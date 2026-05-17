@@ -3,10 +3,12 @@
 处理Word文档导出和参考文献格式
 """
 
-from fastapi import APIRouter, Form, HTTPException
+from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, FileResponse
 from typing import Optional
 import os
+import re
+import time
 from pathlib import Path
 
 from services.session_manager import manager, SessionMode
@@ -16,9 +18,47 @@ router = APIRouter()
 BASE_DIR = Path(__file__).parent.parent
 OUTPUT_DIR = BASE_DIR / "output"
 
+RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
+RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
+_request_counts: dict[str, list[float]] = {}
+
+
+def _check_rate_limit(client_ip: str) -> bool:
+    """Check if client has exceeded rate limit."""
+    current_time = time.time()
+    if client_ip not in _request_counts:
+        _request_counts[client_ip] = []
+    _request_counts[client_ip] = [
+        t for t in _request_counts[client_ip]
+        if current_time - t < RATE_LIMIT_WINDOW
+    ]
+    if len(_request_counts[client_ip]) >= RATE_LIMIT_REQUESTS:
+        return False
+    _request_counts[client_ip].append(current_time)
+    return True
+
+
+def _get_client_ip(request: Request) -> str:
+    """Extract client IP from request, considering proxy headers."""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip
+    return request.client.host if request.client else "unknown"
+
+
+def sanitize_filename(filename: str) -> str:
+    """Sanitize filename to prevent path traversal attacks."""
+    filename = re.sub(r'[^\w\s\-\.]', '', filename)
+    filename = re.sub(r'\.\.', '', filename)
+    return filename[:255]
+
 
 @router.post("/docx")
 async def export_to_docx(
+    request: Request,
     session_id: str = Form(...),
     language: str = Form("中文"),
     ref_style: str = Form("vancouver")
@@ -34,6 +74,13 @@ async def export_to_docx(
     Returns:
         下载文件路径
     """
+    client_ip = _get_client_ip(request)
+    if not _check_rate_limit(client_ip):
+        return JSONResponse({
+            "success": False,
+            "message": "请求过于频繁，请稍后再试"
+        }, status_code=429)
+
     session = manager.get_session(session_id)
     if not session:
         return JSONResponse({
@@ -46,33 +93,36 @@ async def export_to_docx(
     generator = DocumentGenerator()
 
     title = session.research_topic or session.research_question or "医学论文"
+    safe_title = sanitize_filename(title)
+    safe_session_id = sanitize_filename(session_id)
 
-    output_path = OUTPUT_DIR / f"{title}_{session_id[:8]}.docx"
+    output_path = OUTPUT_DIR / f"{safe_title}_{safe_session_id[:8]}.docx"
 
     try:
         generator.generate_paper(
             session=session,
             output_path=str(output_path),
-            language=language,
-            ref_style=ref_style
+            language=sanitize_filename(language),
+            ref_style=sanitize_filename(ref_style)
         )
 
         return JSONResponse({
             "success": True,
             "message": "文档导出成功",
             "file_path": str(output_path),
-            "file_name": f"{title}.docx"
+            "file_name": f"{safe_title}.docx"
         })
 
     except Exception as e:
         return JSONResponse({
             "success": False,
-            "message": f"导出失败: {str(e)}"
+            "message": "导出失败"
         }, status_code=500)
 
 
 @router.get("/download/{session_id}")
 async def download_document(
+    request: Request,
     session_id: str,
     language: str = "中文",
     ref_style: str = "vancouver"
@@ -88,6 +138,13 @@ async def download_document(
     Returns:
         文件下载响应
     """
+    client_ip = _get_client_ip(request)
+    if not _check_rate_limit(client_ip):
+        return JSONResponse({
+            "success": False,
+            "message": "请求过于频繁，请稍后再试"
+        }, status_code=429)
+
     session = manager.get_session(session_id)
     if not session:
         return JSONResponse({
@@ -100,16 +157,17 @@ async def download_document(
     generator = DocumentGenerator()
 
     title = session.research_topic or session.research_question or "医学论文"
-    safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).strip()
+    safe_title = sanitize_filename(title)
+    safe_session_id = sanitize_filename(session_id)
 
-    output_path = OUTPUT_DIR / f"{safe_title}_{session_id[:8]}.docx"
+    output_path = OUTPUT_DIR / f"{safe_title}_{safe_session_id[:8]}.docx"
 
     try:
         generator.generate_paper(
             session=session,
             output_path=str(output_path),
-            language=language,
-            ref_style=ref_style
+            language=sanitize_filename(language),
+            ref_style=sanitize_filename(ref_style)
         )
 
         return FileResponse(
@@ -121,7 +179,7 @@ async def download_document(
     except Exception as e:
         return JSONResponse({
             "success": False,
-            "message": f"导出失败: {str(e)}"
+            "message": "导出失败"
         }, status_code=500)
 
 

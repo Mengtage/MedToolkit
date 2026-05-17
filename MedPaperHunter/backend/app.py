@@ -24,20 +24,29 @@ import csv
 import io
 import logging
 import os
+import re
+import secrets
 import tempfile
 from typing import Any
 from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile, Request, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from starlette.responses import StreamingResponse
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
+
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000,http://localhost:8001").split(",")
+MAX_CONTENT_SIZE = int(os.getenv("MAX_CONTENT_SIZE", "10485760"))
+RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
+RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
+
+_request_counts: dict[str, list[float]] = {}
 
 from dedup import deduplicate_by_pmid, deduplicate_by_title, llm_screen
 from exporter import articles_to_csv, export_strategies_txt, export_to_excel
@@ -79,9 +88,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
 
@@ -93,6 +102,51 @@ app.mount("/static", StaticFiles(directory=str(frontend_path)), name="static")
 @app.get("/")
 async def read_root():
     return FileResponse(str(frontend_path / "index.html"))
+
+def _check_rate_limit(client_ip: str) -> bool:
+    """Check if client has exceeded rate limit."""
+    import time
+    current_time = time.time()
+    if client_ip not in _request_counts:
+        _request_counts[client_ip] = []
+    _request_counts[client_ip] = [
+        t for t in _request_counts[client_ip]
+        if current_time - t < RATE_LIMIT_WINDOW
+    ]
+    if len(_request_counts[client_ip]) >= RATE_LIMIT_REQUESTS:
+        return False
+    _request_counts[client_ip].append(current_time)
+    return True
+
+
+def sanitize_filename(filename: str) -> str:
+    """Sanitize filename to prevent path traversal attacks."""
+    filename = re.sub(r'[^\w\s\-\.]', '', filename)
+    filename = re.sub(r'\.\.', '', filename)
+    return filename[:255]
+
+
+def _get_client_ip(request: Request) -> str:
+    """Extract client IP from request, considering proxy headers."""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip
+    return request.client.host if request.client else "unknown"
+
+
+def _sanitize_input(value: str, field_name: str, max_length: int = 10000) -> str:
+    """Sanitize user input to prevent injection attacks."""
+    if not isinstance(value, str):
+        return str(value)[:max_length]
+    sanitized = value.strip()[:max_length]
+    dangerous_patterns = ['<script', 'javascript:', 'onerror=', 'onclick=']
+    for pattern in dangerous_patterns:
+        sanitized = sanitized.replace(pattern, '')
+    return sanitized
+
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -188,6 +242,19 @@ class StrategyRequest(BaseModel):
     )
     date_range: str = Field(default="", description="Date range filter, e.g. 2020/01/01-2024/12/31")
 
+    @field_validator('question')
+    @classmethod
+    def validate_question_length(cls, v: str) -> str:
+        if len(v) > 5000:
+            raise ValueError('Question must not exceed 5000 characters')
+        return v.strip()
+
+    @field_validator('databases')
+    @classmethod
+    def validate_databases(cls, v: list[str]) -> list[str]:
+        allowed = {"pubmed", "embase", "cochrane", "wos", "arxiv", "scopus"}
+        return [db for db in v if db in allowed][:10]
+
 
 class ExecuteRequest(BaseModel):
     strategies: dict[str, str] = Field(..., description="Database-specific search strategies")
@@ -195,14 +262,48 @@ class ExecuteRequest(BaseModel):
     date_range: str = Field(default="", description="Date range filter")
     max_results: int = Field(default=500, description="Maximum results per database")
 
+    @field_validator('max_results')
+    @classmethod
+    def validate_max_results(cls, v: int) -> int:
+        if v < 1:
+            return 1
+        return min(v, 2000)
+
+    @field_validator('databases')
+    @classmethod
+    def validate_databases(cls, v: list[str]) -> list[str]:
+        allowed = {"pubmed", "embase", "cochrane", "wos", "arxiv", "scopus"}
+        return [db for db in v if db in allowed][:10]
+
 
 class DedupRequest(BaseModel):
     articles: list[dict[str, Any]] = Field(..., description="List of article dicts to deduplicate")
+
+    @field_validator('articles')
+    @classmethod
+    def validate_articles_count(cls, v: list) -> list:
+        if len(v) > 10000:
+            raise ValueError('Cannot process more than 10000 articles at once')
+        return v
 
 
 class ScreenRequest(BaseModel):
     articles: list[dict[str, Any]] = Field(..., description="List of article dicts to screen")
     question: str = Field(..., description="Research question for relevance screening")
+
+    @field_validator('articles')
+    @classmethod
+    def validate_articles_count(cls, v: list) -> list:
+        if len(v) > 5000:
+            raise ValueError('Cannot screen more than 5000 articles at once')
+        return v
+
+    @field_validator('question')
+    @classmethod
+    def validate_question_length(cls, v: str) -> str:
+        if len(v) > 5000:
+            raise ValueError('Question must not exceed 5000 characters')
+        return v.strip()
 
 
 class ExportArticlesRequest(BaseModel):
@@ -225,12 +326,19 @@ class ExportStrategiesRequest(BaseModel):
 
 
 @app.post("/api/search/analyze", response_model=AnalyzeResponse)
-async def analyze_question(request: AnalyzeRequest):
+async def analyze_question(request: Request, req: AnalyzeRequest):
     """Analyze a research question using LLM to perform PICO/PEO decomposition.
 
     Returns structured PICO concepts that can be edited by the user before
     generating search strategies.
     """
+    client_ip = _get_client_ip(request)
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests. Please try again later.",
+        )
+
     if not LLM_API_KEY:
         raise HTTPException(
             status_code=503,
@@ -268,12 +376,19 @@ async def analyze_question(request: AnalyzeRequest):
 
 
 @app.post("/api/search/build", response_model=BuildResponse)
-async def build_strategies(request: BuildRequest):
+async def build_strategies(request: Request, req: BuildRequest):
     """Build search strategies from PICO concepts.
 
     This endpoint accepts user-edited PICO concepts and generates
     database-specific search strategies.
     """
+    client_ip = _get_client_ip(request)
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests. Please try again later.",
+        )
+
     try:
         strategy_builder = MedicalSearchStrategyBuilder()
 
@@ -296,17 +411,24 @@ async def build_strategies(request: BuildRequest):
 
 
 @app.post("/api/search/strategy")
-async def generate_strategy(request: StrategyRequest):
+async def generate_strategy(request: Request, req: StrategyRequest):
     """Generate search strategies from a natural language research question.
 
     Uses LLMedicalSearchBuilder to analyze the question via LLM, validate
     MeSH terms, and produce database-specific search strategies.
     """
+    client_ip = _get_client_ip(request)
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests. Please try again later.",
+        )
+
     try:
         builder = _get_llm_builder()
         result = await builder.build_from_question(
-            question=request.question,
-            databases=request.databases,
+            question=req.question,
+            databases=req.databases,
         )
         return {
             "strategies": result["strategies"],
@@ -325,18 +447,25 @@ async def generate_strategy(request: StrategyRequest):
 
 
 @app.post("/api/search/execute")
-async def execute_search(request: ExecuteRequest):
+async def execute_search(request: Request, req: ExecuteRequest):
     """Execute search on specified databases using provided strategies.
 
     PubMed is searched via NCBI E-utilities API. Other databases require
     direct network access from an institution with subscription.
     """
+    client_ip = _get_client_ip(request)
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests. Please try again later.",
+        )
+
     all_articles: list[dict[str, Any]] = []
     counts: dict[str, int] = {}
     errors: list[dict[str, str]] = []
 
-    for db in request.databases:
-        strategy = request.strategies.get(db, "")
+    for db in req.databases:
+        strategy = req.strategies.get(db, "")
         if not strategy:
             logger.warning("No strategy provided for database: %s, skipping", db)
             continue
@@ -345,8 +474,8 @@ async def execute_search(request: ExecuteRequest):
             if db == "pubmed":
                 articles = await fetch_pubmed(
                     query=strategy,
-                    max_results=request.max_results,
-                    date_range=request.date_range,
+                    max_results=req.max_results,
+                    date_range=req.date_range,
                 )
                 all_articles.extend(articles)
                 counts["pubmed"] = len(articles)
@@ -436,13 +565,20 @@ async def execute_search(request: ExecuteRequest):
 
 
 @app.post("/api/search/import-file")
-async def import_file(file: UploadFile = File(...)):
+async def import_file(request: Request, file: UploadFile = File(...)):
     """Import articles from a CSV or Excel file.
 
     Expects columns: Title, Authors, Journal, Publication Date, Abstract, DOI, PMID, Source.
     This endpoint is designed for manually exporting results from other databases.
     """
-    filename = file.filename or ""
+    client_ip = _get_client_ip(request)
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests. Please try again later.",
+        )
+
+    filename = sanitize_filename(file.filename or "")
     is_excel = filename.lower().endswith((".xlsx", ".xls"))
 
     if not is_excel and not filename.lower().endswith(".csv"):
@@ -450,6 +586,12 @@ async def import_file(file: UploadFile = File(...)):
 
     try:
         content = await file.read()
+
+        if len(content) > MAX_CONTENT_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File size exceeds maximum allowed size of {MAX_CONTENT_SIZE} bytes."
+            )
 
         if is_excel:
             import openpyxl
@@ -497,23 +639,26 @@ async def import_file(file: UploadFile = File(...)):
 
 
 @app.post("/api/process/dedup")
-async def deduplicate_articles(request: DedupRequest):
+async def deduplicate_articles(request: Request, req: DedupRequest):
     """Deduplicate articles by PMID first, then by normalized title.
 
     For each deduplication step, the article with the most complete data
     is retained when duplicates are found.
     """
-    if not request.articles:
+    client_ip = _get_client_ip(request)
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests. Please try again later.",
+        )
+
+    if not req.articles:
         return {"articles": [], "removed": 0}
 
-    original_count = len(request.articles)
+    original_count = len(req.articles)
 
-    # Step 1: Deduplicate by PMID
-    after_pmid = deduplicate_by_pmid(request.articles)
-
-    # Step 2: Deduplicate remaining by title
+    after_pmid = deduplicate_by_pmid(req.articles)
     after_title = deduplicate_by_title(after_pmid)
-
     removed = original_count - len(after_title)
 
     return {
@@ -525,13 +670,20 @@ async def deduplicate_articles(request: DedupRequest):
 
 
 @app.post("/api/process/screen")
-async def screen_articles(request: ScreenRequest):
+async def screen_articles(request: Request, req: ScreenRequest):
     """Screen articles for relevance using LLM.
 
     Sends article titles and abstracts to the LLM in batches,
     asking whether each article is relevant to the research question.
     """
-    if not request.articles:
+    client_ip = _get_client_ip(request)
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests. Please try again later.",
+        )
+
+    if not req.articles:
         return {"articles": [], "total": 0}
 
     try:
@@ -540,10 +692,9 @@ async def screen_articles(request: ScreenRequest):
         raise
 
     try:
-        # Get all screened articles with screening_result field
         all_screened = []
         batch_size = 20
-        
+
         from dedup import (
             SCREENING_SYSTEM_PROMPT,
             SCREENING_USER_TEMPLATE,
@@ -551,18 +702,17 @@ async def screen_articles(request: ScreenRequest):
             _parse_screening_response,
             _call_llm,
         )
-        
-        for offset in range(0, len(request.articles), batch_size):
-            batch = request.articles[offset : offset + batch_size]
-            
-            # Format articles for the prompt
+
+        for offset in range(0, len(req.articles), batch_size):
+            batch = req.articles[offset : offset + batch_size]
+
             articles_text = "\n".join(
                 _format_article_for_screening(i + 1, article)
                 for i, article in enumerate(batch)
             )
-            
+
             user_message = SCREENING_USER_TEMPLATE.format(
-                question=request.question,
+                question=req.question,
                 count=len(batch),
                 articles_text=articles_text,
             )
@@ -603,17 +753,25 @@ async def screen_articles(request: ScreenRequest):
 
 
 @app.post("/api/export/excel")
-async def export_excel(request: ExportArticlesRequest):
+async def export_excel(request: Request, req: ExportArticlesRequest):
     """Export articles to a styled Excel file.
 
     Returns the Excel file as a downloadable binary stream.
     """
-    if not request.articles:
+    client_ip = _get_client_ip(request)
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests. Please try again later.",
+        )
+
+    if not req.articles:
         raise HTTPException(status_code=400, detail="No articles to export.")
 
     try:
-        filepath = os.path.join(OUTPUT_DIR, "search_results.xlsx")
-        export_to_excel(request.articles, filepath)
+        safe_filename = sanitize_filename("search_results.xlsx")
+        filepath = os.path.join(OUTPUT_DIR, safe_filename)
+        export_to_excel(req.articles, filepath)
 
         def iterfile():
             with open(filepath, "rb") as f:
@@ -622,26 +780,34 @@ async def export_excel(request: ExportArticlesRequest):
         return StreamingResponse(
             iterfile(),
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={"Content-Disposition": "attachment; filename=search_results.xlsx"},
+            headers={"Content-Disposition": f"attachment; filename={safe_filename}"},
         )
 
     except Exception as e:
         logger.exception("Excel export failed")
-        raise HTTPException(status_code=500, detail=f"Excel export failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to export Excel file.")
 
 
 @app.post("/api/export/strategies")
-async def export_strategies(request: ExportStrategiesRequest):
+async def export_strategies(request: Request, req: ExportStrategiesRequest):
     """Export search strategies to a text file.
 
     Returns the text file as a downloadable stream.
     """
-    if not request.strategies:
+    client_ip = _get_client_ip(request)
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests. Please try again later.",
+        )
+
+    if not req.strategies:
         raise HTTPException(status_code=400, detail="No strategies to export.")
 
     try:
-        filepath = os.path.join(OUTPUT_DIR, "search_strategies.txt")
-        export_strategies_txt(request.strategies, filepath)
+        safe_filename = sanitize_filename("search_strategies.txt")
+        filepath = os.path.join(OUTPUT_DIR, safe_filename)
+        export_strategies_txt(req.strategies, filepath)
 
         def iterfile():
             with open(filepath, "rb") as f:
@@ -650,21 +816,28 @@ async def export_strategies(request: ExportStrategiesRequest):
         return StreamingResponse(
             iterfile(),
             media_type="text/plain; charset=utf-8",
-            headers={"Content-Disposition": "attachment; filename=search_strategies.txt"},
+            headers={"Content-Disposition": f"attachment; filename={safe_filename}"},
         )
 
     except Exception as e:
         logger.exception("Strategy export failed")
-        raise HTTPException(status_code=500, detail=f"Strategy export failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to export strategies.")
 
 
 @app.post("/api/export/csv")
-async def export_csv(request: ExportArticlesRequest):
+async def export_csv(request: Request, req: ExportArticlesRequest):
     """Export articles to a CSV file.
 
     Returns the CSV file as a downloadable stream.
     """
-    if not request.articles:
+    client_ip = _get_client_ip(request)
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(
+            status_code=429,
+            detail="Too many requests. Please try again later.",
+        )
+
+    if not req.articles:
         raise HTTPException(status_code=400, detail="No articles to export.")
 
     try:

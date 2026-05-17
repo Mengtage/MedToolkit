@@ -3,7 +3,7 @@
 负责管理MedToolkit的会话状态和上下文
 """
 
-import uuid
+import secrets
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from enum import Enum
@@ -29,7 +29,7 @@ class OutlineNode:
     """提纲节点"""
 
     def __init__(self, level: int, title: str, parent: Optional['OutlineNode'] = None):
-        self.id = str(uuid.uuid4())[:8]
+        self.id = secrets.token_urlsafe(8)
         self.level = level  # 1, 2, 3级标题
         self.title = title
         self.parent = parent
@@ -72,7 +72,7 @@ class Session:
     """会话对象"""
 
     def __init__(self, mode: SessionMode, user_id: Optional[str] = None):
-        self.session_id: str = str(uuid.uuid4())
+        self.session_id: str = secrets.token_urlsafe(32)
         self.mode: SessionMode = mode
         self.status: str = "in_progress"  # in_progress, paused, completed
         self.created_at: str = datetime.now().isoformat()

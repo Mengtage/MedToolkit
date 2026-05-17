@@ -3,15 +3,58 @@
 处理综述模式和RCT模式的对话交互
 """
 
-from fastapi import APIRouter, Form, HTTPException
+from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse
 from typing import Optional
 import re
+import os
+import time
 
 from services.session_manager import manager, SessionMode, OutlineNode
 from llm.client import LLMClient, ExpertFactory, LLMError
 
 router = APIRouter()
+
+RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))
+RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
+_request_counts: dict[str, list[float]] = {}
+
+
+def _check_rate_limit(client_ip: str) -> bool:
+    """Check if client has exceeded rate limit."""
+    current_time = time.time()
+    if client_ip not in _request_counts:
+        _request_counts[client_ip] = []
+    _request_counts[client_ip] = [
+        t for t in _request_counts[client_ip]
+        if current_time - t < RATE_LIMIT_WINDOW
+    ]
+    if len(_request_counts[client_ip]) >= RATE_LIMIT_REQUESTS:
+        return False
+    _request_counts[client_ip].append(current_time)
+    return True
+
+
+def _get_client_ip(request: Request) -> str:
+    """Extract client IP from request, considering proxy headers."""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip
+    return request.client.host if request.client else "unknown"
+
+
+def _sanitize_input(value: str, max_length: int = 10000) -> str:
+    """Sanitize user input to prevent injection attacks."""
+    if not isinstance(value, str):
+        return str(value)[:max_length]
+    sanitized = value.strip()[:max_length]
+    dangerous_patterns = ['<script', 'javascript:', 'onerror=', 'onclick=']
+    for pattern in dangerous_patterns:
+        sanitized = sanitized.replace(pattern, '')
+    return sanitized
 
 
 def build_qa_context(session_id: str) -> str:
@@ -61,6 +104,7 @@ def parse_outline(outline_text: str) -> OutlineNode:
 
 @router.post("/qa")
 async def qa_chat(
+    request: Request,
     session_id: str = Form(...),
     message: str = Form(...),
     clear_context: bool = Form(False)
@@ -76,12 +120,21 @@ async def qa_chat(
     Returns:
         AI回复和Token使用信息
     """
+    client_ip = _get_client_ip(request)
+    if not _check_rate_limit(client_ip):
+        return JSONResponse({
+            "success": False,
+            "message": "请求过于频繁，请稍后再试"
+        }, status_code=429)
+
     session = manager.get_session(session_id)
     if not session:
         return JSONResponse({
             "success": False,
             "message": "会话不存在"
         }, status_code=404)
+
+    message = _sanitize_input(message, 5000)
 
     if clear_context:
         session.qa_context = []
