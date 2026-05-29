@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.venv/
+venv/
+.env.local
+
+# Data
+data/raw/*
+data/processed/*
+*.csv
+*.xlsx
+*.xls
+*.json
+*.dat
+
+# Output
+output/
+*.docx
+*.pdf
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Build
+*.egg-info/
+dist/
+build/
+.env

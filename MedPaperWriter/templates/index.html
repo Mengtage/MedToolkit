@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedPaperWriter - 医学论文自动化写作系统</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="page-header">
+            <h1 class="page-title">MedPaperWriter</h1>
+            <p class="page-subtitle">医学论文自动化写作系统 - 综述模式 / RCT模式</p>
+        </header>
+
+        <div id="successMsg" class="success-msg"></div>
+        <div id="errorMsg" class="error-msg"></div>
+
+        <main class="main-content">
+            <section id="modeSelection" class="workflow-step">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <h2 class="step-title">选择写作模式</h2>
+                </div>
+
+                <div class="mode-grid">
+                    <div class="mode-card" onclick="selectMode('review')">
+                        <h3>综述模式</h3>
+                        <p>输入标题，AI协助挖掘研究问题，生成提纲后逐段撰写</p>
+                        <ul>
+                            <li>漏斗式追问确定研究问题</li>
+                            <li>AI生成3级标题提纲</li>
+                            <li>逐段撰写与审核</li>
+                        </ul>
+                    </div>
+
+                    <div class="mode-card" onclick="selectMode('rct')">
+                        <h3>RCT模式</h3>
+                        <p>基于研究方案和统计分析报告生成论文</p>
+                        <ul>
+                            <li>上传研究方案和统计报告</li>
+                            <li>IMRAD框架搭建</li>
+                            <li>章节撰写与审核</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="reviewModeSection" class="workflow-step" style="display: none;">
+                <div class="step-header">
+                    <div class="step-number">R</div>
+                    <h2 class="step-title">综述模式</h2>
+                    <span id="sessionStatus" class="badge badge-warning">进行中</span>
+                </div>
+
+                <div class="review-workflow">
+                    <div class="workflow-tabs">
+                        <button class="tab-btn active" onclick="switchTab('topic')">研究主题</button>
+                        <button class="tab-btn" onclick="switchTab('qa')" id="qaTab" disabled>追问探索</button>
+                        <button class="tab-btn" onclick="switchTab('outline')" id="outlineTab" disabled>提纲生成</button>
+                        <button class="tab-btn" onclick="switchTab('writing')" id="writingTab" disabled>正文撰写</button>
+                    </div>
+
+                    <div id="topicTab" class="tab-content">
+                        <div class="form-group">
+                            <label class="form-label">研究主题</label>
+                            <textarea id="researchTopic" class="form-textarea" placeholder="请简要描述您的研究领域或兴趣方向..."></textarea>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="startQA()">开始探索研究问题</button>
+                        </div>
+                    </div>
+
+                    <div id="qaTabContent" class="tab-content" style="display: none;">
+                        <div class="qa-container">
+                            <div id="qaHistory" class="qa-history"></div>
+                            <div class="qa-input-area">
+                                <textarea id="qaInput" class="form-textarea" placeholder="请回答AI的问题，或描述您的研究想法..."></textarea>
+                                <div class="qa-actions">
+                                    <button class="btn btn-secondary" onclick="clearQAContext()">清除上下文</button>
+                                    <button class="btn btn-primary" onclick="sendQAMessage()" id="sendQABtn">发送</button>
+                                </div>
+                                <div id="qaStatus" class="loading-status" style="display: none;">
+                                    <span class="loading-spinner"></span>
+                                    <span class="loading-text">AI正在思考中，请稍候...</span>
+                                </div>
+                            </div>
+                            <div class="confirm-question">
+                                <button class="btn btn-success" onclick="confirmQuestion()">确认研究问题</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="outlineTabContent" class="tab-content" style="display: none;">
+                        <div class="form-group">
+                            <label class="form-label">研究问题确认</label>
+                            <div id="confirmedQuestion" class="question-display"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">上传参考资料（可选）</label>
+                            <div class="upload-area" onclick="document.getElementById('referenceFile').click()">
+                                <div class="upload-icon">📄</div>
+                                <div class="upload-title">点击选择参考资料文件</div>
+                        <div class="upload-hint">支持 .txt, .md, .docx, .pdf, .xlsx 格式，可多次上传</div>
+                        <input type="file" id="referenceFile" class="file-input" accept=".txt,.md,.docx,.pdf,.xlsx,.xls" onchange="uploadReference(event)">
+                            </div>
+                            <div id="referenceStatus" class="upload-status">未上传参考资料</div>
+                            <div id="referenceList" class="reference-list"></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">论文提纲（3级标题）</label>
+                            <textarea id="outlineText" class="form-textarea" placeholder="AI将基于研究问题和参考资料生成提纲，您也可以手动修改..."></textarea>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-secondary" onclick="generateOutline()" id="generateOutlineBtn">重新生成提纲</button>
+                            <button class="btn btn-primary" onclick="confirmOutline()">确认提纲，开始撰写</button>
+                        </div>
+                        <div id="outlineStatus" class="loading-status" style="display: none;">
+                            <span class="loading-spinner"></span>
+                            <span class="loading-text">AI正在生成提纲，请稍候...</span>
+                        </div>
+                    </div>
+
+                    <div id="writingTabContent" class="tab-content" style="display: none;">
+                        <div class="writing-progress">
+                            <div class="progress-bar-container">
+                                <div id="writingProgress" class="progress-bar" style="width: 0%;"></div>
+                            </div>
+                            <div id="writingProgressText" class="progress-text">0 / 0 章节已完成</div>
+                        </div>
+
+                        <div id="revisionIndicator" class="revision-indicator" style="display: none;"></div>
+                        <div id="currentSection" class="current-section">
+                            <h4 id="sectionTitle">准备开始...</h4>
+                            <div id="sectionContent" class="section-content"></div>
+                        </div>
+
+                        <div class="section-actions">
+                            <button class="btn btn-secondary" onclick="requestRevision()">提交修订意见</button>
+                            <button class="btn btn-success" onclick="approveSection()">确认通过</button>
+                            <button class="btn btn-primary" onclick="nextSection()" id="nextBtn" disabled>下一章节</button>
+                        </div>
+
+                        <div id="revisionModal" class="modal-overlay" style="display: none;">
+                            <div class="modal">
+                                <h3 class="modal-title">提交修订意见</h3>
+                                <textarea id="revisionFeedback" class="form-textarea" placeholder="请详细描述需要修订的内容..."></textarea>
+                                <div id="revisionStatus" class="revision-status" style="display: none;"></div>
+                                <div class="modal-footer">
+                                    <button class="btn btn-secondary" onclick="closeRevisionModal()">取消</button>
+                                    <button class="btn btn-primary" onclick="submitRevision()">提交修订</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="rctModeSection" class="workflow-step" style="display: none;">
+                <div class="step-header">
+                    <div class="step-number">RCT</div>
+                    <h2 class="step-title">RCT模式</h2>
+                </div>
+
+                <!-- RCT章节修订模态框 -->
+                <div id="rctRevisionModal" class="modal-overlay" style="display: none;">
+                    <div class="modal">
+                        <h3 class="modal-title">提交章节修订意见</h3>
+                        <textarea id="rctRevisionFeedback" class="form-textarea" placeholder="请详细描述需要修订的内容..."></textarea>
+                        <div id="rctRevisionStatus" class="revision-status" style="display: none;"></div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="closeRctRevisionModal()">取消</button>
+                            <button class="btn btn-primary" onclick="submitRctRevision()">提交修订</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rct-workflow">
+                    <div class="upload-section">
+                        <div class="upload-card">
+                            <h4>上传研究方案</h4>
+                            <div class="upload-area" onclick="document.getElementById('protocolFile').click()">
+                                <div class="upload-icon">FILE</div>
+                                <div class="upload-title">选择文件</div>
+                                <div class="upload-hint">支持 .txt, .docx, .doc, .pdf 格式</div>
+                                <input type="file" id="protocolFile" class="file-input" accept=".txt,.docx,.doc,.pdf" onchange="uploadProtocol(event)">
+                            </div>
+                            <div id="protocolStatus" class="upload-status">未上传</div>
+                        </div>
+
+                        <div class="upload-card">
+                            <h4>上传统计分析报告</h4>
+                            <div class="upload-area" onclick="document.getElementById('analysisFile').click()">
+                                <div class="upload-icon">DATA</div>
+                                <div class="upload-title">选择文件</div>
+                                <div class="upload-hint">支持 .txt, .xlsx, .xls, .csv, .docx, .doc, .pdf 格式</div>
+                                <input type="file" id="analysisFile" class="file-input" accept=".txt,.xlsx,.xls,.csv,.docx,.doc,.pdf" onchange="uploadAnalysis(event)">
+                            </div>
+                            <div id="analysisStatus" class="upload-status">未上传</div>
+                        </div>
+                    </div>
+
+                    <div class="framework-section">
+                        <h4>论文框架预览</h4>
+                        <div class="framework-checklist">
+                            <label class="checkbox-item">
+                                <input type="checkbox" checked disabled> Introduction
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" checked disabled> Methods
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" checked disabled> Results
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" checked disabled> Discussion
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" checked disabled> Conclusions
+                            </label>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="startRCTWriting()">确认框架，开始撰写</button>
+                        </div>
+                    </div>
+
+                    <div id="rctWritingSection" class="rct-writing-section" style="display: none;">
+                        <div class="chapter-list">
+                            <h4>IMRAD章节</h4>
+                            <div id="chapterList" class="chapter-items"></div>
+                        </div>
+
+                        <div class="chapter-content">
+                            <h4 id="currentChapterTitle">Introduction</h4>
+                            <div id="chapterContent" class="chapter-text"></div>
+                            <div class="chapter-actions">
+                                <button class="btn btn-secondary" onclick="requestChapterRevision()">提交修订</button>
+                                <button class="btn btn-success" onclick="approveChapter()">审核通过</button>
+                                <button class="btn btn-primary" onclick="nextChapter()" id="rctNextBtn">下一章节</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="exportSection" class="workflow-step" style="display: none;">
+                <div class="step-header">
+                    <div class="step-number">E</div>
+                    <h2 class="step-title">导出文档</h2>
+                </div>
+
+                <div class="export-options">
+                    <div class="form-group">
+                        <label class="form-label">写作语言</label>
+                        <select id="exportLanguage" class="form-select">
+                            <option value="中文">中文</option>
+                            <option value="English">English</option>
+                            <option value="中英文双语">中英文双语</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">参考文献格式</label>
+                        <select id="refStyle" class="form-select">
+                            <option value="vancouver">Vancouver（医学期刊）</option>
+                            <option value="apa">APA（心理学/社会科学）</option>
+                            <option value="mla">MLA（人文学科）</option>
+                            <option value="chicago">Chicago（历史学）</option>
+                            <option value="gb7714">GB/T 7714（中文学术）</option>
+                        </select>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="exportDocument()">导出Word文档</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="token-monitor">
+            <div class="token-info">
+                <span>会话状态：<strong id="tokenStatus">--</strong></span>
+                <span>已消耗Token：<strong id="totalTokens">0</strong></span>
+                <span>预计剩余：<strong id="estimatedTokens">--</strong></span>
+            </div>
+            <div class="token-actions">
+                <button class="btn btn-secondary btn-sm" onclick="pauseSession()">暂停</button>
+                <button class="btn btn-danger btn-sm" onclick="terminateSession()">终止</button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let currentMode = null;
+        let currentTab = 'topic';
+        let outlineData = null;
+        let currentSectionIndex = 0;
+        let sections = [];
+        let totalTokens = 0;
+        let isRequestPending = false;  // 请求防抖标志
+
+        const API_BASE = '/api';
+
+        // 防抖工具函数：防止重复提交
+        async function debouncedRequest(requestFn) {
+            if (isRequestPending) {
+                showMessage('操作正在进行中，请稍候...', true);
+                return;
+            }
+            isRequestPending = true;
+            try {
+                await requestFn();
+            } finally {
+                isRequestPending = false;
+            }
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Page loaded, initializing...');
+            
+            // 确保所有模态框处于隐藏状态
+            const modal = document.getElementById('revisionModal');
+            if (modal) {
+                modal.style.display = 'none';
+                console.log('Modal hidden successfully');
+            } else {
+                console.error('Modal element not found');
+            }
+            
+            // 初始化成功提示
+            showMessage('欢迎使用MedPaperWriter，请选择写作模式开始', false);
+        });
+
+        async function selectMode(mode) {
+            currentMode = mode;
+            document.getElementById('modeSelection').style.display = 'none';
+
+            if (mode === 'review') {
+                document.getElementById('reviewModeSection').style.display = 'block';
+                document.getElementById('qaTab').disabled = true;
+                document.getElementById('outlineTab').disabled = true;
+                document.getElementById('writingTab').disabled = true;
+            } else {
+                document.getElementById('rctModeSection').style.display = 'block';
+            }
+
+            await createSession(mode);
+        }
+
+        async function createSession(mode) {
+            const researchTopic = mode === 'review' ? document.getElementById('researchTopic').value : 'RCT论文';
+
+            try {
+                const response = await fetch(`${API_BASE}/mode/select`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `mode=${mode}&research_topic=${encodeURIComponent(researchTopic)}`
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    currentSessionId = data.session_id;
+                    showMessage('会话已创建');
+                    updateTokenStatus('进行中');
+                } else {
+                    showMessage(data.message, true);
+                }
+            } catch (e) {
+                showMessage('创建会话失败：' + e.message, true);
+            }
+        }
+
+        function switchTab(tabName) {
+            // 移除所有tab-btn的active类
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            // 隐藏所有tab-content
+            document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+
+            currentTab = tabName;
+
+            // 根据tabName激活对应的tab-btn和tab-content
+            const tabBtnMap = {
+                'topic': 'qaTab',      // topic tab没有对应的tab-btn，用qaTab作为占位
+                'qa': 'qaTab',
+                'outline': 'outlineTab',
+                'writing': 'writingTab'
+            };
+            const contentMap = {
+                'topic': 'topicTab',
+                'qa': 'qaTabContent',
+                'outline': 'outlineTabContent',
+                'writing': 'writingTabContent'
+            };
+
+            // 激活对应的tab-btn
+            const btnId = tabBtnMap[tabName];
+            if (btnId) {
+                const btn = document.getElementById(btnId);
+                if (btn) btn.classList.add('active');
+            }
+
+            // 显示对应的tab-content
+            const contentId = contentMap[tabName];
+            if (contentId) {
+                const content = document.getElementById(contentId);
+                if (content) content.style.display = 'block';
+            }
+        }
+
+        async function startQA() {
+            const topic = document.getElementById('researchTopic').value;
+            if (!topic) {
+                showMessage('请输入研究主题', true);
+                return;
+            }
+
+            switchTab('qa');
+            document.getElementById('qaTab').disabled = false;
+            document.querySelector('[onclick="switchTab(\'qa\')"]').classList.add('active');
+            document.getElementById('qaTabContent').style.display = 'block';
+            document.getElementById('topicTab').style.display = 'none';
+
+            // ✅ 显示初始欢迎消息
+            document.getElementById('qaHistory').innerHTML = `
+                <div class="qa-message ai">
+                    <div class="message-label">AI助手</div>
+                    <div class="message-content">您好！我将帮助您聚焦研究问题。让我们开始结构化探讨。</div>
+                </div>
+            `;
+            
+            // ✅ 自动发送用户输入的研究主题给大模型
+            document.getElementById('qaInput').value = topic;
+            await sendQAMessage();
+        }
+
+        // ✅ XSS 防护 + Markdown 渲染辅助函数
+        function createMessageHTML(role, content) {
+            const renderedContent = marked.parse(content);
+            return `
+                <div class="qa-message ${role}">
+                    <div class="message-label">${role === 'user' ? '您' : 'AI助手'}</div>
+                    <div class="message-content">${renderedContent}</div>
+                </div>
+            `;
+        }
+
+        // ✅ 自动滚动到对话框底部
+        function scrollToBottom(element) {
+            setTimeout(() => {
+                element.scrollTop = element.scrollHeight;
+            }, 100);
+        }
+
+        async function sendQAMessage() {
+            const message = document.getElementById('qaInput').value;
+            if (!message) return;
+
+            const qaHistory = document.getElementById('qaHistory');
+            qaHistory.innerHTML += createMessageHTML('user', message);
+            scrollToBottom(qaHistory);
+
+            document.getElementById('qaInput').value = '';
+            document.getElementById('sendQABtn').disabled = true;
+            document.getElementById('qaStatus').style.display = 'flex';
+
+            // 尝试使用流式API，如果失败则回退到普通API
+            try {
+                const response = await fetch(`${API_BASE}/chat/qa/stream`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `session_id=${currentSessionId}&message=${encodeURIComponent(message)}`
+                });
+
+                if (!response.ok) {
+                    throw new Error('Stream API not available');
+                }
+
+                // 创建AI消息占位
+                const aiMsgDiv = document.createElement('div');
+                aiMsgDiv.className = 'qa-message ai';
+                aiMsgDiv.innerHTML = '<div class="message-label">AI助手</div><div class="message-content"></div>';
+                qaHistory.appendChild(aiMsgDiv);
+                scrollToBottom(qaHistory);
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullContent = '';
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.type === 'chunk') {
+                                    fullContent += data.content;
+                                    // 实时更新显示
+                                    const contentDiv = aiMsgDiv.querySelector('.message-content');
+                                    contentDiv.innerHTML = marked.parse(fullContent);
+                                    scrollToBottom(qaHistory);
+                                } else if (data.type === 'done') {
+                                    totalTokens = data.total_tokens;
+                                    document.getElementById('totalTokens').textContent = totalTokens.toLocaleString();
+                                } else if (data.type === 'error') {
+                                    showMessage('AI回复出错：' + data.message, true);
+                                }
+                            } catch (e) {
+                                console.warn('Parse SSE error:', e);
+                            }
+                        }
+                    }
+                }
+
+                document.getElementById('qaStatus').style.display = 'none';
+                document.getElementById('sendQABtn').disabled = false;
+
+            } catch (e) {
+                // 回退到普通API
+                console.warn('Stream API failed, falling back to normal API:', e.message);
+                try {
+                    const response = await fetch(`${API_BASE}/chat/qa`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `session_id=${currentSessionId}&message=${encodeURIComponent(message)}`
+                    });
+
+                    const data = await response.json();
+                    document.getElementById('qaStatus').style.display = 'none';
+                    document.getElementById('sendQABtn').disabled = false;
+
+                    if (data.success) {
+                        qaHistory.innerHTML += createMessageHTML('ai', data.message);
+                        scrollToBottom(qaHistory);
+                        totalTokens = data.total_tokens;
+                        document.getElementById('totalTokens').textContent = totalTokens.toLocaleString();
+                    } else {
+                        showMessage(data.message, true);
+                    }
+                } catch (fallbackError) {
+                    document.getElementById('qaStatus').style.display = 'none';
+                    document.getElementById('sendQABtn').disabled = false;
+                    showMessage('发送失败：' + fallbackError.message, true);
+                }
+            }
+        }
+
+        function clearQAContext() {
+            document.getElementById('qaHistory').innerHTML = '';
+        }
+
+        // ✅ 获取最后一轮对话内容
+        function getLastQAMessage() {
+            const messages = document.querySelectorAll('.qa-message');
+            for (let i = messages.length - 1; i >= 0; i--) {
+                const msgElement = messages[i];
+                const labelElement = msgElement.querySelector('.message-label');
+                if (labelElement && labelElement.textContent === 'AI助手') {
+                    const contentElement = msgElement.querySelector('.message-content');
+                    if (contentElement) {
+                        return contentElement.textContent;
+                    }
+                }
+            }
+            return null;
+        }
+
+        async function confirmQuestion() {
+            const question = document.getElementById('qaInput').value || document.getElementById('researchTopic').value;
+
+            if (!question) {
+                showMessage('请先完成追问，或直接输入研究问题', true);
+                return;
+            }
+
+            // ✅ 获取最后一轮AI回复作为补充信息
+            const lastMessage = getLastQAMessage();
+            const fullQuestion = lastMessage ? 
+                `用户初始研究主题：${question}\n\nAI追问后最终提炼：${lastMessage}` : 
+                question;
+
+            try {
+                const response = await fetch(`${API_BASE}/chat/confirm/question`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `session_id=${currentSessionId}&question=${encodeURIComponent(fullQuestion)}`
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('confirmedQuestion').textContent = fullQuestion;
+                    switchTab('outline');
+                    document.getElementById('outlineTab').disabled = false;
+                    document.getElementById('qaTabContent').style.display = 'none';
+                    document.getElementById('outlineTabContent').style.display = 'block';
+                    await loadReferences();
+                    showMessage('研究问题已确认');
+                    generateOutline();
+                }
+            } catch (e) {
+                showMessage('确认失败：' + e.message, true);
+            }
+        }
+
+        async function uploadReference(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('session_id', currentSessionId);
+            formData.append('references', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/mode/upload/references`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage(data.message);
+                    await loadReferences();
+                } else {
+                    showMessage(data.message, true);
+                }
+            } catch (e) {
+                showMessage('上传失败：' + e.message, true);
+            }
+        }
+
+        // XSS 防护函数：转义 HTML 特殊字符
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function loadReferences() {
+            try {
+                const response = await fetch(`${API_BASE}/mode/references/list/${currentSessionId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const refList = document.getElementById('referenceList');
+                    const refStatus = document.getElementById('referenceStatus');
+                    
+                    if (data.references.length > 0) {
+                        refStatus.textContent = `已上传 ${data.references.length} 份参考资料`;
+                        refStatus.className = 'upload-status success';
+                        refList.innerHTML = data.references.map((ref, i) => `
+                            <div class="reference-item">
+                                <strong>${i + 1}. ${escapeHtml(ref.filename)}</strong>
+                                <p>${escapeHtml(ref.content_preview)}</p>
+                            </div>
+                        `).join('');
+                    } else {
+                        refStatus.textContent = '未上传参考资料';
+                        refStatus.className = 'upload-status';
+                        refList.innerHTML = '';
+                    }
+                }
+            } catch (e) {
+                console.error('加载参考资料失败', e);
+            }
+        }
+
+        async function generateOutline() {
+            document.getElementById('generateOutlineBtn').disabled = true;
+            document.getElementById('outlineStatus').style.display = 'flex';
+
+            try {
+                const response = await fetch(`${API_BASE}/chat/outline/generate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `session_id=${currentSessionId}&study_type=综述`
+                });
+
+                const data = await response.json();
+                document.getElementById('outlineStatus').style.display = 'none';
+                document.getElementById('generateOutlineBtn').disabled = false;
+
+                if (data.success) {
+                    document.getElementById('outlineText').value = data.outline_text;
+                    outlineData = data.outline;
+                    showMessage('提纲已生成');
+                } else {
+                    showMessage(data.message, true);
+                }
+            } catch (e) {
+                document.getElementById('outlineStatus').style.display = 'none';
+                document.getElementById('generateOutlineBtn').disabled = false;
+                showMessage('生成提纲失败：' + e.message, true);
+            }
+        }
+
+        async function confirmOutline() {
+            const outlineText = document.getElementById('outlineText').value;
+            if (!outlineText) {
+                showMessage('请先生成或输入提纲', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/chat/outline/confirm`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `session_id=${currentSessionId}`
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    switchTab('writing');
+                    document.getElementById('outlineTab').disabled = true;
+                    document.getElementById('writingTab').disabled = false;
+                    document.getElementById('outlineTabContent').style.display = 'none';
+                    document.getElementById('writingTabContent').style.display = 'block';
+                    document.getElementById('exportSection').style.display = 'block';
+                    
+                    // ✅ 立即初始化并开始撰写
+                    await initWriting();
+                    showMessage('提纲已确认，开始撰写正文');
+                }
+            } catch (e) {
+                showMessage('确认失败：' + e.message, true);
+            }
+        }
+
+        async function initWriting() {
+            if (!outlineData) return;
+
+            sections = flattenOutline(outlineData);
+            currentSectionIndex = 0;
+            await writeCurrentSection();
+            updateWritingProgress();
+        }
+
+        function flattenOutline(node, result = []) {
+            if (node.level === 3) {
+                result.push({ id: node.id, title: node.title, content: '' });
+            }
+            if (node.children) {
+                for (const child of node.children) {
+                    flattenOutline(child, result);
+                }
+            }
+            return result;
+        }
+
+        async function writeCurrentSection() {
+            if (currentSectionIndex >= sections.length) {
+                document.getElementById('sectionTitle').textContent = '所有章节已完成';
+                document.getElementById('sectionContent').innerHTML = '<p>恭喜！论文初稿已完成，请点击导出生成Word文档。</p>';
+                return;
+            }
+
+            const section = sections[currentSectionIndex];
+            document.getElementById('sectionTitle').textContent = section.title;
+            document.getElementById('sectionContent').innerHTML = '<div class="writing-loading"><span class="loading-spinner"></span><span>AI正在撰写本章节，请稍候...</span></div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/chat/section/write`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `session_id=${currentSessionId}&section_id=${section.id}&language=中文`
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    section.content = data.content;
+                    document.getElementById('sectionContent').innerHTML = `<div class="section-text">${data.content.replace(/\n/g, '<br>')}</div>`;
+                    totalTokens = data.total_tokens;
+                    document.getElementById('totalTokens').textContent = totalTokens.toLocaleString();
+                }
+            } catch (e) {
+                document.getElementById('sectionContent').innerHTML = '<p class="error">生成失败：' + e.message + '</p>';
+            }
+        }
+
+        function updateWritingProgress() {
+            const progress = (currentSectionIndex / sections.length) * 100;
+            document.getElementById('writingProgress').style.width = progress + '%';
+            document.getElementById('writingProgressText').textContent = `${currentSectionIndex} / ${sections.length} 章节已完成`;
+        }
+
+        async function approveSection() {
+            // 检查会话和章节数据是否有效
+            if (!currentSessionId) {
+                showMessage('会话未创建，请先创建会话', true);
+                return;
+            }
+
+            if (!sections || sections.length === 0 || currentSectionIndex >= sections.length) {
+                showMessage('章节数据无效', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/review/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `session_id=${currentSessionId}&section_id=${sections[currentSectionIndex].id}`
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage('章节已通过');
+                    document.getElementById('nextBtn').disabled = false;
+                } else {
+                    showMessage(data.message || '审核失败', true);
+                }
+            } catch (e) {
+                showMessage('审核失败：' + e.message, true);
+            }
+        }
+
+        function requestRevision() {
+            console.log('requestRevision called, currentTab:', currentTab);
+            
+            // 防御性检查
+            const modal = document.getElementById('revisionModal');
+            if (!modal) {
+                console.error('Modal element not found');
+                showMessage('系统错误：模态框未找到', true);
+                return;
+            }
+            
+            // 检查当前tab状态
+            if (currentTab !== 'writing') {
+                showMessage('请先进入写作阶段再提交修订意见', true);
+                return;
+            }
+            
+            // 检查会话状态
+            if (!currentSessionId) {
+                showMessage('请先创建会话', true);
+                return;
+            }
+            
+            // 显示模态框
+            modal.style.display = 'block';
+        }
+
+        function closeRevisionModal() {
+            document.getElementById('revisionModal').style.display = 'none';
+        }
+
+        async function submitRevision() {
+            const feedback = document.getElementById('revisionFeedback').value;
+            if (!feedback) {
+                showMessage('请输入修订意见', true);
+                return;
+            }
+
+            // 检查会话和章节数据是否有效
+            if (!currentSessionId) {
+                showMessage('会话未创建，请先创建会话', true);
+                return;
+            }
+
+            if (!sections || sections.length === 0 || currentSectionIndex >= sections.length) {
+                showMessage('章节数据无效', true);
+                return;
+            }
+
+            // 显示提交中状态
+            const statusEl = document.getElementById('revisionStatus');
+            statusEl.className = 'revision-status submitting';
+            statusEl.innerHTML = '<span class="loading-spinner"></span> 提交中...';
+            statusEl.style.display = 'flex';
+
+            try {
+                const response = await fetch(`${API_BASE}/review/revision`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `session_id=${currentSessionId}&section_id=${sections[currentSectionIndex].id}&feedback=${encodeURIComponent(feedback)}`
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    // ✅ 持久化成功标志
+                    statusEl.className = 'revision-status success';
+                    statusEl.innerHTML = '✅ 修订意见已提交，AI将根据您的意见修改';
+                    
+                    // 在章节区域也显示标志
+                    const indicator = document.getElementById('revisionIndicator');
+                    indicator.className = 'revision-indicator success';
+                    indicator.innerHTML = '📝 已提交修订意见（等待AI修改...）';
+                    indicator.style.display = 'block';
+                    
+                    document.getElementById('revisionFeedback').value = '';
+                    // 延迟关闭模态框，让用户看到成功状态
+                    setTimeout(() => closeRevisionModal(), 1500);
+                } else {
+                    statusEl.className = 'revision-status error';
+                    statusEl.innerHTML = '❌ ' + (data.message || '提交失败');
+                }
+            } catch (e) {
+                statusEl.className = 'revision-status error';
+                statusEl.innerHTML = '❌ 提交失败：' + e.message;
+            }
+        }
+
+        async function nextSection() {
+            currentSectionIndex++;
+            document.getElementById('nextBtn').disabled = true;
+            updateWritingProgress();
+            await writeCurrentSection();
+        }
+
+        async function uploadProtocol(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('session_id', currentSessionId);
+            formData.append('protocol', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/mode/upload/protocol`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('protocolStatus').textContent = file.name + ' - 已上传';
+                    document.getElementById('protocolStatus').className = 'upload-status success';
+                    showMessage('研究方案上传成功');
+                }
+            } catch (e) {
+                showMessage('上传失败：' + e.message, true);
+            }
+        }
+
+        async function uploadAnalysis(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('session_id', currentSessionId);
+            formData.append('analysis', file);
+
+            try {
+                const response = await fetch(`${API_BASE}/mode/upload/analysis`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('analysisStatus').textContent = file.name + ' - 已上传';
+                    document.getElementById('analysisStatus').className = 'upload-status success';
+                    showMessage('统计分析报告上传成功');
+                }
+            } catch (e) {
+                showMessage('上传失败：' + e.message, true);
+            }
+        }
+
+        // RCT模式相关变量
+        let rctChapters = ['Introduction', 'Methods', 'Results', 'Discussion', 'Conclusions'];
+        let currentRCTChapterIndex = 0;
+
+        async function startRCTWriting() {
+            document.getElementById('rctWritingSection').style.display = 'block';
+            
+            // 渲染章节列表
+            const chapterList = document.getElementById('chapterList');
+            chapterList.innerHTML = rctChapters.map((ch, i) => `
+                <div class="reference-item" style="cursor: pointer;" onclick="switchRCTChapter(${i})">
+                    <strong>${i + 1}. ${ch}</strong>
+                    <p id="rctStatus_${i}">待撰写</p>
+                </div>
+            `).join('');
+            
+            showMessage('RCT论文撰写已开始');
+            await writeRCTChapter(0);
+        }
+
+        function switchRCTChapter(index) {
+            currentRCTChapterIndex = index;
+            const chapter = rctChapters[index];
+            document.getElementById('currentChapterTitle').textContent = chapter;
+            
+            // 查找已生成的内容
+            const chapterEntry = rctChaptersContent.find(c => c.chapter === chapter);
+            if (chapterEntry) {
+                document.getElementById('chapterContent').innerHTML = chapterEntry.content.replace(/\n/g, '<br>');
+            } else {
+                document.getElementById('chapterContent').innerHTML = '<p>内容待生成...</p>';
+            }
+        }
+
+        let rctChaptersContent = [];
+
+        async function writeRCTChapter(index, revisionFeedback = '') {
+            if (index >= rctChapters.length) {
+                document.getElementById('currentChapterTitle').textContent = '所有章节已完成';
+                document.getElementById('chapterContent').innerHTML = '<p>恭喜！RCT论文初稿已完成，请点击导出生成Word文档。</p>';
+                document.getElementById('exportSection').style.display = 'block';
+                return;
+            }
+
+            const chapter = rctChapters[index];
+            currentRCTChapterIndex = index;
+            document.getElementById('currentChapterTitle').textContent = chapter;
+            document.getElementById('chapterContent').innerHTML = '<div class="writing-loading"><span class="loading-spinner"></span><span>AI正在撰写本章节，请稍候...</span></div>';
+            
+            // 更新状态
+            const statusEl = document.getElementById(`rctStatus_${index}`);
+            if (statusEl) statusEl.textContent = revisionFeedback ? '修订中...' : '撰写中...';
+
+            try {
+                // 构建请求体
+                let body = `session_id=${currentSessionId}&chapter=${encodeURIComponent(chapter)}&language=中文`;
+                if (revisionFeedback) {
+                    body += `&revision_feedback=${encodeURIComponent(revisionFeedback)}`;
+                }
+                
+                const response = await fetch(`${API_BASE}/chat/rct/write`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: body
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    // 保存内容
+                    const existing = rctChaptersContent.find(c => c.chapter === chapter);
+                    if (existing) {
+                        existing.content = data.content;
+                    } else {
+                        rctChaptersContent.push({ chapter, content: data.content });
+                    }
+                    
+                    document.getElementById('chapterContent').innerHTML = data.content.replace(/\n/g, '<br>');
+                    totalTokens = data.total_tokens;
+                    document.getElementById('totalTokens').textContent = totalTokens.toLocaleString();
+                    
+                    if (statusEl) statusEl.textContent = '待审核';
+                } else {
+                    document.getElementById('chapterContent').innerHTML = '<p class="error">生成失败：' + data.message + '</p>';
+                    if (statusEl) statusEl.textContent = '生成失败';
+                }
+            } catch (e) {
+                document.getElementById('chapterContent').innerHTML = '<p class="error">生成失败：' + e.message + '</p>';
+                if (statusEl) statusEl.textContent = '生成失败';
+            }
+        }
+
+        async function approveChapter() {
+            const chapter = rctChapters[currentRCTChapterIndex];
+            try {
+                const response = await fetch(`${API_BASE}/chat/rct/approve`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `session_id=${currentSessionId}&chapter=${encodeURIComponent(chapter)}`
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    showMessage(`${chapter} 章节已审核通过`);
+                    const statusEl = document.getElementById(`rctStatus_${currentRCTChapterIndex}`);
+                    if (statusEl) statusEl.textContent = '已通过 ✅';
+                    document.getElementById('rctNextBtn').disabled = false;
+                }
+            } catch (e) {
+                showMessage('审核失败：' + e.message, true);
+            }
+        }
+
+        async function nextChapter() {
+            document.getElementById('rctNextBtn').disabled = true;
+            currentRCTChapterIndex++;
+            await writeRCTChapter(currentRCTChapterIndex);
+        }
+
+        function requestChapterRevision() {
+            const modal = document.getElementById('rctRevisionModal');
+            modal.style.display = 'flex';
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => {
+                modal.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+            }, 100);
+        }
+
+        function closeRctRevisionModal() {
+            const modal = document.getElementById('rctRevisionModal');
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+            document.body.style.overflow = '';
+            document.getElementById('rctRevisionFeedback').value = '';
+            document.getElementById('rctRevisionStatus').style.display = 'none';
+            document.getElementById('rctRevisionStatus').innerHTML = '';
+        }
+
+        async function submitRctRevision() {
+            const feedback = document.getElementById('rctRevisionFeedback').value;
+            if (!feedback) {
+                showMessage('请输入修订意见', true);
+                return;
+            }
+
+            const chapter = rctChapters[currentRCTChapterIndex];
+            const statusEl = document.getElementById(`rctStatus_${currentRCTChapterIndex}`);
+            const revisionStatusEl = document.getElementById('rctRevisionStatus');
+            
+            // 显示提交中状态
+            revisionStatusEl.style.display = 'block';
+            revisionStatusEl.innerHTML = '<span class="loading-spinner"></span><span class="loading-text">正在提交修订意见...</span>';
+            
+            try {
+                // 1. 先提交修订意见
+                const response = await fetch(`${API_BASE}/chat/rct/revision`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `session_id=${currentSessionId}&chapter=${encodeURIComponent(chapter)}&feedback=${encodeURIComponent(feedback)}`
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    revisionStatusEl.innerHTML = '<span class="success-text">✓ 修订意见已提交</span>';
+                    showMessage('修订意见已提交，AI正在重新生成内容...', false);
+                    
+                    // 关闭模态框
+                    closeRctRevisionModal();
+                    
+                    // 显示章节重新生成状态
+                    if (statusEl) statusEl.textContent = '修订中...';
+                    document.getElementById('chapterContent').innerHTML = '<div class="writing-loading"><span class="loading-spinner"></span><span>AI正在根据您的修订意见重新生成章节内容，请稍候...</span></div>';
+                    
+                    // 2. 等待一小段时间让用户看到提交成功的消息
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // 3. 重新生成章节（传递修订反馈）
+                    await writeRCTChapter(currentRCTChapterIndex, feedback);
+                    
+                    // 4. 更新状态
+                    if (statusEl) statusEl.textContent = '已修订';
+                    showMessage('✓ 章节已根据修订意见重新生成', false);
+                } else {
+                    revisionStatusEl.innerHTML = '<span style="color: var(--danger-color);">提交失败：' + (data.message || '未知错误') + '</span>';
+                    showMessage(data.message || '提交失败', true);
+                }
+            } catch (e) {
+                revisionStatusEl.innerHTML = '<span style="color: var(--danger-color);">提交失败：' + e.message + '</span>';
+                showMessage('提交失败：' + e.message, true);
+            }
+        }
+
+        async function exportDocument() {
+            const language = document.getElementById('exportLanguage').value;
+            const refStyle = document.getElementById('refStyle').value;
+            
+            // 显示导出进度
+            const exportBtn = document.querySelector('.action-buttons .btn-primary');
+            const originalText = exportBtn.textContent;
+            exportBtn.textContent = '导出中...';
+            exportBtn.disabled = true;
+            
+            // 创建进度提示
+            let progressMsg = document.getElementById('exportProgress');
+            if (!progressMsg) {
+                progressMsg = document.createElement('div');
+                progressMsg.id = 'exportProgress';
+                progressMsg.className = 'loading-status';
+                progressMsg.style.display = 'flex';
+                progressMsg.style.alignItems = 'center';
+                progressMsg.style.gap = '8px';
+                document.querySelector('.export-options').appendChild(progressMsg);
+            } else {
+                progressMsg.style.display = 'flex';
+            }
+
+            // 创建进度条
+            let progressBar = document.getElementById('exportProgressBar');
+            if (!progressBar) {
+                progressBar = document.createElement('div');
+                progressBar.id = 'exportProgressBar';
+                progressBar.style.width = '100%';
+                progressBar.style.height = '4px';
+                progressBar.style.backgroundColor = '#e5e7eb';
+                progressBar.style.borderRadius = '2px';
+                progressBar.style.marginTop = '8px';
+                progressBar.style.overflow = 'hidden';
+                document.querySelector('.export-options').appendChild(progressBar);
+                
+                let progressFill = document.createElement('div');
+                progressFill.id = 'exportProgressFill';
+                progressFill.style.height = '100%';
+                progressFill.style.backgroundColor = '#3b82f6';
+                progressFill.style.borderRadius = '2px';
+                progressFill.style.transition = 'width 0.3s ease';
+                progressFill.style.width = '0%';
+                progressBar.appendChild(progressFill);
+            }
+
+            const updateProgress = (message, progress) => {
+                if (progressMsg) {
+                    progressMsg.innerHTML = `<span class="loading-spinner"></span><span class="loading-text">${message}</span>`;
+                }
+                const fill = document.getElementById('exportProgressFill');
+                if (fill) {
+                    fill.style.width = `${progress}%`;
+                }
+            };
+
+            updateProgress('开始生成文档...', 0);
+
+            try {
+                // 使用SSE获取实时进度
+                const eventSource = new EventSource(`${API_BASE}/export/download/progress/${currentSessionId}?language=${encodeURIComponent(language)}&ref_style=${refStyle}`);
+                
+                await new Promise((resolve, reject) => {
+                    eventSource.onmessage = (event) => {
+                        try {
+                            const data = JSON.parse(event.data);
+                            
+                            if (data.type === 'progress') {
+                                updateProgress(data.message, data.progress);
+                            } else if (data.type === 'complete') {
+                                eventSource.close();
+                                resolve(data.file_path);
+                            } else if (data.type === 'error') {
+                                eventSource.close();
+                                reject(new Error(data.message));
+                            }
+                        } catch (e) {
+                            eventSource.close();
+                            reject(e);
+                        }
+                    };
+                    
+                    eventSource.onerror = () => {
+                        eventSource.close();
+                        reject(new Error('连接中断'));
+                    };
+                }).then(async (filePath) => {
+                    // 下载生成的文档
+                    const response = await fetch(filePath);
+                    const blob = await response.blob();
+                    
+                    // 生成文件名
+                    const topic = document.getElementById('researchTopic').value || '医学论文';
+                    const filename = `${topic}_${new Date().toISOString().slice(0, 10)}.docx`;
+                    
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    // 更新进度为完成
+                    if (progressMsg) {
+                        progressMsg.innerHTML = '<span style="color: #22c55e;">✅ 文档导出成功</span>';
+                    }
+                    const fill = document.getElementById('exportProgressFill');
+                    if (fill) {
+                        fill.style.width = '100%';
+                        fill.style.backgroundColor = '#22c55e';
+                    }
+                    
+                    setTimeout(() => { 
+                        if (progressMsg) progressMsg.style.display = 'none';
+                        if (progressBar) progressBar.style.display = 'none';
+                    }, 3000);
+                    
+                    showMessage(`文档已导出: ${filename}`);
+                });
+                
+            } catch (e) {
+                if (progressMsg) {
+                    progressMsg.innerHTML = `<span style="color: #ef4444;">❌ 导出失败: ${e.message}</span>`;
+                }
+                setTimeout(() => { 
+                    if (progressMsg) progressMsg.style.display = 'none';
+                    if (progressBar) progressBar.style.display = 'none';
+                }, 5000);
+                showMessage('导出失败：' + e.message, true);
+            } finally {
+                exportBtn.textContent = originalText;
+                exportBtn.disabled = false;
+            }
+        }
+
+        async function pauseSession() {
+            updateTokenStatus('已暂停');
+            showMessage('会话已暂停');
+        }
+
+        async function terminateSession() {
+            if (!confirm('确定要终止会话吗？已生成的内容将会保存。')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/session/terminate/${currentSessionId}`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    updateTokenStatus('已终止');
+                    showMessage('会话已终止');
+                }
+            } catch (e) {
+                showMessage('终止失败：' + e.message, true);
+            }
+        }
+
+        function updateTokenStatus(status) {
+            document.getElementById('tokenStatus').textContent = status;
+        }
+
+        function showMessage(msg, isError = false) {
+            const el = isError ? document.getElementById('errorMsg') : document.getElementById('successMsg');
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+    </script>
+</body>
+</html>
