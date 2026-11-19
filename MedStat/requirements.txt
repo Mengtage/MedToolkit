@@ -1,7 +1,42 @@
-flask
-pandas
-numpy
-scipy
-scikit-learn
-openpyxl
-werkzeug
+# MedStat 运行依赖
+# 安装：pip install -r requirements.txt
+
+# --- Web 服务 ---
+flask>=2.3
+werkzeug>=2.3
+
+# --- 数据处理 ---
+pandas>=2.0
+numpy>=1.24
+scipy>=1.10
+scikit-learn>=1.3
+pyyaml>=6.0
+
+# --- 统计建模 ---
+# ancova.py（ANCOVA / 多臂两两对比 / Rubin 合并）
+# quality_control.py（Lilliefors 正态性检验）
+# src/analysis/diagnostics.py（诊断检验）
+statsmodels>=0.14
+
+# --- 生存分析 ---
+# survival.py（Kaplan-Meier / log-rank / Cox / Schoenfeld 残差）
+lifelines>=0.27
+
+# --- 导出 ---
+openpyxl>=3.1
+reportlab>=4.0
+
+# --- 可视化 ---
+matplotlib>=3.7
+seaborn>=0.13
+plotly>=5.18
+
+# --- 其他 ---
+requests>=2.31
+psutil>=5.9
+
+# --- 测试 ---
+pytest>=7.4
+
+# --- 可选扩展（未安装时相关功能自动跳过）---
+# playwright>=1.40       # GUI 端到端测试

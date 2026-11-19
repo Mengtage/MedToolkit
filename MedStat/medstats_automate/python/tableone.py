@@ -8,6 +8,26 @@ import numpy as np
 from scipy import stats
 import warnings
 
+try:
+    from quality_control import normality_test
+except ImportError:  # 独立运行时回退到本地实现
+    normality_test = None
+
+
+def _normality(vals):
+    """正态性判断：统一走 quality_control.normality_test（Shapiro / Lilliefors）。"""
+    if normality_test is not None:
+        res = normality_test(vals)
+        if res["normal"] is None:
+            return None
+        return {"test": res["test"], "statistic": res["statistic"],
+                "p_value": res["p_value"], "normal": res["normal"]}
+    vals = pd.Series(vals).dropna()
+    if len(vals) < 3 or vals.nunique() < 2:
+        return None
+    stat, p = stats.shapiro(vals) if len(vals) <= 5000 else (np.nan, np.nan)
+    return {"test": "Shapiro-Wilk", "statistic": stat, "p_value": p, "normal": p > 0.05}
+
 def generate_tableone(data, groups=2, strata=None, config=None, verbose=True):
     """
     生成TableOne基线资料表
@@ -34,8 +54,11 @@ def generate_tableone(data, groups=2, strata=None, config=None, verbose=True):
     
     # 确定变量类型
     all_vars = data.columns.tolist()
-    factor_vars = data.select_dtypes(include=['category', 'object']).columns.tolist()
-    cont_vars = [v for v in all_vars if v not in factor_vars]
+    # 注意：bool 变量必须按分类处理——旧版本漏了 'bool'，
+    # 导致 True/False 列进入连续变量分支，np.percentile 直接抛 TypeError
+    factor_vars = data.select_dtypes(include=['category', 'object', 'bool']).columns.tolist()
+    cont_vars = [v for v in all_vars
+                 if v not in factor_vars and pd.api.types.is_numeric_dtype(data[v])]
     
     if strata and strata in factor_vars:
         factor_vars.remove(strata)
@@ -50,21 +73,16 @@ def generate_tableone(data, groups=2, strata=None, config=None, verbose=True):
     for var in cont_vars:
         vals = data[var].dropna()
         if len(vals) >= 3:
-            if len(vals) <= 5000:
-                stat, p = stats.shapiro(vals)
-                test_name = "Shapiro-Wilk"
-            else:
-                stat, p = stats.kstest(vals, 'norm', args=(vals.mean(), vals.std()))
-                test_name = "Kolmogorov-Smirnov"
-            
+            res = _normality(vals)
+            if res is None:
+                continue
             normality_results[var] = {
-                'test': test_name,
-                'statistic': stat,
-                'p_value': p,
-                'normal': p > 0.05
+                'test': res['test'],
+                'statistic': res['statistic'],
+                'p_value': res['p_value'],
+                'normal': res['normal']
             }
-            
-            if config.get('auto_detect_nonnormal', True) and p <= 0.05:
+            if config.get('auto_detect_nonnormal', True) and not res['normal']:
                 auto_nonnormal.append(var)
     
     # 生成描述性统计表
@@ -156,77 +174,95 @@ def generate_tableone(data, groups=2, strata=None, config=None, verbose=True):
     }
 
 def calculate_pvalues(data, cont_vars, factor_vars, strata, groups, normality_results):
-    """计算组间比较P值"""
+    """计算组间比较 P 值（Table 1 描述性比较）。
+
+    修复点（v2.0）：
+        1. 旧版读取 normality_results[...]['is_normal']，但该字典的键是 'normal'，
+           导致所有连续变量都被判为非正态、一律走秩检验；
+        2. 旧版用"观察频数最小值 < 5"决定是否用 Fisher——正确做法是比较
+           **期望频数**（chi2_contingency 的 expected）；且 Fisher 仅适用于 2×2；
+        3. 旧版对 P 值做跨变量 Bonferroni 校正（p × 变量数），SAP 明确
+           基线比较的 P 为描述性，不应校正——已移除；
+        4. 对整形/布尔输入与异常返回值做健壮处理，避免 ndarray 直接 round 报错。
+    """
     p_values = []
-    
+
     if strata is None:
         return pd.DataFrame(p_values)
-    
+
+    arm_names = list(data[strata].dropna().unique())
+
+    # ---------------- 连续变量 ----------------
     for var in cont_vars:
-        group_vals = data.groupby(strata)[var].apply(list).to_dict()
-        group_vals = {k: [v for v in vals if v is not None and not np.isnan(v)] 
-                      for k, vals in group_vals.items()}
-        
-        group_list = list(group_vals.values())
-        group_names = list(group_vals.keys())
-        
-        if len(group_list) >= 2:
-            # 检查正态性
-            is_normal = bool(normality_results.get(var, {}).get('is_normal', False))
-            is_nonnormal = False
-            
-            # 两组比较
-            if groups == 2:
-                if is_normal:
-                    stat, p = stats.ttest_ind(group_list[0], group_list[1])
-                    method = "t-test"
+        try:
+            samples = []
+            for a in arm_names:
+                s = pd.to_numeric(data.loc[data[strata] == a, var], errors="coerce").dropna()
+                if len(s) > 1 and s.nunique() > 1:
+                    samples.append(s.to_numpy(dtype=float))
+            if len(samples) < 2:
+                continue
+
+            is_normal = normality_results.get(var, {}).get('normal', None)
+
+            if len(samples) == 2:
+                if is_normal is True:
+                    stat, p = stats.ttest_ind(samples[0], samples[1], equal_var=False)
+                    method = "Welch t-test"
                 else:
-                    stat, p = stats.mannwhitneyu(group_list[0], group_list[1])
+                    stat, p = stats.mannwhitneyu(samples[0], samples[1])
                     method = "Mann-Whitney U"
             else:
-                # 多组比较
-                if is_normal:
-                    stat, p = stats.f_oneway(*group_list)
+                if is_normal is True:
+                    stat, p = stats.f_oneway(*samples)
                     method = "ANOVA"
                 else:
-                    stat, p = stats.kruskal(*group_list)
+                    stat, p = stats.kruskal(*samples)
                     method = "Kruskal-Wallis"
-            
-            # 多重比较校正
-            p_adj = min(p * len(cont_vars), 1.0)
-            
+
             p_values.append({
                 'Variable': var,
                 'Test': method,
-                'Statistic': stat,
-                'P_value': round(p, 4),
-                'P_adjusted': round(p_adj, 4)
+                'Statistic': float(stat),
+                'P_value': round(float(p), 4),
+                'P_adjusted': None,   # 基线比较为描述性，不做多重性校正
             })
-    
-    # 分类变量卡方检验
+        except Exception as exc:  # 单个变量失败不影响整表
+            p_values.append({
+                'Variable': var, 'Test': f'N/A ({exc})',
+                'Statistic': None, 'P_value': None, 'P_adjusted': None,
+            })
+
+    # ---------------- 分类变量 ----------------
     for var in factor_vars:
-        contingency = pd.crosstab(data[strata], data[var])
-        
-        if contingency.size > 0:
-            min_expected = contingency.values.min()
-            
-            if min_expected < 5:
-                try:
-                    stat, p = stats.fisher_exact(contingency)
-                    method = "Fisher exact"
-                except:
-                    stat, p = np.nan, np.nan
-                    method = "N/A"
+        try:
+            tab = pd.crosstab(data[strata], data[var])
+            if tab.shape[0] < 2 or tab.shape[1] < 2:
+                continue
+
+            chi2, p_chi, dof, expected = stats.chi2_contingency(tab, correction=False)
+            min_expected = float(expected.min())
+
+            if tab.shape == (2, 2) and min_expected < 5:
+                _, p = stats.fisher_exact(tab)
+                stat, method = float('nan'), "Fisher exact"
             else:
-                stat, p, dof, expected = stats.chi2_contingency(contingency)
-                method = "Chi-square"
-            
+                stat, method = float(chi2), "Chi-square"
+                if min_expected < 1:
+                    method += " (expected count <1, interpret with caution)"
+                p = float(p_chi)
+
             p_values.append({
                 'Variable': var,
                 'Test': method,
-                'Statistic': stat if not np.isnan(stat) else None,
-                'P_value': round(p, 4) if not np.isnan(p) else None,
-                'P_adjusted': None
+                'Statistic': None if np.isnan(stat) else float(stat),
+                'P_value': round(float(p), 4) if np.isfinite(p) else None,
+                'P_adjusted': None,
             })
-    
+        except Exception as exc:
+            p_values.append({
+                'Variable': var, 'Test': f'N/A ({exc})',
+                'Statistic': None, 'P_value': None, 'P_adjusted': None,
+            })
+
     return pd.DataFrame(p_values)

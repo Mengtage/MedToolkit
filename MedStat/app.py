@@ -9,6 +9,8 @@ import pandas as pd
 import numpy as np
 import os
 import uuid
+import secrets
+import time
 import traceback
 import json
 import math
@@ -37,7 +39,14 @@ from src.utils import Visualizer, Exporter
 
 # 初始化Flask应用
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+# 安全：SECRET_KEY 必须显式配置；未配置时生成随机值（进程级有效），
+# 避免使用硬编码默认密钥导致会话可被伪造。
+_secret = os.environ.get('SECRET_KEY')
+if not _secret:
+    _secret = secrets.token_hex(32)
+    print('[WARN] 未设置 SECRET_KEY，已生成临时随机密钥（重启后旧会话失效）。'
+          '生产环境请在环境变量中显式配置 SECRET_KEY。')
+app.secret_key = _secret
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 app.config['UPLOAD_FOLDER'] = '/tmp/medstat_uploads'
 app.config['DATA_FOLDER'] = '/tmp/medstat_sessions'
@@ -50,25 +59,34 @@ os.makedirs(app.config['DATA_FOLDER'], exist_ok=True)
 
 @app.before_request
 def log_request():
-    """记录所有请求的详细信息用于调试"""
+    """请求日志（隐私安全版）。
+
+    只记录方法、路径、状态码与耗时。
+    医疗研究数据属敏感信息：表单字段、查询参数、文件内容一律不落盘，
+    以符合数据最小化原则（审查报告 5.3 项）。
+    """
+    request._start_time = time.time()
+
+
+@app.after_request
+def log_request_done(response):
+    """在请求结束后记录一行不含敏感信息的访问日志。"""
+    started = getattr(request, '_start_time', None)
+    duration_ms = (time.time() - started) * 1000 if started else -1
     log_line = (
-        f"\n{'='*60}\n"
-        f"【请求日志】{request.method} {request.path}\n"
-        f"时间: {pd.Timestamp.now()}\n"
-        f"客户端IP: {request.remote_addr}\n"
-        f"User-Agent: {request.headers.get('User-Agent', 'Unknown')}\n"
-        f"Content-Type: {request.headers.get('Content-Type', 'Unknown')}\n"
-        f"Referrer: {request.headers.get('Referer', 'Unknown')}\n"
-        f"查询参数: {request.args}\n"
-        f"表单字段: {list(request.form.keys())}\n"
-        f"文件字段: {list(request.files.keys())}\n"
-        f"{'='*60}"
+        f"{pd.Timestamp.now().isoformat(timespec='seconds')} "
+        f"{request.method} {request.path} -> {response.status_code} "
+        f"({duration_ms:.0f} ms)"
     )
     print(log_line)
     # 日志写到应用所在目录（避免硬编码旧路径导致 FileNotFoundError→500）
     log_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'server.log')
-    with open(log_path, 'a') as f:
-        f.write(log_line + '\n')
+    try:
+        with open(log_path, 'a') as f:
+            f.write(log_line + '\n')
+    except OSError:
+        pass
+    return response
 
 
 @app.after_request

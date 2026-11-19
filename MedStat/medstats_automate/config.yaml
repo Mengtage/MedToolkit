@@ -102,9 +102,32 @@ roc:
 # 相关与回归设置
 # ============================================
 regression:
-  correlation_method: "auto"  # 相关分析方法: pearson / spearman / auto
+  correlation_method: "auto"  # 相关分析方法: pearson / spearman / auto(按正态性逐对选择)
   vif_threshold: 10          # VIF多重共线性阈值
   stepwise: false            # 是否使用逐步回归
+  # 模型设定（留空则回退到 primary_outcome / strata / primary_baseline）
+  dependent: null            # 线性回归因变量
+  binary_outcome: null       # Logistic 回归因变量（二分类）
+  independents: []           # 自变量列表（分组变量会自动以哑变量纳入）
+
+# ============================================
+# 生存分析设置（时间-事件结局）
+# ============================================
+# 说明：
+#   - event_var 必须是事件指示（1=发生事件，0=删失）。
+#     若原始数据用 1=存活 / 2=死亡，请把 event_coding 设为 [2]。
+#   - 未声明 event_coding 且事件变量出现 0/1 之外的取值时会直接报错，
+#     避免"把死亡编码当连续协变量"这类静默错误。
+survival:
+  time_var: null             # 随访时间变量名
+  event_var: null            # 事件指示变量名
+  event_coding: [1]          # 原始数据中代表"发生事件"的取值
+  time_unit: "weeks"         # 时间单位（仅用于表头）
+  covariates: []             # Cox 模型协变量（不含分组变量）
+  report_median: true        # 是否报告中位生存时间及 95% CI
+  # 诊断项（默认开启，结果写入 Warnings sheet）：
+  #   - EPV = 事件数 / 参数个数，< 10 时告警
+  #   - 比例风险假设（Schoenfeld 残差），违反时提示 HR 不可直接解释
 
 # ============================================
 # 导出设置

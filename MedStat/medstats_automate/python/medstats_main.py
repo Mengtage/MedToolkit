@@ -25,7 +25,10 @@ from tableone import generate_tableone
 from effect_size import calculate_effect_size
 from export_results import export_results
 from visualization import visualization_report
-from correlation_regression import correlation_regression
+try:
+    from correlation_regression import correlation_regression
+except ImportError:  # 该模块尚未移植：主流程其余步骤仍可用
+    correlation_regression = None
 from roc_analysis import roc_analysis
 
 def main():
@@ -116,11 +119,26 @@ def main():
     )
     
     # Step 8: 相关与回归分析
-    print("[Step 8/9] 相关与回归分析...")
-    reg_result = correlation_regression(
-        data=data,
-        config=config
-    )
+    reg_result = None
+    if correlation_regression is None:
+        print("[Step 8/9] 相关与回归分析 - 跳过（correlation_regression 模块缺失）")
+    else:
+        print("[Step 8/9] 相关与回归分析...")
+        reg_result = correlation_regression(
+            data=data,
+            config=config
+        )
+        has_result = False
+        if reg_result:
+            for _key in ("correlation", "linear", "logistic"):
+                _val = reg_result.get(_key)
+                if _val is not None and len(_val) > 0:
+                    has_result = True
+                    break
+        if has_result:
+            from run_analysis import export_regression_results
+            path = export_regression_results(reg_result, args.output)
+            print(f"相关与回归结果已导出: {path}")
     
     # Step 9: ROC分析
     if args.roc_var_a is not None and args.roc_var_b is not None:
