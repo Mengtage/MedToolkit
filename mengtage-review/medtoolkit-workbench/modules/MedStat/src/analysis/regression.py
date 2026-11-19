@@ -383,7 +383,11 @@ class GLMAnalyzer:
         self.results = None
 
     def _prepare_xy(self, y_var: str, X_vars: List[str]):
-        """构造带列名的 y/X，保证 GLM 结果可按变量名序列化。"""
+        """构造带列名的 y/X，保证 GLM 结果可按变量名序列化。
+
+        非数值预测变量自动做哑变量编码（参照组为排序后的第一个水平，
+        与 patsy 的 C() 默认处理一致）。
+        """
         columns = [y_var] + list(X_vars)
         missing = [c for c in columns if c not in self.df.columns]
         if missing:
@@ -393,10 +397,20 @@ class GLMAnalyzer:
             raise ValueError('剔除缺失值后没有可用样本')
         try:
             y = data[y_var].astype(float)
-            X = sm.add_constant(
-                data[list(X_vars)].astype(float), has_constant='add')
         except (TypeError, ValueError) as error:
-            raise ValueError(f'y/X 必须是数值型变量: {error}')
+            raise ValueError(f'因变量 {y_var} 必须是数值型: {error}')
+
+        X_df = data[list(X_vars)]
+        non_numeric = [c for c in X_vars
+                       if not pd.api.types.is_numeric_dtype(X_df[c])]
+        if non_numeric:
+            X_df = pd.get_dummies(
+                X_df, columns=non_numeric, drop_first=True, dtype=float)
+        try:
+            X_df = X_df.astype(float)
+        except (TypeError, ValueError) as error:
+            raise ValueError(f'预测变量必须可转换为数值型: {error}')
+        X = sm.add_constant(X_df, has_constant='add')
         return y, X
 
     def fit_poisson(self, formula: str = None, y_var: str = None, X_vars: List[str] = None) -> Dict:
@@ -455,6 +469,10 @@ class GLMAnalyzer:
             return {'error': '模型未拟合'}
 
         names = list(getattr(self.model, 'exog_names', []) or [])
+        # statsmodels 的 .bic 基于 deviance 并触发 FutureWarning；
+        # 发表级惯例使用对数似然版本的 BIC。
+        bic_attr = getattr(self.results, 'bic_llf', None)
+        bic = float(bic_attr) if bic_attr is not None else float(self.results.bic)
         result = {
             'success': True,
             'coefficients': self._as_named_dict(self.results.params, names),
@@ -462,7 +480,8 @@ class GLMAnalyzer:
             't_values': self._as_named_dict(self.results.tvalues, names),
             'p_values': self._as_named_dict(self.results.pvalues, names),
             'aic': float(self.results.aic),
-            'bic': float(self.results.bic),
+            'bic': bic,
+            'bic_method': 'log_likelihood',
             'log_likelihood': float(self.results.llf),
             'deviance': float(self.results.deviance),
             'pearson_chi2': float(self.results.pearson_chi2),

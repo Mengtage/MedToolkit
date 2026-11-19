@@ -1,5 +1,7 @@
-pandas
+# Minimum bounds for installation. For a byte-identical validated
+# environment use: pip install -r requirements-tested.txt
+pandas>=3.0
 scipy>=1.15
-scikit-learn
-httpx
+scikit-learn>=1.6
+httpx>=0.28
 statsmodels>=0.14

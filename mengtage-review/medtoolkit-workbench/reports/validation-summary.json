@@ -37,7 +37,7 @@
       }
     }
   ],
-  "validated_at": "2026-11-19T06:26:07.090503+00:00",
+  "validated_at": "2026-11-19T06:46:49.048855+00:00",
   "python": "3.14.8",
   "source_sha256": {
     "workbench/server.py": "c65f9b22275a9db00b6b5292b063374b759e92b22ffbee4f711469fb8ed141e3",
@@ -51,12 +51,12 @@
     "tests/acceptance_regression.py": "a19100cee0dbdb4e4274b823c27f516775e7262ea83598c2043b6d74326c7f58",
     "tests/acceptance_missing.py": "67540c0d7dc8dc467a71708c50b18baeb69189786907e56c56a7bb4b2ff6287c",
     "tests/test_http.py": "821c451e40197e9ec61caf7c3d97b9738ef4626d83715eccf7b533764d2ba457",
-    "modules/MedStat/src/analysis/diagnostics.py": "23fa898fbef5bfb97e52ab163317d712388ba37a1bae8c8412ee4db98a708b8f",
+    "modules/MedStat/src/analysis/diagnostics.py": "abbc336af23d05c860f3eb5e045e013dce72a07f3e7729cfcb2b05fe3be820eb",
     "modules/MedStat/src/analysis/mice_imputation.py": "c3f85e75d92d156a659676a869929d0e3f1706eeffca4c39ec03f19ff18e6402",
     "modules/MedStat/src/analysis/categorical_tests.py": "99a2d3989566a52a5616de2a4b770b50bb14100528e00c5bccc042ff8342ea4c",
     "modules/MedStat/src/analysis/visualization_selector.py": "90b696d77cca28aea87bca9553d0a545eccfbf3225a41f49c2fe6fb830a72e49",
     "modules/MedStat/src/analysis/group_analysis.py": "6097384a9c7ae8bcd59fda2be1486cb91a5f2ad2ee76c7343423135b711fee3a",
-    "modules/MedStat/src/analysis/regression.py": "7636ac6212253ac746bf50a24fc4d218d23e2e67441ad47e538d8869d30329e7",
+    "modules/MedStat/src/analysis/regression.py": "76a207d2ca1a485618131df4fa76462f5193b833cbb282568bbdfabf8c130047",
     "modules/MedStat/src/analysis/correlation.py": "ee8ec0c9f9c085155a66c9110207bc58523fea613a1a5148b9cc9ddc8eed7310",
     "modules/MedStat/src/analysis/model_evaluation.py": "3706e3a87cbff0694d756106467b586a2b489b0d3f842d2bb1588c5816ef2fae",
     "modules/MedStat/src/analysis/quality_control.py": "1a08f920e5e8b58e3d2f60e7665d118e5a030221d28ef5c458176513bcb57ec6",

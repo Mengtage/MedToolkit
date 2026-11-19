@@ -1,6 +1,6 @@
 # Pinned dependency lockfile, generated from the environment in which
 # scripts/validate.py and tests/ last passed (Python 3.14.8, Linux).
-# Regenerate with: pip freeze against a fresh venv that passes validation.
+# All pins verified against official PyPI (pypi.org); regional mirrors may lag.
 anyio==4.14.1
 certifi==2026.7.22
 h11==0.16.0

@@ -81,22 +81,35 @@ class NormalityTests:
 
     @staticmethod
     def anderson_darling(data: np.ndarray) -> Dict:
-        """Anderson-Darling检验"""
-        result = anderson(data, dist='norm')
-        if hasattr(result, 'critical_values'):
+        """Anderson-Darling检验。
+
+        SciPy 1.17+ 要求显式指定 method；1.19 起将移除 critical_values 等属性，
+        因此优先用 'interpolate' 取得 P 值，不依赖旧属性。
+        """
+        try:
+            result = anderson(data, dist='norm', method='interpolate')
+            return {
+                'test': 'Anderson-Darling',
+                'statistic': float(result.statistic),
+                'p_value': float(result.pvalue),
+                'normal': "true" if result.pvalue > 0.05 else "false",
+                'interpretation': '数据服从正态分布' if result.pvalue > 0.05 else '数据不服从正态分布'
+            }
+        except TypeError:
+            # scipy < 1.17 没有 method 参数
+            result = anderson(data, dist='norm')
             crit_vals = result.critical_values.tolist()
             sig_levels = result.significance_level.tolist()
-        else:
-            crit_vals = result.critical_values.tolist() if hasattr(result, 'critical_values') else []
-            sig_levels = result.significance_level.tolist() if hasattr(result, 'significance_level') else []
-        interpretation = f'在{sig_levels[2] if len(sig_levels) > 2 else 5}%显著性水平下检验' if result.statistic < (crit_vals[2] if len(crit_vals) > 2 else 0.784) else '拒绝正态性假设'
-        return {
-            'test': 'Anderson-Darling',
-            'statistic': float(result.statistic),
-            'critical_values': crit_vals,
-            'significance_levels': sig_levels,
-            'interpretation': interpretation
-        }
+            idx = 2 if len(crit_vals) > 2 else -1
+            normal = result.statistic < crit_vals[idx]
+            return {
+                'test': 'Anderson-Darling',
+                'statistic': float(result.statistic),
+                'critical_values': crit_vals,
+                'significance_levels': sig_levels,
+                'normal': "true" if normal else "false",
+                'interpretation': '数据服从正态分布' if normal else '数据不服从正态分布'
+            }
 
     @staticmethod
     def lilliefors_test(data: np.ndarray) -> Dict:
