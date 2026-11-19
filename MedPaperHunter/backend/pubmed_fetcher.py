@@ -42,7 +42,10 @@ API使用限制:
 from __future__ import annotations
 
 import asyncio
+import calendar
 import logging
+import os
+import re
 import xml.etree.ElementTree as ET
 from typing import Any
 
@@ -53,29 +56,63 @@ logger = logging.getLogger(__name__)
 ESEARCH_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
 EFETCH_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
 
-# NCBI recommends no more than 3 requests per second without an API key.
-# Using 0.4s delay keeps us safely under that limit.
+# NCBI recommends no more than 3 requests per second without an API key
+# (10 req/s with one). Using 0.4s delay keeps us safely under that limit.
 REQUEST_DELAY = 0.4
+
+# Optional NCBI API key (raises the rate limit from 3 to 10 req/s)
+NCBI_API_KEY = os.getenv("NCBI_API_KEY", "")
+
+# A date component: YYYY, YYYY/MM, YYYY/MM/DD (also accepts '-' separator)
+_DATE_COMPONENT = r"\d{4}(?:[-/]\d{1,2}(?:[-/]\d{1,2})?)?"
+_DATE_RANGE_RE = re.compile(
+    rf"^\s*({_DATE_COMPONENT})\s*[-–—]\s*({_DATE_COMPONENT})\s*$"
+)
+
+
+def _normalize_date(date_str: str, is_start: bool) -> str:
+    """将 YYYY / YYYY/MM / YYYY-MM-DD 等格式补齐为 NCBI 的 YYYY/MM/DD。
+
+    - 开始日期缺省部分补最小值（01/01）
+    - 结束日期缺省部分补最大值：年→12月31日，月→该月最后一天
+      （用 calendar.monthrange 取真实月末，避免 "2024/02/31" 这类非法日期）
+
+    Raises:
+        ValueError: 日期组件无法解析时
+    """
+    parts = [p for p in re.split(r"[-/]", date_str.strip()) if p]
+    if not parts or not parts[0].isdigit() or len(parts[0]) != 4:
+        raise ValueError(f"Invalid date component: '{date_str}'")
+
+    year = int(parts[0])
+    month = int(parts[1]) if len(parts) > 1 else (1 if is_start else 12)
+    if not 1 <= month <= 12:
+        raise ValueError(f"Invalid month in date component: '{date_str}'")
+    if len(parts) > 2:
+        day = int(parts[2])
+    else:
+        day = 1 if is_start else calendar.monthrange(year, month)[1]
+    if not 1 <= day <= 31:
+        raise ValueError(f"Invalid day in date component: '{date_str}'")
+
+    return f"{year:04d}/{month:02d}/{day:02d}"
 
 
 def _parse_date_range(date_range: str) -> tuple[str, str]:
     """解析日期范围字符串。
-    
-    支持多种日期格式:
-        - "2020/01/01-2024/12/31"  # 完整日期范围
-        - "2020-2024"              # 年份范围
-        - "2020/01-2024/12"        # 年月范围
-    
-    自动补齐不完整的日期:
-        - 开始日期: 年 → 年/01/01, 年月 → 年月/01
-        - 结束日期: 年 → 年/12/31, 年月 → 年月/31
-    
+
+    支持的格式（起止日期可分别省略月/日，分隔符可用 / 或 -）:
+        - "2020-2024"                    # 年份范围
+        - "2020/01-2024/12"              # 年月范围
+        - "2020/01/01-2024/12/31"        # 完整日期（/ 分隔）
+        - "2020-01-01 - 2024-12-31"      # 完整日期（- 分隔，可用正则区分）
+
     Args:
         date_range: 日期范围字符串
-    
+
     Returns:
-        (start_date, end_date): 标准化后的开始和结束日期
-    
+        (start_date, end_date): 标准化为 YYYY/MM/DD 的开始和结束日期
+
     Raises:
         ValueError: 如果日期格式无效
     """
@@ -83,43 +120,19 @@ def _parse_date_range(date_range: str) -> tuple[str, str]:
     if not date_range:
         return "", ""
 
-    parts = date_range.split("-")
-    if len(parts) != 2:
+    match = _DATE_RANGE_RE.match(date_range)
+    if not match:
         raise ValueError(
             f"Invalid date range format: '{date_range}'. "
-            "Expected format: 'start-end' (e.g. '2020/01/01-2024/12/31')."
+            "Expected format: 'start-end' (e.g. '2020-2024' or '2020/01/01-2024/12/31')."
         )
 
-    start = parts[0].strip()
-    end = parts[1].strip()
-
-    # Normalize partial dates to full YYYY/MM/DD format
-    for d in (start, end):
-        parts_count = d.count("/")
-        if parts_count == 0 and len(d) == 4:
-            # Year only: 2020 -> 2020/01/01 or 2020/12/31
-            pass
-        elif parts_count == 1:
-            # Year/Month: 2020/01
-            pass
-        elif parts_count == 2:
-            # Full date: 2020/01/01
-            pass
-        else:
-            raise ValueError(f"Invalid date component: '{d}'")
-
-    # Pad partial dates
-    if len(start) == 4:
-        start = f"{start}/01/01"
-    elif start.count("/") == 1:
-        start = f"{start}/01"
-
-    if len(end) == 4:
-        end = f"{end}/12/31"
-    elif end.count("/") == 1:
-        # Get last day of month (approximate with 31)
-        end = f"{end}/31"
-
+    start = _normalize_date(match.group(1), is_start=True)
+    end = _normalize_date(match.group(2), is_start=False)
+    if start > end:
+        raise ValueError(
+            f"Invalid date range: start '{start}' is after end '{end}'."
+        )
     return start, end
 
 
@@ -234,6 +247,66 @@ def _parse_article_xml(article_el: ET.Element) -> dict[str, Any]:
     return article
 
 
+async def _get_with_retry(
+    client: httpx.AsyncClient,
+    url: str,
+    params: dict[str, str],
+    max_retries: int = 3,
+) -> httpx.Response:
+    """GET 请求，带指数退避重试。
+
+    对 429（限流）和 5xx（服务端错误）自动重试，
+    退避间隔 1s、2s、4s……；其他错误直接抛出。
+
+    Args:
+        client: httpx异步客户端
+        url: 请求URL
+        params: 查询参数
+        max_retries: 最大重试次数
+
+    Returns:
+        成功的 HTTP 响应
+
+    Raises:
+        httpx.HTTPStatusError: 重试耗尽后仍失败
+    """
+    for attempt in range(max_retries + 1):
+        try:
+            resp = await client.get(url, params=params)
+            if resp.status_code == 429 or resp.status_code >= 500:
+                if attempt < max_retries:
+                    wait = 2 ** attempt
+                    logger.warning(
+                        "NCBI returned %d, retrying in %ds (attempt %d/%d)",
+                        resp.status_code, wait, attempt + 1, max_retries,
+                    )
+                    await asyncio.sleep(wait)
+                    continue
+            resp.raise_for_status()
+            return resp
+        except (httpx.TimeoutException, httpx.TransportError) as e:
+            if attempt < max_retries:
+                wait = 2 ** attempt
+                logger.warning(
+                    "NCBI request failed (%s), retrying in %ds (attempt %d/%d)",
+                    e, wait, attempt + 1, max_retries,
+                )
+                await asyncio.sleep(wait)
+                continue
+            raise
+    raise httpx.HTTPStatusError(  # pragma: no cover - 兜底，逻辑上不可达
+        "NCBI request failed after retries", request=None, response=resp
+    )
+
+
+def _apply_api_key(params: dict[str, str]) -> dict[str, str]:
+    """如果配置了 NCBI_API_KEY，附加到请求参数中。"""
+    if NCBI_API_KEY:
+        params = dict(params)
+        params["api_key"] = NCBI_API_KEY
+    return params
+
+
 async def _esearch(
     client: httpx.AsyncClient,
     query: str,
@@ -277,8 +350,7 @@ async def _esearch(
 
     logger.info("Running esearch with query: %s (max_results=%d)", query, max_results)
 
-    resp = await client.get(ESEARCH_BASE, params=params)
-    resp.raise_for_status()
+    resp = await _get_with_retry(client, ESEARCH_BASE, _apply_api_key(params))
     data = resp.json()
 
     result = data.get("esearchresult", {})
@@ -316,16 +388,16 @@ async def _efetch_batch(
     ids_str = ",".join(pmids)
     logger.info("Fetching %d articles via efetch", len(pmids))
 
-    resp = await client.get(
+    resp = await _get_with_retry(
+        client,
         EFETCH_BASE,
-        params={
+        _apply_api_key({
             "db": "pubmed",
             "id": ids_str,
             "rettype": "xml",
             "retmode": "xml",
-        },
+        }),
     )
-    resp.raise_for_status()
 
     root = ET.fromstring(resp.text)
     articles: list[dict[str, Any]] = []

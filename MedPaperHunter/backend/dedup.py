@@ -38,7 +38,9 @@ AI筛选规则:
 
 from __future__ import annotations
 
+import json
 import logging
+import os
 import re
 import string
 from typing import Any
@@ -114,6 +116,78 @@ def deduplicate_by_pmid(articles: list[dict[str, Any]]) -> list[dict[str, Any]]:
     result = list(seen.values()) + no_pmid
     logger.info(
         "Deduplicated by PMID: %d articles -> %d unique",
+        len(articles),
+        len(result),
+    )
+    return result
+
+
+_DOI_PREFIXES = ("https://doi.org/", "http://doi.org/", "dx.doi.org/", "doi.org/", "doi:")
+
+
+def _normalize_doi(doi: Any) -> str:
+    """规范化 DOI 用于去重比对。
+
+    处理步骤:
+        1. 转字符串、去首尾空白、转小写
+        2. 剥离常见前缀（https://doi.org/、doi: 等）
+        3. 去除结尾多余的句点/斜杠
+
+    Args:
+        doi: 原始 DOI 值（可能是 None、str 或其他类型）
+
+    Returns:
+        规范化后的 DOI 字符串；无效输入返回空字符串
+    """
+    if doi is None:
+        return ""
+    d = str(doi).strip().lower()
+    if not d:
+        return ""
+    for prefix in _DOI_PREFIXES:
+        if d.startswith(prefix):
+            d = d[len(prefix):]
+            break
+    return d.rstrip("./").strip()
+
+
+def deduplicate_by_doi(articles: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """按 DOI 去重。
+
+    DOI 是跨数据库最稳定的文献唯一标识。PMID 只覆盖 PubMed 收录文献，
+    而 WoS/Scopus/Embase 导入的文献通常没有 PMID，但绝大多数有 DOI。
+    因此去重顺序应为：PMID -> DOI -> 规范化标题。
+
+    去重策略:
+        1. 遍历所有文献，按规范化 DOI 分组
+        2. 对于相同 DOI 的文献，保留数据最完整的那篇
+        3. 没有 DOI 的文献单独保留（后续按标题去重兜底）
+
+    Args:
+        articles: 文献列表，每个文献可能包含 "doi" 字段
+
+    Returns:
+        去重后的文献列表
+    """
+    seen: dict[str, dict[str, Any]] = {}
+    no_doi: list[dict[str, Any]] = []
+
+    for article in articles:
+        doi = _normalize_doi(article.get("doi"))
+        if not doi:
+            no_doi.append(article)
+            continue
+
+        if doi in seen:
+            existing = seen[doi]
+            if _count_filled_fields(article) > _count_filled_fields(existing):
+                seen[doi] = article
+        else:
+            seen[doi] = article
+
+    result = list(seen.values()) + no_doi
+    logger.info(
+        "Deduplicated by DOI: %d articles -> %d unique",
         len(articles),
         len(result),
     )
@@ -205,24 +279,26 @@ def deduplicate_by_title(articles: list[dict[str, Any]]) -> list[dict[str, Any]]
 # LLM screening
 # ------------------------------------------------------------------
 
+# 解析失败时的标记值：禁止静默落到 YES/NO，必须显式上报
+UNPARSED = "UNPARSED"
+
 SCREENING_SYSTEM_PROMPT = (
     "You are a research assistant helping to screen academic articles for "
-    "relevance to a specific research question. For each article provided, "
-    "determine whether it is relevant based on its title and abstract. "
-    "IMPORTANT: Respond in the following exact format for each article using CHINESE language:\n"
-    "\n"
-    "ANSWER: YES or NO\n"
-    "REASON: <简要说明原因>\n"
-    "\n"
-    "Be inclusive rather than exclusive -- when in doubt, mark as YES."
+    "relevance to a specific research question. For each article, judge "
+    "relevance based on its title and abstract.\n"
+    "OUTPUT RULES (strict):\n"
+    "- Output ONLY a JSON array. No extra text, no markdown fences.\n"
+    "- One object per article, in the SAME ORDER as the input:\n"
+    '  {"index": <int, 1-based>, "answer": "YES" or "NO", "reason": "<brief reason in Chinese>"}\n'
+    "- Be inclusive rather than exclusive -- when in doubt, answer YES."
 )
 
 SCREENING_USER_TEMPLATE = (
     "研究问题: {question}\n"
     "\n"
-    "请评估以下{count}篇文章。对于每篇文章，请使用以下格式回复（使用中文）：\n"
-    "ANSWER: YES or NO\n"
-    "REASON: <简要说明原因>\n"
+    "请评估以下{count}篇文章。严格按输入顺序输出一个 JSON 数组，每篇文章一个对象：\n"
+    '[{{"index": <1到{count}>, "answer": "YES"或"NO", "reason": "<中文简要理由>"}}]\n'
+    "只输出 JSON 数组本身，不要输出任何其他内容。\n"
     "\n"
     "{articles_text}"
 )
@@ -243,88 +319,107 @@ def _format_article_for_screening(index: int, article: dict[str, Any]) -> str:
     return f"Article {index}:\nTitle: {title}\nAbstract: {abstract}\n"
 
 
+def _extract_json_array(text: str) -> list[Any]:
+    """从 LLM 响应中提取 JSON 数组，带两级容错。
+
+    容错策略:
+        1. 剥离 markdown 代码块围栏
+        2. 截取第一个 '[' 到最后一个 ']' 之间的内容解析
+        3. 若解析失败（如响应被截断），截断到最后一个完整对象再解析
+
+    Args:
+        text: LLM 原始响应文本
+
+    Returns:
+        解析出的列表；完全无法解析时返回空列表
+    """
+    s = text.strip()
+    fence = re.search(r"```(?:json)?\s*(.*?)```", s, re.DOTALL)
+    if fence:
+        s = fence.group(1).strip()
+
+    start = s.find("[")
+    if start == -1:
+        return []
+    end = s.rfind("]")
+
+    if end > start:
+        try:
+            data = json.loads(s[start : end + 1])
+            if isinstance(data, list):
+                return data
+        except json.JSONDecodeError:
+            pass  # 落入下方的截断修复路径
+
+    # 响应可能被 max_tokens 截断（无闭合 ']' 或 JSON 不完整）：
+    # 截到最后一个完整对象，补上 ']' 再解析，至少恢复前面的条目
+    last_brace = s.rfind("}")
+    if last_brace <= start:
+        return []
+    try:
+        data = json.loads(s[start : last_brace + 1] + "]")
+    except json.JSONDecodeError:
+        return []
+    return data if isinstance(data, list) else []
+
+
 def _parse_screening_response(
     response_text: str,
     batch_articles: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
-    """Parse the LLM response and attach screening results to articles.
+) -> tuple[list[dict[str, Any]], int]:
+    """解析 LLM 筛选响应，按 index 逐篇对号。
 
-    Expects the response to contain ANSWER: YES/NO and REASON: lines
-    for each article.
+    设计原则（替代旧的文本块对齐方案）:
+        - LLM 按约定输出 JSON 数组，每篇含 index/answer/reason
+        - 按 index 对号入座，index 缺失、越界、answer 非法的条目一律
+          标记为 UNPARSED，绝不借用其他条目的答案（防止张冠李戴）
+        - 返回解析成功数，供调用方做数量守恒校验
 
     Args:
-        response_text: The raw text response from the LLM.
-        batch_articles: The articles that were sent for screening.
+        response_text: LLM 原始响应文本
+        batch_articles: 本批次送筛的文献列表
 
     Returns:
-        List of articles with "screening_result" and "screening_reason" fields added.
+        (results, n_parsed):
+            - results: 带 screening_result ("YES"/"NO"/"UNPARSED") 和
+              screening_reason 字段的文献列表，顺序与输入一致
+            - n_parsed: 成功解析出判定的文献数量
     """
-    # Split response into per-article blocks
-    # Try to match patterns like "Article N:" or numbered sections
-    blocks = re.split(r"Article\s+\d+[:\s]*", response_text, flags=re.IGNORECASE)
+    items = _extract_json_array(response_text)
 
-    # If splitting didn't produce enough blocks, try splitting by ANSWER
-    if len(blocks) < len(batch_articles):
-        blocks = re.split(r"ANSWER:", response_text, flags=re.IGNORECASE)
-        if blocks and blocks[0].strip():
-            # First block might be preamble, keep it
-            pass
+    by_index: dict[int, dict[str, str]] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        idx = item.get("index")
+        answer = str(item.get("answer", "")).strip().upper()
+        # 兼容个别模型把 index 输出为字符串
+        if isinstance(idx, str) and idx.strip().isdigit():
+            idx = int(idx.strip())
+        if not isinstance(idx, int) or answer not in ("YES", "NO"):
+            continue
+        if idx < 1 or idx > len(batch_articles):
+            continue
+        reason = str(item.get("reason", "")).strip()
+        by_index[idx] = {"answer": answer, "reason": reason}
 
     results: list[dict[str, Any]] = []
-
+    n_parsed = 0
     for i, article in enumerate(batch_articles):
         article_copy = dict(article)
-
-        # Find the relevant block for this article
-        block = ""
-        if i + 1 < len(blocks):
-            block = blocks[i + 1] if len(blocks) > len(batch_articles) else (
-                blocks[i] if i < len(blocks) else ""
-            )
-
-        # If blocks don't align well, search the full response for this article's section
-        if not block and len(batch_articles) > 1:
-            pattern = rf"Article\s+{i + 1}[:\s]*(.*?)(?=Article\s+{i + 2}|$)"
-            match = re.search(pattern, response_text, re.IGNORECASE | re.DOTALL)
-            if match:
-                block = match.group(1)
-
-        # Extract ANSWER - handle multiple formats:
-        # 1. ANSWER: YES/NO (expected format)
-        # 2. YES/NO followed by reason (actual format from some LLMs)
-        answer_match = re.search(
-            r"(?:ANSWER\s*:\s*)?(YES|NO)",
-            block or response_text,
-            re.IGNORECASE,
-        )
-        screening_result = "YES" if (
-            answer_match and answer_match.group(1).upper() == "YES"
-        ) else "NO"
-
-        # Extract REASON - handle multiple formats:
-        # 1. REASON: <explanation> (expected format)
-        # 2. YES/NO\t<reason> or YES/NO <reason> (actual format from some LLMs)
-        reason_match = re.search(
-            r"REASON\s*:\s*(.+?)(?=\n\s*(?:ANSWER|REASON|Article|\Z))",
-            block or response_text,
-            re.IGNORECASE | re.DOTALL,
-        )
-        screening_reason = ""
-        if reason_match:
-            screening_reason = reason_match.group(1).strip()
+        got = by_index.get(i + 1)
+        if got is not None:
+            article_copy["screening_result"] = got["answer"]
+            article_copy["screening_reason"] = got["reason"]
+            n_parsed += 1
         else:
-            # Fallback: extract text after YES/NO (handle both tab and space separated)
-            if answer_match:
-                rest = response_text[answer_match.end():].strip()
-                # Remove leading tabs/spaces and take the rest as reason
-                rest = rest.lstrip('\t ').strip()
-                screening_reason = rest[:200] if rest else "No reason provided"
-
-        article_copy["screening_result"] = screening_result
-        article_copy["screening_reason"] = screening_reason
+            article_copy["screening_result"] = UNPARSED
+            article_copy["screening_reason"] = (
+                "LLM 响应中缺少该文献的判定，需人工复核"
+            )
         results.append(article_copy)
 
-    return results
+    return results, n_parsed
 
 
 async def llm_screen(
@@ -332,43 +427,39 @@ async def llm_screen(
     llm_client: Any,
     question: str,
     batch_size: int = 20,
+    max_retries: int = 1,
 ) -> list[dict[str, Any]]:
-    """AI相关性筛选。
-    
-    使用大语言模型判断文献与研究问题的相关性。
-    
+    """AI相关性筛选（返回全部文献的判定结果）。
+
     处理流程:
-        1. 将文献分批（每批最多20篇）
-        2. 构建包含研究问题和文献信息的提示词
+        1. 将文献分批（每批最多 batch_size 篇）
+        2. 构建包含研究问题和文献信息的提示词（要求 LLM 输出 JSON 数组）
         3. 调用LLM进行判断
-        4. 解析LLM响应，标记每篇文献的相关性
-        5. 只返回标记为相关的文献
-    
+        4. 按 index 逐篇解析，做数量守恒校验
+        5. 解析不完整的批次自动重试（最多 max_retries 次）
+
     筛选规则:
         - 包容性原则：不确定时标记为相关(YES)
         - 根据标题和摘要判断相关性
-        - 返回每篇文献的判断理由
-    
-    支持的LLM客户端类型:
-        - OpenAI兼容客户端（chat.completions.create接口）
-        - 自定义客户端（chat方法）
-        - 可调用对象
-    
+        - 解析失败的文献标记为 UNPARSED，显式上报，绝不静默归类
+
     Args:
         articles: 文献列表，每个文献应包含 "title" 和 "abstract" 字段
         llm_client: LLM客户端对象
         question: 研究问题，用于判断相关性
         batch_size: 每批处理的文献数量，默认20
-    
+        max_retries: 解析不完整时的最大重试次数，默认1
+
     Returns:
-        筛选后的文献列表（仅包含标记为相关的文献），每个文献添加了:
-            - screening_result: "YES" 或 "NO"
-            - screening_reason: 判断理由
+        全部文献列表（顺序不变），每篇添加了:
+            - screening_result: "YES" / "NO" / "UNPARSED"
+            - screening_reason: 判断理由（UNPARSED 时为提示语）
     """
     if not articles:
         return []
 
     all_screened: list[dict[str, Any]] = []
+    total_parsed = 0
 
     for offset in range(0, len(articles), batch_size):
         batch = articles[offset : offset + batch_size]
@@ -379,40 +470,52 @@ async def llm_screen(
             len(articles),
         )
 
-        # Format articles for the prompt
         articles_text = "\n".join(
             _format_article_for_screening(i + 1, article)
             for i, article in enumerate(batch)
         )
-
         user_message = SCREENING_USER_TEMPLATE.format(
             question=question,
             count=len(batch),
             articles_text=articles_text,
         )
-
         messages = [
             {"role": "system", "content": SCREENING_SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
         ]
 
-        # Call the LLM
-        response_text = await _call_llm(llm_client, messages)
+        screened: list[dict[str, Any]] = []
+        n_parsed = 0
+        for attempt in range(1, max_retries + 2):
+            response_text = await _call_llm(llm_client, messages)
+            screened, n_parsed = _parse_screening_response(response_text, batch)
 
-        # Parse the response
-        screened = _parse_screening_response(response_text, batch)
+            if n_parsed == len(batch):
+                break
+            logger.warning(
+                "Screening batch %d-%d: parsed %d/%d articles (attempt %d/%d)",
+                offset + 1,
+                offset + len(batch),
+                n_parsed,
+                len(batch),
+                attempt,
+                max_retries + 1,
+            )
+
         all_screened.extend(screened)
+        total_parsed += n_parsed
 
-    # Filter to only YES results
-    relevant = [a for a in all_screened if a.get("screening_result") == "YES"]
-
+    yes_count = sum(1 for a in all_screened if a.get("screening_result") == "YES")
+    unparsed_count = len(all_screened) - total_parsed
     logger.info(
-        "LLM screening complete: %d of %d articles marked as relevant",
-        len(relevant),
+        "LLM screening complete: %d relevant / %d excluded / %d unparsed of %d total",
+        yes_count,
+        len(all_screened) - yes_count - unparsed_count,
+        unparsed_count,
         len(articles),
     )
 
-    return relevant
+    return all_screened
 
 
 async def _call_llm(llm_client: Any, messages: list[dict[str, str]]) -> str:
@@ -432,8 +535,13 @@ async def _call_llm(llm_client: Any, messages: list[dict[str, str]]) -> str:
     """
     # Try OpenAI-compatible interface
     if hasattr(llm_client, "chat") and hasattr(llm_client.chat, "completions"):
+        model = (
+            getattr(llm_client, "model", None)
+            or os.getenv("LLM_MODEL")
+            or "default"
+        )
         response = await llm_client.chat.completions.create(
-            model="default",
+            model=model,
             messages=messages,
             temperature=0.1,
         )

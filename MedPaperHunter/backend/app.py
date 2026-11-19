@@ -47,6 +47,7 @@ import logging
 import os
 import tempfile
 import time
+import uuid
 from typing import Any
 from pathlib import Path
 from collections import defaultdict
@@ -62,7 +63,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-from dedup import deduplicate_by_pmid, deduplicate_by_title, llm_screen
+from dedup import deduplicate_by_pmid, deduplicate_by_doi, deduplicate_by_title, llm_screen, UNPARSED
 from exporter import articles_to_csv, export_strategies_txt, export_to_excel
 from llm_medical_search import LLMClient, LLMConfig, LLMedicalSearchBuilder
 from medical_search_strategy_builder import MedicalSearchStrategyBuilder
@@ -139,10 +140,23 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# CORS：默认仅允许本机来源，可通过 ALLOWED_ORIGINS 环境变量扩展（逗号分隔）。
+# 注意：allow_origins=["*"] 与 allow_credentials=True 是规范上的无效组合，
+# 浏览器会直接拒绝，因此放开来源时必须关闭 credentials。
+_allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "").strip()
+if _allowed_origins_env:
+    _allowed_origins = [o.strip() for o in _allowed_origins_env.split(",") if o.strip()]
+else:
+    _allowed_origins = [
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
+_allow_credentials = "*" not in _allowed_origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_allowed_origins,
+    allow_credentials=_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -155,6 +169,20 @@ app.add_middleware(
 _request_counts: dict[str, dict[str, float]] = defaultdict(lambda: {"count": 0, "timestamp": 0})
 _RATE_LIMIT = 100  # 每分钟最大请求数
 _RATE_LIMIT_WINDOW = 60  # 时间窗口（秒）
+_RATE_LIMIT_MAX_ENTRIES = 5000  # 内存保护：超过该数量时清理过期条目
+
+
+def _prune_rate_limit_entries(now: float) -> None:
+    """清理已过期的限流记录，防止 _request_counts 无限增长耗尽内存。"""
+    if len(_request_counts) <= _RATE_LIMIT_MAX_ENTRIES:
+        return
+    stale_ips = [
+        ip
+        for ip, rec in _request_counts.items()
+        if now - rec["timestamp"] > _RATE_LIMIT_WINDOW
+    ]
+    for ip in stale_ips:
+        _request_counts.pop(ip, None)
 
 
 @app.middleware("http")
@@ -175,7 +203,10 @@ async def rate_limit_middleware(request: Request, call_next):
     """
     client_ip = request.client.host if request.client else "unknown"
     now = time.time()
-    
+
+    # 内存保护：定期清理过期条目
+    _prune_rate_limit_entries(now)
+
     # 获取客户端的请求记录
     record = _request_counts[client_ip]
     
@@ -339,6 +370,35 @@ class ExportStrategiesRequest(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+def _stream_and_cleanup(filepath: str, media_type: str, filename: str) -> StreamingResponse:
+    """流式返回文件并在发送完毕后删除临时文件。
+
+    修复并发导出竞态：每次导出写入带唯一后缀的临时文件，
+    不再共用固定文件名（search_results.xlsx 等），
+    避免多用户同时导出时互相覆盖；流结束后立即清理。
+
+    Args:
+        filepath: 服务端临时文件路径（含唯一后缀）
+        media_type: HTTP 响应的 MIME 类型
+        filename: 返回给浏览器的下载文件名
+    """
+    def iterfile():
+        try:
+            with open(filepath, "rb") as f:
+                yield from f
+        finally:
+            try:
+                os.remove(filepath)
+            except OSError:
+                logger.warning("Failed to remove temp export file: %s", filepath)
+
+    return StreamingResponse(
+        iterfile(),
+        media_type=media_type,
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+   )
+
+
 
 
 
@@ -416,10 +476,27 @@ async def generate_strategy(request: StrategyRequest):
             question=request.question,
             databases=request.databases,
         )
+
+        # 将 MeSH 校验失败/无法校验的词显式上报给用户（此前只藏在日志里）
+        mesh_warnings: list[str] = []
+        for dim, validations in result.get("mesh_validation", {}).items():
+            for v in validations:
+                if v.get("valid") is False:
+                    mesh_warnings.append(
+                        f"MeSH 词 \"{v.get('term')}\"（维度 {dim}）未在官方词表中找到，"
+                        "该词仍以自由词形式参与检索，建议人工核实或替换。"
+                    )
+                elif v.get("valid") is None:
+                    mesh_warnings.append(
+                        f"MeSH 词 \"{v.get('term')}\"（维度 {dim}）校验失败（API 错误），"
+                        "该词未经官方词表验证，建议人工核实。"
+                    )
+
         return {
             "strategies": result["strategies"],
             "analysis": result["analysis"],
             "mesh_validation": result.get("mesh_validation", {}),
+            "mesh_warnings": mesh_warnings,
             "validation_tips": result.get("validation_tips", []),
             "language": result.get("language", "en"),
         }
@@ -842,8 +919,8 @@ async def import_file(files: list[UploadFile] = File(...)):
             logger.exception(f"Failed to import file: {filename}")
             errors.append(f"Failed to parse '{filename}': {str(e)}")
     
-    # 合并后进行初步去重（按标题）
-    all_articles = deduplicate_by_title(deduplicate_by_pmid(all_articles))
+    # 合并后进行初步去重（PMID → DOI → 标题）
+    all_articles = deduplicate_by_title(deduplicate_by_doi(deduplicate_by_pmid(all_articles)))
     
     return {
         "articles": all_articles,
@@ -855,7 +932,7 @@ async def import_file(files: list[UploadFile] = File(...)):
 
 @app.post("/api/process/dedup")
 async def deduplicate_articles(request: DedupRequest):
-    """Deduplicate articles by PMID first, then by normalized title.
+    """Deduplicate articles by PMID first, then DOI, then normalized title.
 
     For each deduplication step, the article with the most complete data
     is retained when duplicates are found.
@@ -868,8 +945,11 @@ async def deduplicate_articles(request: DedupRequest):
     # Step 1: Deduplicate by PMID
     after_pmid = deduplicate_by_pmid(request.articles)
 
-    # Step 2: Deduplicate remaining by title
-    after_title = deduplicate_by_title(after_pmid)
+    # Step 2: Deduplicate remaining by DOI (cross-database identifier)
+    after_doi = deduplicate_by_doi(after_pmid)
+
+    # Step 3: Deduplicate remaining by normalized title
+    after_title = deduplicate_by_title(after_doi)
 
     removed = original_count - len(after_title)
 
@@ -887,6 +967,9 @@ async def screen_articles(request: ScreenRequest):
 
     Sends article titles and abstracts to the LLM in batches,
     asking whether each article is relevant to the research question.
+
+    统一使用 dedup.llm_screen（JSON 逐篇对号 + 数量守恒 + 自动重试），
+    解析失败的文献标记为 UNPARSED 并在响应中显式上报，不会静默归类。
     """
     if not request.articles:
         return {"articles": [], "total": 0}
@@ -897,61 +980,35 @@ async def screen_articles(request: ScreenRequest):
         raise
 
     try:
-        # Get all screened articles with screening_result field
-        all_screened = []
-        batch_size = 20
-        
-        from dedup import (
-            SCREENING_SYSTEM_PROMPT,
-            SCREENING_USER_TEMPLATE,
-            _format_article_for_screening,
-            _parse_screening_response,
-            _call_llm,
+        all_screened = await llm_screen(
+            request.articles,
+            llm_client,
+            request.question,
         )
-        
-        for offset in range(0, len(request.articles), batch_size):
-            batch = request.articles[offset : offset + batch_size]
-            
-            # Format articles for the prompt
-            articles_text = "\n".join(
-                _format_article_for_screening(i + 1, article)
-                for i, article in enumerate(batch)
-            )
-            
-            user_message = SCREENING_USER_TEMPLATE.format(
-                question=request.question,
-                count=len(batch),
-                articles_text=articles_text,
-            )
-            
-            messages = [
-                {"role": "system", "content": SCREENING_SYSTEM_PROMPT},
-                {"role": "user", "content": user_message},
-            ]
-            
-            # Call the LLM
-            response_text = await _call_llm(llm_client, messages)
-            
-            # Parse the response
-            screened = _parse_screening_response(response_text, batch)
-            all_screened.extend(screened)
-        
+
         # Convert to frontend expected format
         articles_with_screening = []
         for article in all_screened:
             article_copy = dict(article)
-            # Map screening_result to screening field (frontend expects this)
-            article_copy["screening"] = "included" if article.get("screening_result") == "YES" else "excluded"
+            result = article_copy.get("screening_result")
+            if result == "YES":
+                article_copy["screening"] = "included"
+            elif result == "NO":
+                article_copy["screening"] = "excluded"
+            else:  # UNPARSED：需人工复核，前端按 pending 样式显示
+                article_copy["screening"] = "unparsed"
             articles_with_screening.append(article_copy)
 
         included_count = sum(1 for a in articles_with_screening if a["screening"] == "included")
-        excluded_count = len(articles_with_screening) - included_count
-        
+        excluded_count = sum(1 for a in articles_with_screening if a["screening"] == "excluded")
+        unparsed_count = sum(1 for a in articles_with_screening if a["screening"] == "unparsed")
+
         return {
             "articles": articles_with_screening,
             "total": len(articles_with_screening),
             "included_count": included_count,
             "excluded_count": excluded_count,
+            "unparsed_count": unparsed_count,
         }
 
     except Exception as e:
@@ -969,17 +1026,12 @@ async def export_excel(request: ExportArticlesRequest):
         raise HTTPException(status_code=400, detail="No articles to export.")
 
     try:
-        filepath = str(Config.OUTPUT_DIR / "search_results.xlsx")
+        filepath = str(Config.OUTPUT_DIR / f"search_results_{uuid.uuid4().hex[:8]}.xlsx")
         export_to_excel(request.articles, filepath)
-
-        def iterfile():
-            with open(filepath, "rb") as f:
-                yield from f
-
-        return StreamingResponse(
-            iterfile(),
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={"Content-Disposition": "attachment; filename=search_results.xlsx"},
+        return _stream_and_cleanup(
+            filepath,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "search_results.xlsx",
         )
 
     except Exception as e:
@@ -997,17 +1049,12 @@ async def export_strategies(request: ExportStrategiesRequest):
         raise HTTPException(status_code=400, detail="No strategies to export.")
 
     try:
-        filepath = str(Config.OUTPUT_DIR / "search_strategies.txt")
+        filepath = str(Config.OUTPUT_DIR / f"search_strategies_{uuid.uuid4().hex[:8]}.txt")
         export_strategies_txt(request.strategies, filepath)
-
-        def iterfile():
-            with open(filepath, "rb") as f:
-                yield from f
-
-        return StreamingResponse(
-            iterfile(),
-            media_type="text/plain; charset=utf-8",
-            headers={"Content-Disposition": "attachment; filename=search_strategies.txt"},
+        return _stream_and_cleanup(
+            filepath,
+            "text/plain; charset=utf-8",
+            "search_strategies.txt",
         )
 
     except Exception as e:
@@ -1025,17 +1072,12 @@ async def export_csv(request: ExportArticlesRequest):
         raise HTTPException(status_code=400, detail="No articles to export.")
 
     try:
-        filepath = str(Config.OUTPUT_DIR / "search_results.csv")
+        filepath = str(Config.OUTPUT_DIR / f"search_results_{uuid.uuid4().hex[:8]}.csv")
         articles_to_csv(request.articles, filepath)
-
-        def iterfile():
-            with open(filepath, "rb") as f:
-                yield from f
-
-        return StreamingResponse(
-            iterfile(),
-            media_type="text/csv; charset=utf-8",
-            headers={"Content-Disposition": "attachment; filename=search_results.csv"},
+        return _stream_and_cleanup(
+            filepath,
+            "text/csv; charset=utf-8",
+            "search_results.csv",
         )
 
     except Exception as e:

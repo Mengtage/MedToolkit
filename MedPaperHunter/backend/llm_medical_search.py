@@ -73,6 +73,31 @@ from medical_search_strategy_builder import (
 logger = logging.getLogger(__name__)
 
 
+async def _get_with_backoff(
+    client: httpx.AsyncClient,
+    url: str,
+    max_retries: int = 3,
+) -> httpx.Response:
+    """GET 请求，对 429/5xx 做指数退避重试（1s、2s、4s……）。
+
+    Raises:
+        httpx.HTTPStatusError: 重试耗尽后仍失败
+    """
+    resp = await client.get(url)
+    attempt = 0
+    while resp.status_code == 429 or resp.status_code >= 500:
+        if attempt >= max_retries:
+            break
+        wait = 2 ** attempt
+        logger.warning("MeSH API returned %d, retrying in %ds (attempt %d/%d)",
+                       resp.status_code, wait, attempt + 1, max_retries)
+        await asyncio.sleep(wait)
+        resp = await client.get(url)
+        attempt += 1
+    resp.raise_for_status()
+    return resp
+
+
 # ---------------------------------------------------------------------------
 # LLM 客户端（OpenAI兼容API）
 # ---------------------------------------------------------------------------
@@ -238,12 +263,9 @@ class MeSHValidator:
                         f"?db=mesh&term={quote(descriptor_query)}"
                         f"&retmax=5&retmode=json"
                     )
-                    resp = await client.get(search_url)
-                    if resp.status_code == 429:
-                        # 限流：等待后重试
-                        await asyncio.sleep(1)
-                        resp = await client.get(search_url)
-                    if resp.status_code != 200:
+                    try:
+                        resp = await _get_with_backoff(client, search_url, self.max_retries)
+                    except httpx.HTTPError:
                         result = {"term": term, "valid": None, "mesh_uid": None, "mesh_name": None, "entry_terms": [], "note": "API error"}
                         self._cache[term] = result
                         return result
@@ -262,12 +284,10 @@ class MeSHValidator:
                         f"{self.EUTILS_BASE}/esummary.fcgi"
                         f"?db=mesh&id={','.join(id_list)}&retmode=json"
                     )
-                    resp2 = await client.get(summary_url)
-                    if resp2.status_code == 429:
-                        await asyncio.sleep(1)
-                        resp2 = await client.get(summary_url)
-                    if resp2.status_code != 200:
-                        logger.warning(f"MeSH esummary returned {resp2.status_code} for IDs {id_list}")
+                    try:
+                        resp2 = await _get_with_backoff(client, summary_url, self.max_retries)
+                    except httpx.HTTPError:
+                        logger.warning(f"MeSH esummary failed for term '{term}' (IDs {id_list})")
                         result = {"term": term, "valid": True, "mesh_uid": id_list[0], "mesh_name": None, "entry_terms": [], "note": "found but details unavailable"}
                         self._cache[term] = result
                         return result
