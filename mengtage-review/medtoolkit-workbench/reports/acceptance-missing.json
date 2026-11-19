@@ -1,7 +1,7 @@
 {
   "scope": "repaired missing-data and numeric-only MI; actual app function extracted with mocked session/storage; synthetic inputs only",
-  "pandas": "3.1.1",
-  "numpy": "2.5.5",
+  "pandas": "3.0.6",
+  "numpy": "2.5.3",
   "results": [
     {
       "name": "native_missing_count",
