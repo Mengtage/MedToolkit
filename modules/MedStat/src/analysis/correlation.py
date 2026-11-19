@@ -23,8 +23,10 @@ class CorrelationAnalyzer:
         Pearson相关系数
         """
         data = self.df[[x, y]].dropna()
-        if len(data) < 3:
+        if len(data) < 3 or data[x].nunique() < 2 or data[y].nunique() < 2:
             return None
+        if not np.isfinite(data.to_numpy(dtype=float)).all():
+            raise ValueError("相关性输入必须为有限数值")
         
         r, p = stats.pearsonr(data[x], data[y])
         return {
@@ -38,8 +40,10 @@ class CorrelationAnalyzer:
         Spearman秩相关系数
         """
         data = self.df[[x, y]].dropna()
-        if len(data) < 3:
+        if len(data) < 3 or data[x].nunique() < 2 or data[y].nunique() < 2:
             return None
+        if not np.isfinite(data.to_numpy(dtype=float)).all():
+            raise ValueError("相关性输入必须为有限数值")
         
         r, p = stats.spearmanr(data[x], data[y])
         return {
@@ -62,6 +66,8 @@ class CorrelationAnalyzer:
         dict
             包含相关系数矩阵和p值矩阵
         """
+        if method not in ('pearson', 'spearman'):
+            raise ValueError('未知相关方法')
         if len(self.numeric_cols) < 2:
             return None
         
@@ -71,8 +77,9 @@ class CorrelationAnalyzer:
         for i, x in enumerate(self.numeric_cols):
             for j, y in enumerate(self.numeric_cols):
                 if i == j:
-                    corr_matrix.loc[x, y] = 1.0
-                    p_matrix.loc[x, y] = 1.0
+                    valid = self.df[x].dropna()
+                    corr_matrix.loc[x, y] = 1.0 if len(valid) >= 3 and valid.nunique() >= 2 else None
+                    p_matrix.loc[x, y] = None
                 else:
                     if method == 'pearson':
                         result = self.pearson(x, y)
@@ -84,8 +91,8 @@ class CorrelationAnalyzer:
                         p_matrix.loc[x, y] = result['p_value']
         
         return {
-            'correlation_matrix': corr_matrix.astype(float).to_dict(),
-            'p_value_matrix': p_matrix.astype(float).to_dict(),
+            'correlation_matrix': corr_matrix.where(pd.notna(corr_matrix), None).to_dict(),
+            'p_value_matrix': p_matrix.where(pd.notna(p_matrix), None).to_dict(),
             'method': method,
             'variables': self.numeric_cols
         }

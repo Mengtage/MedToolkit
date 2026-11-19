@@ -32,6 +32,16 @@ class CategoricalTestSelector:
         dict
             检验结果和方法选择理由
         """
+        observed = np.asarray(observed)
+        if observed.ndim != 2 or min(observed.shape) < 2 or not np.isfinite(observed).all() or np.any(observed < 0) or np.any(observed != np.floor(observed)):
+            raise ValueError('列联表须为至少2×2的非负整数频数')
+        if np.any(observed.sum(axis=0) == 0) or np.any(observed.sum(axis=1) == 0):
+            raise ValueError('列联表存在零边际，检验不可估计')
+        observed = observed.astype(np.int64)
+        if method not in ('auto', 'chi2', 'fisher', 'yates'):
+            raise ValueError('未知分类检验方法')
+        if method == 'yates' and observed.shape != (2, 2):
+            raise ValueError('Yates矫正仅支持2×2表')
         if method != 'auto':
             return CategoricalTestSelector._force_method(observed, method)
         
@@ -84,8 +94,8 @@ class CategoricalTestSelector:
             'p_value': float(p_value),
             'expected': expected.tolist(),
             'min_expected': float(min_expected),
-            'reason': f'所有期望频数≥5，总例数≥20',
-            'recommended': True
+            'reason': f'Pearson渐近卡方；最小期望频数={min_expected:.2f}，请核对适用条件',
+            'recommended': bool(min_expected >= 1 and np.mean(expected < 5) <= .2)
         }
     
     @staticmethod
@@ -115,7 +125,8 @@ class CategoricalTestSelector:
             
             return {
                 'method': 'Fisher精确检验',
-                'statistic': float(odds_ratio),
+                'statistic': float(odds_ratio) if np.isfinite(odds_ratio) else None,
+                'odds_ratio_boundary': bool(not np.isfinite(odds_ratio) or odds_ratio == 0),
                 'statistic_name': 'OR',
                 'p_value': float(p_value),
                 'or_ci': CategoricalTestSelector._calculate_or_ci(observed),
@@ -124,18 +135,23 @@ class CategoricalTestSelector:
                 'recommended': True
             }
         else:
-            # R×C表使用Monte Carlo模拟
-            chi2_stat, p_value, _, expected = stats.chi2_contingency(observed, correction=False)
-            
+            # Fixed-margin conditional Monte Carlo; statistic is table probability, not chi-square.
+            n_resamples, seed = 19999, 20261119
+            if not hasattr(stats, 'MonteCarloMethod'):
+                raise ValueError('RxC条件Monte Carlo检验需要SciPy>=1.15')
+            method = stats.MonteCarloMethod(n_resamples=n_resamples, rng=np.random.default_rng(seed))
+            result = stats.fisher_exact(observed, method=method)
+            expected = np.outer(observed.sum(axis=1), observed.sum(axis=0)) / observed.sum()
             return {
-                'method': 'Fisher精确检验(Monte Carlo模拟)',
-                'statistic': float(chi2_stat),
-                'statistic_name': 'χ²',
-                'p_value': float(p_value),
+                'method': 'Fisher条件Monte Carlo检验',
+                'statistic': float(np.asarray(result.statistic).item()),
+                'statistic_name': '条件表概率',
+                'p_value': float(np.asarray(result.pvalue).item()),
                 'expected': expected.tolist(),
-                'min_expected': float(min_expected) if min_expected else None,
-                'reason': f'R×C表，期望频数条件不满足卡方检验',
-                'recommended': True
+                'min_expected': float(expected.min()),
+                'reason': 'RxC稀疏表；在固定边际下按表概率比较极端性，P值为模拟估计',
+                'recommended': True, 'n_resamples': n_resamples, 'random_seed': seed,
+                'p_value_is_approximate': True
             }
     
     @staticmethod
@@ -144,7 +160,7 @@ class CategoricalTestSelector:
         a, b = observed[0, 0], observed[0, 1]
         c, d = observed[1, 0], observed[1, 1]
         
-        if b == 0 or c == 0:
+        if min(a, b, c, d) == 0:
             return [None, None]
         
         or_val = (a * d) / (b * c)
@@ -253,104 +269,63 @@ class MantelHaenszelTest:
         dict
             分层分析结果
         """
-        strata_results = []
-        total_a, total_b, total_c, total_d = 0, 0, 0, 0
-        
-        for stratum in data[strata_col].unique():
-            stratum_data = data[data[strata_col] == stratum]
-            
-            # 构建2×2表
-            a = len(stratum_data[(stratum_data[group_col] == 1) & (stratum_data[outcome_col] == 1)])
-            b = len(stratum_data[(stratum_data[group_col] == 1) & (stratum_data[outcome_col] == 0)])
-            c = len(stratum_data[(stratum_data[group_col] == 0) & (stratum_data[outcome_col] == 1)])
-            d = len(stratum_data[(stratum_data[group_col] == 0) & (stratum_data[outcome_col] == 0)])
-            
-            total_a += a
-            total_b += b
-            total_c += c
-            total_d += d
-            
-            # 计算层特异性OR
-            if b > 0 and c > 0:
-                stratum_or = (a * d) / (b * c)
-            else:
-                stratum_or = np.nan
-            
-            strata_results.append({
-                'stratum': stratum,
-                'a': int(a), 'b': int(b), 'c': int(c), 'd': int(d),
-                'or': float(stratum_or) if not np.isnan(stratum_or) else None,
-                'total': int(a + b + c + d)
-            })
-        
-        # Mantel-Haenszel汇总OR
-        mh_numerator = sum((s['a'] * s['d']) / s['total'] for s in strata_results if s['a'] and s['d'])
-        mh_denominator = sum((s['b'] * s['c']) / s['total'] for s in strata_results if s['b'] and s['c'])
-        
-        if mh_denominator > 0:
-            mh_or = mh_numerator / mh_denominator
-        else:
-            mh_or = np.nan
-        
-        # Mantel-Haenszel卡方检验
-        grand_total = total_a + total_b + total_c + total_d
-        mh_stat = (abs(total_a * total_d - total_b * total_c) - 0.5)**2 * grand_total / \
-                  ((total_a + total_b) * (total_c + total_d) * (total_a + total_c) * (total_b + total_d))
-        
-        p_value = chi2.sf(mh_stat, df=1)
-        
-        # Breslow-Day同质性检验
-        bd_stat = 0
-        for s in strata_results:
-            if s['or'] is not None:
-                expected = ((s['a'] + s['c']) * (s['a'] + s['b'])) / s['total']
-                variance = expected * (1 - expected / (s['a'] + s['b'])) * (1 - expected / (s['a'] + s['c']))
-                if variance > 0:
-                    bd_stat += (s['a'] - expected)**2 / variance
-        
-        homogeneity_p = chi2.sf(bd_stat, df=len(strata_results) - 1)
-        
-        # 计算MH OR的置信区间
-        or_ci = MantelHaenszelTest._calculate_mh_or_ci(strata_results, mh_or)
-        
-        return {
-            'method': 'Mantel-Haenszel分层分析',
-            'strata': strata_results,
-            'pooled_or': float(mh_or) if not np.isnan(mh_or) else None,
-            'pooled_or_ci': or_ci,
-            'mh_statistic': float(mh_stat),
-            'mh_p_value': float(p_value),
-            'homogeneity_statistic': float(bd_stat),
-            'homogeneity_p': float(homogeneity_p),
-            'has_heterogeneity': bool(homogeneity_p < 0.05),
-            'n_strata': len(strata_results)
-        }
+        from statsmodels.stats.contingency_tables import StratifiedTable
+        used = data[[group_col, outcome_col, strata_col]].dropna()
+        if used.empty or not used[group_col].isin([0, 1]).all() or not used[outcome_col].isin([0, 1]).all():
+            raise ValueError('MH分析需要0/1分组与结局及非缺失分层')
+        tables, strata_results = [], []
+        for label, frame in used.groupby(strata_col, sort=False):
+            table = pd.crosstab(frame[group_col], frame[outcome_col]).reindex(index=[1,0], columns=[1,0], fill_value=0).to_numpy()
+            if np.any(table.sum(0) == 0) or np.any(table.sum(1) == 0):
+                raise ValueError('分层存在零边际，MH分析不可估计')
+            a,b,c,d = table.ravel()
+            odds = float(a*d/(b*c)) if b*c else None
+            if odds is not None and not np.isfinite(odds): odds = None
+            strata_results.append({'stratum': label.item() if isinstance(label,np.generic) else label,
+                'a':int(a),'b':int(b),'c':int(c),'d':int(d),'or':odds,
+                'or_ci':CategoricalTestSelector._calculate_or_ci(table), 'total':int(table.sum())})
+            tables.append(table)
+        model = StratifiedTable(tables, shift_zeros=False)
+        test = model.test_null_odds(correction=False)
+        pooled = float(model.oddsratio_pooled)
+        if not np.isfinite(pooled) or pooled <= 0:
+            raise ValueError('合并OR位于边界，常规对数区间不可估计')
+        interval = [float(v) for v in model.oddsratio_pooled_confint()]
+        bd_stat = homogeneity_p = None
+        if len(tables) > 1:
+            # Stable form of the Breslow-Day quadratic, including common OR=1.
+            components = []
+            for table in tables:
+                a,b,c,d = table.ravel().astype(float)
+                row, col, n = a+b, a+c, table.sum()
+                qa = 1-pooled
+                qb = pooled*(row+col) + d-a
+                qc = -pooled*row*col
+                expected = -qc/qb if abs(qa) < 1e-12 else 2*qc/(-qb-np.sqrt(qb*qb-4*qa*qc))
+                cells = np.array([expected,row-expected,col-expected,n-row-col+expected])
+                if np.any(cells <= 0):
+                    raise ValueError('Breslow-Day期望频数位于边界，检验不可估计')
+                variance = 1/np.sum(1/cells)
+                components.append((a-expected)**2/variance)
+            bd_stat = float(sum(components))
+            homogeneity_p = float(chi2.sf(bd_stat,len(tables)-1))
+        return {'method':'Mantel-Haenszel分层分析','strata':strata_results,
+            'pooled_or':pooled,'pooled_or_ci':interval,
+            'mh_statistic':float(test.statistic),'mh_p_value':float(test.pvalue),
+            'homogeneity_statistic':bd_stat,'homogeneity_p':homogeneity_p,
+            'has_heterogeneity':bool(homogeneity_p < .05) if homogeneity_p is not None else None,
+            'n_strata':len(tables),'input_rows':len(data),'complete_rows':len(used),
+            'excluded_missing_rows':len(data)-len(used),'continuity_correction':False,
+            'ci_method':'Robins-Breslow-Greenland log-OR variance',
+            'homogeneity_method':'Breslow-Day (unadjusted)' if len(tables)>1 else 'not_applicable_single_stratum'}
     
     @staticmethod
     def _calculate_mh_or_ci(strata_results, mh_or):
-        """计算MH OR的置信区间"""
-        if np.isnan(mh_or) or mh_or <= 0:
-            return [None, None]
-        
-        # 简化计算，使用Woolf方法
-        log_mh_or = np.log(mh_or)
-        
-        # 计算log(OR)的方差
-        var_log_or = 0
-        for s in strata_results:
-            if s['a'] and s['b'] and s['c'] and s['d']:
-                var = 1/s['a'] + 1/s['b'] + 1/s['c'] + 1/s['d']
-                var_log_or += var
-        
-        if var_log_or > 0:
-            se = np.sqrt(var_log_or)
-            z = norm.ppf(0.975)
-            log_ci_lower = log_mh_or - z * se
-            log_ci_upper = log_mh_or + z * se
-            return [float(np.exp(log_ci_lower)), float(np.exp(log_ci_upper))]
-        
-        return [None, None]
-    
+        from statsmodels.stats.contingency_tables import StratifiedTable
+        if mh_or is None or not np.isfinite(mh_or) or mh_or <= 0: return [None,None]
+        tables = [np.array([[s['a'],s['b']],[s['c'],s['d']]]) for s in strata_results]
+        return [float(v) for v in StratifiedTable(tables,shift_zeros=False).oddsratio_pooled_confint()]
+
     @staticmethod
     def generate_forest_plot_data(strata_results, pooled_or, pooled_ci):
         """生成森林图数据"""
@@ -358,9 +333,9 @@ class MantelHaenszelTest:
         
         # 分层效应量
         for i, result in enumerate(strata_results):
-            if result['or'] is not None:
-                or_lower = result['or'] * 0.5
-                or_upper = result['or'] * 2
+            interval = result.get('or_ci', [None, None])
+            if result['or'] is not None and interval[0] is not None and interval[1] is not None:
+                or_lower, or_upper = interval
                 
                 data.append({
                     'x': [result['or']],
@@ -371,8 +346,8 @@ class MantelHaenszelTest:
                     'error_x': {
                         'type': 'data',
                         'symmetric': False,
-                        'array': [result['or'] - or_lower],
-                        'arrayminus': [or_upper - result['or']]
+                        'array': [or_upper - result['or']],
+                        'arrayminus': [result['or'] - or_lower]
                     },
                     'name': f"分层 {result['stratum']}"
                 })
@@ -388,8 +363,8 @@ class MantelHaenszelTest:
                 'error_x': {
                     'type': 'data',
                     'symmetric': False,
-                    'array': [pooled_or - pooled_ci[0]],
-                    'arrayminus': [pooled_ci[1] - pooled_or]
+                    'array': [pooled_ci[1] - pooled_or],
+                    'arrayminus': [pooled_or - pooled_ci[0]]
                 },
                 'name': 'MH汇总OR'
             })
@@ -399,7 +374,7 @@ class MantelHaenszelTest:
             'xaxis': {
                 'title': '比值比 (OR)',
                 'type': 'log',
-                'range': [np.log10(0.1), np.log10(10)],
+                'autorange': True,
                 'zeroline': False
             },
             'yaxis': {'title': '分层'},

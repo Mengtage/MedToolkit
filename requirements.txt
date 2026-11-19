@@ -1,4 +1,5 @@
 pandas
-scipy
+scipy>=1.15
 scikit-learn
 httpx
+statsmodels>=0.14

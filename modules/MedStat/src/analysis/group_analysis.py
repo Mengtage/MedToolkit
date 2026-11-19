@@ -97,8 +97,12 @@ class GroupAnalyzer:
         """
         results = {'variable': var, 'type': 'categorical', 'groups': {}}
         
-        crosstab = pd.crosstab(self.df[self.group_var], self.df[var])
-        crosstab_pct = pd.crosstab(self.df[self.group_var], self.df[var], normalize='index') * 100
+        crosstab = pd.crosstab(self.df[self.group_var], self.df[var]).reindex(self.groups, fill_value=0)
+        valid_counts = crosstab.sum(axis=1)
+        crosstab_pct = crosstab.div(valid_counts.replace(0, np.nan), axis=0) * 100
+        results['missing'] = {str(g): int(self.df.loc[self.df[self.group_var] == g, var].isna().sum()) for g in self.groups}
+        results['valid_counts'] = {str(g): int(valid_counts.loc[g]) for g in self.groups}
+        results['percentage_denominator'] = 'nonmissing_within_group'
         
         for g in self.groups:
             g_str = str(g)
@@ -106,7 +110,7 @@ class GroupAnalyzer:
             for level in crosstab.columns:
                 results['groups'][g_str][str(level)] = {
                     'n': int(crosstab.loc[g, level]),
-                    'percent': round(float(crosstab_pct.loc[g, level]), 1)
+                    'percent': round(float(crosstab_pct.loc[g, level]), 1) if valid_counts.loc[g] else None
                 }
         
         try:

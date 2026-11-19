@@ -15,6 +15,6 @@ test_statistics_known_result (test_core.CoreTest.test_statistics_known_result) .
 test_auth_and_private_response (test_http.HttpTest.test_auth_and_private_response) ... ok
 
 ----------------------------------------------------------------------
-Ran 15 tests in 0.694s
+Ran 15 tests in 0.691s
 
 OK

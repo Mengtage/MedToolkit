@@ -2,8 +2,17 @@
   "commit": "0f504790771781826053002bc3cbb253e908bd10",
   "changed_files": [
     "MedPaperHunter/docs/AI_FEATURE_GUIDE.md",
+    "MedStat/app.py",
     "MedStat/medstats_automate/python/medstats_main.py",
-    "MedStat/medstats_automate/python/run_analysis.py"
+    "MedStat/medstats_automate/python/run_analysis.py",
+    "MedStat/src/analysis/categorical_tests.py",
+    "MedStat/src/analysis/correlation.py",
+    "MedStat/src/analysis/group_analysis.py",
+    "MedStat/src/analysis/mice_imputation.py",
+    "MedStat/src/analysis/model_evaluation.py",
+    "MedStat/src/analysis/quality_control.py",
+    "MedStat/src/analysis/regression.py",
+    "MedStat/src/analysis/tableone.py"
   ],
   "missing_files": [],
   "upstream_modified": false

@@ -1,0 +1,52 @@
+[
+  {
+    "case": "OLS independent least-squares",
+    "status": "PASS",
+    "detail": "{'Intercept': 2.000000000000007, 'x': 2.9999999999999982}"
+  },
+  {
+    "case": "Logit analytic two-stratum MLE",
+    "status": "PASS",
+    "detail": "{'Intercept': -1.0986122886681098, 'x': 2.1972245773362196}"
+  },
+  {
+    "case": "OLS missing-row count",
+    "status": "PASS",
+    "detail": "n_obs=5"
+  },
+  {
+    "case": "Logit invalid outcomes",
+    "status": "PASS",
+    "detail": "invalid binary outcome rejected"
+  },
+  {
+    "case": "Confusion matrix arithmetic",
+    "status": "PASS",
+    "detail": "{'TP': 1, 'TN': 1, 'FP': 1, 'FN': 1, 'matrix': [[1, 1], [1, 1]]}"
+  },
+  {
+    "case": "AUC pairwise known 0.75",
+    "status": "PASS",
+    "detail": "0.75"
+  },
+  {
+    "case": "Constant probability threshold",
+    "status": "FAIL",
+    "detail": "AssertionError: {'TP': 0, 'TN': 2, 'FP': 0, 'FN': 2, 'matrix': [[2, 0], [2, 0]]}"
+  },
+  {
+    "case": "Calibration boundary count",
+    "status": "FAIL",
+    "detail": "AssertionError: [{'bin': 1, 'mean_predicted': 0.1, 'mean_observed': 0.0, 'n': 2}, {'bin': 2, 'mean_predicted': 0.8, 'mean_observed': 1.0, 'n': 1}]"
+  },
+  {
+    "case": "ROC strict JSON constant scores",
+    "status": "FAIL",
+    "detail": "ValueError: Out of range float values are not JSON compliant: inf"
+  },
+  {
+    "case": "FormulaParser categorical",
+    "status": "FAIL",
+    "detail": "KeyError: \"None of [Index(['g_b'], dtype='str')] are in the [columns]\""
+  }
+]

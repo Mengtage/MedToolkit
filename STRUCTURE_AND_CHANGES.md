@@ -22,7 +22,7 @@ medtoolkit-workbench/
 │   ├── server.py             单所有者本地HTTP接口与访问令牌检查
 │   └── __main__.py           命令行入口
 ├── web/                      竖屏页面、检索、合成数据统计及RIS导出
-├── tests/                    15项回归测试
+├── tests/                    15项基础回归及58项统计验收
 ├── examples/                 合成统计输入与未授权写作模板
 ├── source-version.json       源码提交版本
 ├── source-diff.json          原模块逐文件差异清单
@@ -34,13 +34,9 @@ medtoolkit-workbench/
 
 ## 对原模块的改动
 
-原模块162个文件完整收录，159个内容与源提交一致。3个文件仅有说明或项目署名调整：
+原模块162个文件完整收录；与上游提交相比，12个文件有本地修改，详见source-diff.json。包括统计修复涉及的8个分析模块及MedStat/app.py，以及此前的3项说明或项目署名调整。
 
-- MedPaperHunter/docs/AI_FEATURE_GUIDE.md
-- MedStat/medstats_automate/python/medstats_main.py
-- MedStat/medstats_automate/python/run_analysis.py
-
-没有修改旧版统计公式、插补算法、去重和筛选逻辑。旧应用仍保留原有配置与历史文档，不能将其当作经过安全加固的公网服务直接启动。
+本版已修复MH、分类检验、TableOne、预测评估、缺失统计和插补合并等问题。旧失败证据见reports/baseline，当前验收报告见reports/ACCEPTANCE_SUMMARY.md。原始去重、筛选策略没有改变。旧WebApp尚未完成生产安全验收，不应直接开放公网。
 
 ## 新增整合代码
 
@@ -54,6 +50,6 @@ medtoolkit-workbench/
 
 ## 验证结果与限制
 
-15项回归测试通过，覆盖鉴权、路径隔离、输入未落盘、重试幂等、中断恢复、引用标识、RIS字段换行以及已知合成相关性结果。真实查询“anesthesia AND postoperative pain”命中43256条，本轮仅获取3条并标记不完整，成功导出RIS。合成统计r=1、n=4，没有Gemini调用。
+15项基础回归及58项统计检查通过；基础测试覆盖鉴权、路径隔离、输入未落盘、重试幂等、中断恢复、引用标识、RIS字段换行以及已知合成相关性结果。真实查询“anesthesia AND postoperative pain”命中43256条，本轮仅获取3条并标记不完整，成功导出RIS。合成统计r=1、n=4，没有Gemini调用。
 
 当前版本提供可运行的非LLM基础链路，尚未完成全部统计方法迁移、临床方法学验证、自动全文提取、完整写作agent或生产安全验收。真实患者数据、自动画像/记忆、付费检索、对外投稿均未接入。Gemini按当前安排留空。

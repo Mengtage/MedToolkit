@@ -284,7 +284,10 @@ def missing_analysis():
         if df is None:
             return jsonify({'error': '数据加载失败'}), 400
 
-        analyzer = MissingDataAnalyzer(df)
+        request_data = request.get_json(silent=True) or {}
+        policy = request_data.get('missing_codes', load_result(session_id, 'missing_policy') or {})
+        analyzer = MissingDataAnalyzer(df, missing_codes=policy)
+        save_result(session_id, 'missing_policy', policy)
         raw_results = analyzer.analyze()
 
         # 计算总体缺失率
@@ -303,7 +306,7 @@ def missing_analysis():
             })
 
         # 生成热力图数据
-        missing_matrix = df.isnull().astype(int)
+        missing_matrix = analyzer.get_missing_matrix()
         heatmap_data = {
             'data': [{
                 'z': missing_matrix.values.tolist(),
@@ -357,6 +360,8 @@ def missing_analysis():
             'results': results
         })
     
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
@@ -606,46 +611,38 @@ def distribution_diagnostics():
 @app.route('/api/mice-impute', methods=['POST'])
 def mice_impute():
     """MICE多重插补"""
-    print("\n" + "="*60)
-    print("【MICE插补API】收到请求")
-    print("="*60)
     try:
         session_id = session.get('id')
-        print(f"Session ID: {session_id}")
         
         if not session_id:
-            print("错误：没有上传数据")
             return jsonify({'error': '没有上传数据'}), 400
 
         df, var_types = load_data(session_id)
-        print(f"数据加载: df={df is not None}, var_types={var_types is not None}")
         
         if df is None or var_types is None:
-            print("错误：数据加载失败")
             return jsonify({'error': '数据加载失败'}), 400
 
         # 修复：处理Content-Type不正确的情况
-        request_data = request.json if request.json else {}
-        print(f"请求数据: {request_data}")
+        request_data = request.get_json(silent=True) or {}
         
         n_imputations = request_data.get('n_imputations', 5)
         max_iter = request_data.get('max_iter', 10)
         strategy = request_data.get('strategy', 'bayesian_ridge')
 
-        print(f"参数: n_imputations={n_imputations}, max_iter={max_iter}, strategy={strategy}")
         
+        policy = request_data.get('missing_codes', load_result(session_id, 'missing_policy') or {})
+        df = MissingDataAnalyzer(df, missing_codes=policy).normalized_data()
         imputer = MICEImputer(df, var_types, n_imputations=n_imputations,
                              max_iter=max_iter, strategy=strategy)
         imputed_datasets = imputer.impute()
+        save_result(session_id, 'missing_policy', policy)
         comparison = imputer.get_comparison()
         
-        print(f"插补完成: comparison={comparison is not None}")
 
         # 计算插补前后缺失数量
         before_missing = int(df.isnull().sum().sum())
         after_missing = int(imputed_datasets[0].isnull().sum().sum())
         
-        print(f"缺失值统计: before={before_missing}, after={after_missing}")
 
         # 保存插补数据集
         session_dir = get_session_dir(session_id)
@@ -667,29 +664,8 @@ def mice_impute():
                     'imputed_values_mean': row_data.get('imputed_values_mean')
                 })
 
-        # Rubin规则统计 (简化版)
-        rubin_stats = []
-        if comparison is not None:
-            for var, row_data in comparison.items():
-                n = len(df)
-                m = n_imputations
-                # 简化计算
-                q_bar = row_data.get('imputed_mean', 0)
-                u_bar = (row_data.get('imputed_std', 0) ** 2) / n
-                b = ((row_data.get('imputed_std', 0) - row_data.get('original_std', 0)) ** 2) / m if m > 1 else 0
-                t = u_bar + (1 + 1/m) * b
-                fmi = (b / (u_bar + b)) if (u_bar + b) > 0 else 0
-                riv = b / u_bar if u_bar > 0 else 0
-
-                rubin_stats.append({
-                    'variable': var,
-                    'q_bar': q_bar,
-                    'u_bar': u_bar,
-                    'b': b,
-                    't': t,
-                    'fmi': fmi,
-                    'riv': riv
-                })
+        # Pool actual per-dataset estimates and variances via the shared implementation.
+        rubin_stats = imputer.pooled_means()
 
         # 生成均值比较图表
         mean_comparison_chart = {}
@@ -751,6 +727,7 @@ def mice_impute():
             'before_missing': before_missing,
             'after_missing': after_missing,
             'm': len(imputed_datasets),
+            'inference_status': 'multiple_imputation' if len(imputed_datasets) > 1 else 'single_completed_dataset_no_mi_inference',
             'comparison': comp_data,
             'rubin_stats': rubin_stats,
             'mean_comparison_chart': mean_comparison_chart,
@@ -759,15 +736,15 @@ def mice_impute():
         }
 
         save_result(session_id, 'mice_results', result_data)
-        print("MICE插补完成，返回成功")
         
         return jsonify({
             'success': True,
             **result_data
         })
     
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
-        print(f"MICE插补错误异常: {type(e).__name__}: {str(e)}")
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 

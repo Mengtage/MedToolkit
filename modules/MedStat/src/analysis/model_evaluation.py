@@ -41,26 +41,33 @@ class ModelEvaluator:
         threshold : float, optional
             默认分类阈值（默认0.5）
         """
-        self.y_true = np.array(y_true)
-        self.y_scores = np.array(y_scores)
-        self.threshold = threshold
-        
-        # 自动检测输入类型：概率值还是分类结果
-        unique_values = np.unique(self.y_scores)
-        self.is_probability = len(unique_values) > 2 or (
-            len(unique_values) == 2 and 
-            not np.all(np.isin(unique_values, [0, 1]))
-        )
-        
-        if self.is_probability:
-            # 输入是概率值
-            self.y_probs = np.array(y_probs) if y_probs is not None else self.y_scores
-            self.y_pred = (self.y_scores >= threshold).astype(int)
-        else:
-            # 输入是分类结果（0/1）
-            self.y_probs = None
-            self.y_pred = self.y_scores.astype(int)
-        
+        self.y_true = np.asarray(y_true, dtype=float)
+        self.y_scores = np.asarray(y_scores, dtype=float)
+        self.threshold = float(threshold)
+        if (self.y_true.ndim != 1 or self.y_scores.ndim != 1 or
+                len(self.y_true) == 0 or len(self.y_true) != len(self.y_scores)):
+            raise ValueError('真实标签与预测分数必须是等长非空一维数组')
+        if (not np.all(np.isfinite(self.y_true)) or
+                not np.all(np.isin(self.y_true, [0, 1])) or
+                not np.all(np.isfinite(self.y_scores)) or not np.isfinite(self.threshold)):
+            raise ValueError('需要有限预测分数、有限阈值及二元0/1标签')
+        self.y_true = self.y_true.astype(int)
+        # Only actual 0/1 values are class labels; one unique fractional value
+        # is still a probability/score and must be thresholded.
+        self.is_probability = not np.all(np.isin(self.y_scores, [0, 1]))
+        self.y_probs = None
+        if y_probs is not None:
+            self.y_probs = np.asarray(y_probs, dtype=float)
+            if (self.y_probs.ndim != 1 or len(self.y_probs) != len(self.y_true) or
+                    not np.all(np.isfinite(self.y_probs)) or
+                    np.any((self.y_probs < 0) | (self.y_probs > 1))):
+                raise ValueError('预测概率必须与标签等长且处于[0,1]')
+            self.is_probability = True
+        elif self.is_probability:
+            self.y_probs = self.y_scores
+        self.y_pred = ((self.y_scores >= self.threshold).astype(int)
+                       if self.is_probability else self.y_scores.astype(int))
+
     def calculate_confusion_matrix(self):
         """
         计算混淆矩阵
@@ -70,13 +77,7 @@ class ModelEvaluator:
         dict
             包含TP, TN, FP, FN
         """
-        cm = confusion_matrix(self.y_true, self.y_pred)
-        if cm.shape[0] == 1:
-            if self.y_true[0] == 0:
-                return {'TP': 0, 'TN': cm[0, 0], 'FP': 0, 'FN': 0}
-            else:
-                return {'TP': cm[0, 0], 'TN': 0, 'FP': 0, 'FN': 0}
-        
+        cm = confusion_matrix(self.y_true, self.y_pred, labels=[0, 1])
         TN, FP, FN, TP = cm.ravel()
         return {
             'TP': int(TP),
@@ -145,12 +146,17 @@ class ModelEvaluator:
         # 如果输入是分类结果，自动转换为伪概率值
         probs = self.y_probs if self.is_probability else self.y_scores.astype(float)
         
+        if len(np.unique(self.y_true)) != 2:
+            raise ValueError('ROC需要两类真实结局')
         fpr, tpr, thresholds = roc_curve(self.y_true, probs)
         roc_auc = auc(fpr, tpr)
         
         # 计算最佳截断点（使用Youden指数）
         youden_indices = tpr - fpr
-        optimal_idx = np.argmax(youden_indices)
+        finite_indices = np.flatnonzero(np.isfinite(thresholds))
+        if len(finite_indices) == 0:
+            raise ValueError('ROC没有有限的可用阈值')
+        optimal_idx = finite_indices[np.argmax(youden_indices[finite_indices])]
         optimal_threshold = thresholds[optimal_idx]
         
         # 修复：将inf值替换为None，避免JSON序列化失败
@@ -186,6 +192,11 @@ class ModelEvaluator:
         # 如果输入是分类结果，自动转换为伪概率值
         probs = self.y_probs if self.is_probability else self.y_scores.astype(float)
         
+        if type(n_bins) is not int or n_bins < 1:
+            raise ValueError('分箱数量必须是正整数')
+        if np.any((probs < 0) | (probs > 1)):
+            raise ValueError('校准分析需要[0,1]概率，不能使用未校准的分数')
+
         # Brier分数
         brier_score = np.mean((probs - self.y_true) ** 2)
         
@@ -195,7 +206,7 @@ class ModelEvaluator:
         
         # 按预测概率分箱
         bins = np.linspace(0, 1, n_bins + 1)
-        bin_indices = np.digitize(probs, bins) - 1
+        bin_indices = np.minimum(np.digitize(probs, bins) - 1, n_bins - 1)
         
         calib_data = []
         hl_expected = []

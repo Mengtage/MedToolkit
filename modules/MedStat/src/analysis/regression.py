@@ -53,40 +53,68 @@ class FormulaParser:
         if y_var not in df.columns:
             raise ValueError(f"结果变量 '{y_var}' 不在数据中")
 
-        X_vars = []
+        # This helper returns a predictor matrix without an intercept.
+        # Build derived columns explicitly rather than looking them up in df.
+        columns = {}
+
+        def numeric(name):
+            if name not in df.columns:
+                raise ValueError(f"变量 '{name}' 不在数据中")
+            values = pd.to_numeric(df[name], errors='raise').to_numpy(dtype=float)
+            if not np.all(np.isfinite(values)):
+                raise ValueError('简化公式解析器要求完整有限数值；须先明确缺失处理规则')
+            return values
+
+        def add(name, values):
+            if name not in columns:
+                columns[name] = np.asarray(values, dtype=float)
+
         for term in x_part.split('+'):
             term = term.strip()
             if not term:
-                continue
-
-            if term.startswith('C(') and term.endswith(')'):
-                var_name = term[2:-1]
-                if var_name not in df.columns:
-                    raise ValueError(f"变量 '{var_name}' 不在数据中")
-                dummies = pd.get_dummies(df[var_name], prefix=var_name, drop_first=True)
+                raise ValueError('公式包含空项')
+            category = re.fullmatch(r'C\(([^()]+)\)', term)
+            power = re.fullmatch(r'I\(([^()]+?)\s*\*\*\s*(\d+)\)', term)
+            if category:
+                name = category.group(1).strip()
+                if name not in df.columns:
+                    raise ValueError(f"变量 '{name}' 不在数据中")
+                if df[name].isna().any():
+                    raise ValueError('分类变量含缺失值，须先明确缺失处理规则')
+                dummies = pd.get_dummies(df[name], prefix=name, drop_first=True, dtype=float)
                 for col in dummies.columns:
-                    X_vars.append(col)
-            elif '*' in term:
-                interaction_terms = [t.strip() for t in term.split('*')]
-                if len(interaction_terms) == 2:
-                    var1, var2 = interaction_terms
-                    if var1 in df.columns and var2 in df.columns:
-                        interaction = df[var1] * df[var2]
-                        X_vars.append(f"{var1}:{var2}")
+                    if col in df.columns:
+                        raise ValueError('分类编码列名与原始变量冲突')
+                    add(col, dummies[col])
+            elif power:
+                name, exponent = power.group(1).strip(), int(power.group(2))
+                if exponent > 10:
+                    raise ValueError('简化解析器仅支持0至10的整数幂')
+                with np.errstate(over='ignore', invalid='ignore'):
+                    values = numeric(name) ** exponent
+                if not np.all(np.isfinite(values)):
+                    raise ValueError('幂运算得到非有限数值')
+                add(f'{name}**{exponent}', values)
+            elif '*' in term or ':' in term:
+                separator = '*' if '*' in term else ':'
+                parts = [v.strip() for v in term.split(separator)]
+                if len(parts) != 2 or any(not v for v in parts):
+                    raise ValueError('简化解析器仅支持两个原始数值变量的交互')
+                left, right = parts
+                a, b = numeric(left), numeric(right)
+                if separator == '*':
+                    add(left, a)
+                    add(right, b)
+                product = a * b
+                if not np.all(np.isfinite(product)):
+                    raise ValueError('交互项得到非有限数值')
+                add(f'{left}:{right}', product)
             else:
-                if term.startswith('I(') and term.endswith(')'):
-                    term = term[2:-1]
-                    if '**' in term:
-                        base, exp = term.split('**')
-                        X_vars.append(f"{base}_squared")
-                    continue
-                if term not in df.columns:
-                    raise ValueError(f"变量 '{term}' 不在数据中")
-                X_vars.append(term)
+                add(term, numeric(term))
 
-        y = df[y_var].values
-        X = df[X_vars].values
-
+        y = numeric(y_var)
+        X_vars = list(columns)
+        X = np.column_stack(list(columns.values())) if columns else np.empty((len(df), 0))
         return y, X, X_vars
 
     @staticmethod

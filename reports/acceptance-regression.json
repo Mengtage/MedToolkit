@@ -31,22 +31,42 @@
   },
   {
     "case": "Constant probability threshold",
-    "status": "FAIL",
-    "detail": "AssertionError: {'TP': 0, 'TN': 2, 'FP': 0, 'FN': 2, 'matrix': [[2, 0], [2, 0]]}"
+    "status": "PASS",
+    "detail": "{'TP': 2, 'TN': 0, 'FP': 2, 'FN': 0, 'matrix': [[0, 2], [0, 2]]}"
   },
   {
     "case": "Calibration boundary count",
-    "status": "FAIL",
-    "detail": "AssertionError: [{'bin': 1, 'mean_predicted': 0.1, 'mean_observed': 0.0, 'n': 2}, {'bin': 2, 'mean_predicted': 0.8, 'mean_observed': 1.0, 'n': 1}]"
+    "status": "PASS",
+    "detail": "all observations retained"
   },
   {
     "case": "ROC strict JSON constant scores",
-    "status": "FAIL",
-    "detail": "ValueError: Out of range float values are not JSON compliant: inf"
+    "status": "PASS",
+    "detail": "strict JSON"
   },
   {
     "case": "FormulaParser categorical",
-    "status": "FAIL",
-    "detail": "KeyError: \"None of [Index(['g_b'], dtype='str')] are in the [columns]\""
+    "status": "PASS",
+    "detail": "['g_b']"
+  },
+  {
+    "case": "FormulaParser derived matrix",
+    "status": "PASS",
+    "detail": "['x', 'z', 'x:z', 'x**2']"
+  },
+  {
+    "case": "Input rejects invalid scores",
+    "status": "PASS",
+    "detail": "length/nonfinite rejected"
+  },
+  {
+    "case": "Single-class ROC explicit rejection",
+    "status": "PASS",
+    "detail": "single-class ROC rejected"
+  },
+  {
+    "case": "Calibration endpoint probabilities",
+    "status": "PASS",
+    "detail": "[{'bin': 1, 'mean_predicted': 0.0, 'mean_observed': 0.0, 'n': 1}, {'bin': 2, 'mean_predicted': 1.0, 'mean_observed': 1.0, 'n': 1}]"
   }
 ]

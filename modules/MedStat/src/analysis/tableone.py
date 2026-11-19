@@ -113,7 +113,7 @@ class TableOne:
                     is_normal = self.normality_results.get(var, {}).get('is_normal', False)
                     
                     if is_normal:
-                        display = f"{np.mean(vals):.2f} ({np.std(vals):.2f})"
+                        display = f"{np.mean(vals):.2f} ({format(np.std(vals, ddof=1), '.2f') if len(vals)>1 else '不可估计'})"
                     else:
                         display = f"{np.median(vals):.2f} [{np.percentile(vals, 25):.2f}, {np.percentile(vals, 75):.2f}]"
                     
@@ -123,7 +123,7 @@ class TableOne:
                         'type': 'numeric',
                         'n': len(vals),
                         'mean': float(np.mean(vals)),
-                        'sd': float(np.std(vals)),
+                        'sd': float(np.std(vals, ddof=1)) if len(vals) > 1 else None,
                         'median': float(np.median(vals)),
                         'q25': float(np.percentile(vals, 25)),
                         'q75': float(np.percentile(vals, 75)),
@@ -135,7 +135,7 @@ class TableOne:
                 is_normal = self.normality_results.get(var, {}).get('is_normal', False)
                 
                 if is_normal:
-                    display = f"{np.mean(vals):.2f} ({np.std(vals):.2f})"
+                    display = f"{np.mean(vals):.2f} ({format(np.std(vals, ddof=1), '.2f') if len(vals)>1 else '不可估计'})"
                 else:
                     display = f"{np.median(vals):.2f} [{np.percentile(vals, 25):.2f}, {np.percentile(vals, 75):.2f}]"
                 
@@ -145,7 +145,7 @@ class TableOne:
                     'type': 'numeric',
                     'n': len(vals),
                     'mean': float(np.mean(vals)),
-                    'sd': float(np.std(vals)),
+                    'sd': float(np.std(vals, ddof=1)) if len(vals) > 1 else None,
                     'median': float(np.median(vals)),
                     'q25': float(np.percentile(vals, 25)),
                     'q75': float(np.percentile(vals, 75)),
@@ -159,42 +159,25 @@ class TableOne:
         处理分类变量
         """
         results = []
-        
         if self.strata and self.strata in self.df.columns:
-            crosstab = pd.crosstab(self.df[self.strata], self.df[var])
-            crosstab_pct = pd.crosstab(self.df[self.strata], self.df[var], normalize='index') * 100
-            
-            for group_name in crosstab.index:
-                for level in crosstab.columns:
-                    n = int(crosstab.loc[group_name, level])
-                    pct = round(float(crosstab_pct.loc[group_name, level]), 1)
-                    display = f"{n} ({pct}%)"
-                    
-                    results.append({
-                        'variable': var,
-                        'level': str(level),
-                        'group': str(group_name),
-                        'type': 'categorical',
-                        'n': n,
-                        'percent': pct,
-                        'display': display
-                    })
+            groups = [(str(g), self.df.loc[self.df[self.strata] == g, var])
+                      for g in self.df[self.strata].dropna().unique()]
         else:
-            counts = self.df[var].value_counts()
-            for level, count in counts.items():
-                pct = round(count / len(self.df) * 100, 1)
-                display = f"{count} ({pct}%)"
-                
-                results.append({
-                    'variable': var,
-                    'level': str(level),
-                    'group': 'Overall',
-                    'type': 'categorical',
-                    'n': int(count),
-                    'percent': pct,
-                    'display': display
-                })
-        
+            groups = [('Overall', self.df[var])]
+        levels = self.df[var].dropna().unique()
+        for group_name, values in groups:
+            valid = values.dropna()
+            denominator = len(valid)
+            missing = int(values.isna().sum())
+            counts = valid.value_counts()
+            for level in levels:
+                n = int(counts.get(level, 0))
+                pct = round(n / denominator * 100, 1) if denominator else None
+                results.append({'variable': var, 'level': str(level), 'group': group_name,
+                    'type': 'categorical', 'n': n, 'percent': pct,
+                    'n_valid': denominator, 'n_missing': missing,
+                    'percentage_denominator': 'nonmissing_within_group',
+                    'display': f"{n} ({pct}%)" if pct is not None else '0 (不可估计)'})
         return results
     
     def _calculate_pvalues(self):

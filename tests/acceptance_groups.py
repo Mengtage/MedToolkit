@@ -84,9 +84,26 @@ def fisher():
 check('2×2 Fisher精确P值','独立超几何组合枚举',fisher)
 def montecarlo():
     obs=np.array([[1,0,1],[0,1,1],[1,1,0]]);r=Cat.CategoricalTestSelector.select_test(obs)
-    # Branch called Fisher/Monte Carlo must not merely return uncorrected Pearson approximation.
-    return 'Monte Carlo' not in r['method'],r,{'not_acceptable':'Fisher/Monte Carlo标签实际调用chi2_contingency；此处不提供Fisher基准值'}
-check('稀疏RxC方法名称与执行一致','静态调用核对 + 数值返回，不宣称精确P值独立基准',montecarlo)
+    # Independently enumerate every 3x3 table with margins (2,2,2).
+    coefficient=math.factorial(2)**6/math.factorial(6)
+    masses=[]
+    for a in range(3):
+      for b in range(3):
+       for d in range(3):
+        for e in range(3):
+         c=2-a-b;f=2-d-e;g=2-a-d;h=2-b-e;i=2-g-h
+         cells=[a,b,c,d,e,f,g,h,i]
+         if min(cells)>=0 and c+f+i==2:
+          masses.append(coefficient/math.prod(math.factorial(v) for v in cells))
+    observed_mass=coefficient
+    exact=sum(v for v in masses if v<=observed_mass+1e-15)
+    tolerance=max(.001,6*math.sqrt(exact*(1-exact)/r.get('n_resamples',1)))
+    repeat=Cat.CategoricalTestSelector.select_test(obs)
+    passed=('Monte Carlo' in r['method'] and r['statistic_name']=='条件表概率'
+            and abs(r['p_value']-exact)<=tolerance and repeat['p_value']==r['p_value']
+            and close(sum(masses),1))
+    return passed,r,{'enumerated_exact_p':exact,'six_standard_error_tolerance':tolerance,'total_table_probability':sum(masses)}
+check('稀疏RxC方法名称与执行一致','独立枚举固定边际全部3×3表；模拟P值按六标准误容差对照',montecarlo)
 def df_strata(tables):
     rows=[]
     for k,table in enumerate(tables):
@@ -122,6 +139,30 @@ def denominator():
     op=float(overall[overall.level=='yes'].iloc[0].percent);gp=float(grouped[grouped.level=='yes'].iloc[0].percent)
     return op==gp,{'unstratified_yes_pct':op,'single_group_yes_pct':gp},'同一份数据仅增加单一分层，不应静默切换分母；两种口径须显式说明'
 check('TableOne分类百分比分母一致性','单层/无分层不变性',denominator)
+def mh_nonnull():
+    tables=[np.array([[12,8],[5,15]]),np.array([[9,11],[3,17]])]
+    score=variance=0
+    for t in tables:
+        a,b,c,d=t.ravel();n=t.sum();score+=a-(a+b)*(a+c)/n
+        variance+=(a+b)*(c+d)*(a+c)*(b+d)/(n*n*(n-1))
+    r=Cat.MantelHaenszelTest.test(df_strata(tables),'g','y','s')
+    return close(r['mh_statistic'],score*score/variance),r['mh_statistic'],score*score/variance
+check('MH非零条件得分','独立分层超几何均值与方差公式',mh_nonnull)
+def mh_unit_common():
+    r=Cat.MantelHaenszelTest.test(df_strata([[[9,81],[1,9]],[[9,1],[81,9]]]),'g','y','s')
+    return close(r['homogeneity_statistic'],0) and close(r['homogeneity_p'],1),r['homogeneity_p'],1
+check('共同OR为1的同质性边界','OR=1的Breslow-Day二次方程退化线性极限',mh_unit_common)
+def invalid_table():
+    try:Cat.CategoricalTestSelector.select_test(np.array([[1.5,2],[3,4]]))
+    except ValueError:return True,'拒绝非整数频数','拒绝'
+    return False,'接受','拒绝'
+check('列联表频数输入验证','非整数不能作为独立计数表',invalid_table)
+def stratum_ci():
+    result=Cat.MantelHaenszelTest.test(df_strata([[[20,10],[10,20]]]),'g','y','s')
+    layer=result['strata'][0];expected=[4*math.exp(-1.959963984540054*math.sqrt(.3)),4*math.exp(1.959963984540054*math.sqrt(.3))]
+    fig=Cat.MantelHaenszelTest.generate_forest_plot_data(result['strata'],result['pooled_or'],result['pooled_or_ci'])
+    return all(close(a,b) for a,b in zip(layer['or_ci'],expected)) and close(fig['data'][0]['error_x']['array'][0],expected[1]-4),layer['or_ci'],expected
+check('分层森林图采用估计区间','独立Woolf log-OR标准误；不使用固定倍数',stratum_ci)
 def plain(value):
     if isinstance(value,np.generic):return plain(value.item())
     if isinstance(value,float) and not math.isfinite(value):return str(value)
@@ -132,12 +173,22 @@ results=plain(results)
 summary={x:sum(r['status']==x for r in results) for x in ['PASS','FAIL','BLOCKED']}
 (ROOT/'reports').mkdir(exist_ok=True)
 (ROOT/'reports/acceptance-groups.json').write_text(json.dumps({'scope':'correlation,group_analysis,categorical_tests,tableone','summary':summary,'results':results},ensure_ascii=False,indent=2,allow_nan=True))
-lines=['# 相关性、组间比较、分类检验与TableOne验收','',f"固定合成数据共 {len(results)} 项：PASS {summary['PASS']}，FAIL {summary['FAIL']}，BLOCKED {summary['BLOCKED']}。未修改原模块；所有发现待决定后修复。",'', '独立性说明：相关系数、Welch统计量、ANOVA、Cohen d、2×2 Fisher采用直接公式/组合枚举；MH使用条件独立与同质性构造反例。未把调用同一SciPy函数视为独立验证。未做临床数据验证；PASS只覆盖所列样例。','', '| 检查 | 结果 | 基准/判据 |','|---|---|---|']
+lines=['# 相关性、组间比较、分类检验与TableOne验收','',f"固定合成数据共 {len(results)} 项：PASS {summary['PASS']}，FAIL {summary['FAIL']}，BLOCKED {summary['BLOCKED']}。本轮按用户授权修复原模块；原有19项反例保留并增加4项边界/数值验证。",'', '独立性说明：相关系数、Welch统计量、ANOVA、Cohen d、2×2 Fisher采用直接公式/组合枚举；MH使用条件独立与同质性构造反例。未把调用同一SciPy函数视为独立验证。未做临床数据验证；PASS只覆盖所列样例。','', '| 检查 | 结果 | 基准/判据 |','|---|---|---|']
 for r in results:lines.append(f"| {r['case']} | {r['status']} | {r['basis']} |")
 lines+=['','## 未通过项具体证据','']
 for r in results:
     if r['status']=='FAIL':lines += ['### '+r['case'],'','预期：'+str(r['expected']),'','实际：```'+json.dumps(r['observed'],ensure_ascii=False)+'```','']
-lines+=['## 判断与待确认项','','- 正常有限输入下基础Pearson/Spearman、Welch统计量、Mann–Whitney小样本、Cohen d、ANOVA及2×2 Fisher所列样例通过。不能由此推出全部统计模块验收通过。','- 分类RxC“Fisher/Monte Carlo”分支实际返回Pearson近似P值，方法标签与执行不符，应阻止作为精确检验报告。','- MH检验使用合并总频数而非分层条件得分；同质性检验以OR=1独立性期望代替共同OR期望；区间对层方差直接求和，更多独立层反而变宽；森林图误差方向颠倒且单层区间被固定设为OR×0.5/2。','- TableOne的SD采用总体分母，与同项目GroupAnalyzer的样本SD不一致；分类缺失值分母无分层/分层不一致。','- GroupAnalyzer数值两组同时返回Welch和Mann–Whitney，TableOne依总体正态性结果自动选检验且t检验默认等方差。这些是方法选择与分析计划兼容性事项，尚不自动更改。','- TableOne缺少完整效应量/置信区间及显式缺失汇总；这些为验收范围外的缺项，不应称为已满足完整科研报告要求。','','执行：`.venv/bin/python tests/acceptance_groups.py`。JSON记录包含全部输入构造对应的实际返回值；失败案例不会被计作通过。']
+lines+=['## 实现与适用边界','',
+'- 常量相关返回不可估计；未知方法拒绝。分类变量全缺失组保留有效/缺失数及不可估计百分比，不制造零百分比。',
+'- RxC稀疏表实际调用SciPy条件Monte Carlo，19999次、固定种子，统计量是条件表概率；用独立全枚举小表检验P值偏差。',
+'- MH条件得分和Robins–Breslow–Greenland区间采用statsmodels StratifiedTable；Breslow-Day期望使用稳定二次式，单层不输出同质性P值。零边际、无效二分类和边界OR明确拒绝。',
+'- 森林图使用实际层区间，纠正上下误差方向；TableOne改用样本SD，分类百分比分母统一为组内非缺失样本并返回分母/缺失数。',
+'- GroupAnalyzer仍同时返回Welch和Mann–Whitney；TableOne仍依原有方法选择逻辑。方法选择须按预先分析计划，当前并非全部方法学认证。',
+'- 当前固定样例通过不等于全部参数范围、CI覆盖率、临床输入或所有边界均已验证。',
+'', '## 方法依据','',
+'- [statsmodels StratifiedTable](https://www.statsmodels.org/stable/generated/statsmodels.stats.contingency_tables.StratifiedTable.html)：CMH、Breslow-Day与Robins/Breslow/Greenland方差；本机0.15.0源码已对照。',
+'- [SciPy fisher_exact](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.fisher_exact.html)：RxC固定边际表概率及MonteCarloMethod；需SciPy>=1.15。',
+'', '执行：`.venv/bin/python tests/acceptance_groups.py`。输入仅合成数据，无LLM调用。']
 lines += ['', '存在FAIL或BLOCKED时脚本以退出码1结束；生成报告不等同于验收通过。']
 (ROOT/'reports/acceptance-groups.md').write_text('\n'.join(lines)+'\n')
 print(json.dumps(summary));print('reports/acceptance-groups.md')

@@ -1,251 +1,163 @@
-"""
-MICE多重插补模块
-实现完整的多重插补和Rubin规则合并
-"""
+"""Continuous numeric iterative imputation and scalar Rubin pooling.
 
-import pandas as pd
+Missing categorical/count outcomes are rejected: encoding categories as numbers
+and rounding a Gaussian regression is not a validated categorical MI model.
+"""
 import numpy as np
+import pandas as pd
 from scipy import stats
-from sklearn.experimental import enable_iterative_imputer
+from sklearn.experimental import enable_iterative_imputer  # noqa: F401
 from sklearn.impute import IterativeImputer
 from sklearn.linear_model import BayesianRidge, LinearRegression, Ridge
-from sklearn.preprocessing import LabelEncoder
-import warnings
 
 
 class MICEImputer:
-    """
-    MICE多重插补器
-    
-    参考文献：
-    - van Buuren, S. (2018). Flexible Imputation of Missing Data. 2nd Ed. CRC Press.
-    - Rubin, D. B. (1987). Multiple Imputation for Nonresponse in Surveys.
-    - White, I. R., et al. (2011). Multiple imputation using chained equations. Statistics in Medicine.
-    """
-    
-    def __init__(self, df, variable_types, n_imputations=5, max_iter=10, 
+    def __init__(self, df, variable_types, n_imputations=5, max_iter=10,
                  strategy='bayesian_ridge'):
-        """
-        初始化MICE插补器
-        
-        Parameters:
-        -----------
-        df : pd.DataFrame
-            原始数据
-        variable_types : dict
-            变量类型映射
-        n_imputations : int
-            插补数据集数量 (m)
-        max_iter : int
-            每个插补过程的最大迭代次数
-        strategy : str
-            回归策略 ('bayesian_ridge', 'linear', 'ridge')
-        """
-        self.df = df
-        self.variable_types = variable_types if variable_types is not None else {}
+        if type(n_imputations) is not int or not 1 <= n_imputations <= 100:
+            raise ValueError('插补次数必须为1至100的整数')
+        if type(max_iter) is not int or not 1 <= max_iter <= 1000:
+            raise ValueError('迭代次数必须为1至1000的整数')
+        if strategy not in ('bayesian_ridge', 'linear', 'ridge'):
+            raise ValueError('未知插补策略')
+        if n_imputations > 1 and strategy != 'bayesian_ridge':
+            raise ValueError('linear/ridge仅支持单次插补，不能提供多重插补间不确定性')
+        self.df = df.copy()
+        self.variable_types = variable_types or {}
         self.n_imputations = n_imputations
         self.max_iter = max_iter
         self.strategy = strategy
         self.imputed_datasets = None
-        self.comparison_stats = None
-    
+        self.comparison_stats = {}
+
     def impute(self):
-        """
-        执行多重插补
-        
-        Returns:
-        --------
-        list
-            m个插补后的DataFrame
-        """
-        numeric_cols = [col for col, t in self.variable_types.items()
-                       if t in ['numeric_continuous', 'numeric_discrete']]
-        
-        categorical_cols = [col for col, t in self.variable_types.items()
-                          if t in ['categorical', 'boolean']]
-        
-        if self.df.isnull().sum().sum() == 0:
+        if self.df.empty or self.df.columns.duplicated().any():
+            raise ValueError('数据不能为空或有重复列名')
+        if self.df.isna().all().any():
+            raise ValueError('全缺失列不可估计，请补充数据或明确移除该变量')
+        missing_cols = self.df.columns[self.df.isna().any()].tolist()
+        if any(self.variable_types.get(c) != 'numeric_continuous' for c in missing_cols):
+            raise ValueError('当前仅支持连续数值缺失插补；分类、离散或未定义类型需专用模型')
+        numeric_cols = [c for c in self.df if self.variable_types.get(c) in
+                        ('numeric_continuous', 'numeric_discrete')]
+        if not missing_cols:
             self.imputed_datasets = [self.df.copy()]
             return self.imputed_datasets
-        
-        encoded_df = self.df.copy()
-        label_encoders = {}
-        
-        for col in categorical_cols:
-            le = LabelEncoder()
-            temp_series = self.df[col].astype(str).fillna('__MISSING__')
-            le.fit(temp_series)
-            encoded_df[col + '_encoded'] = le.transform(temp_series).astype(float)
-            missing_mask = self.df[col].isnull()
-            encoded_df.loc[missing_mask, col + '_encoded'] = np.nan
-            label_encoders[col] = le
-        
-        impute_features = []
-        for col in numeric_cols:
-            if col in encoded_df.columns:
-                impute_features.append(col)
-        
-        for col in categorical_cols:
-            if (col + '_encoded') in encoded_df.columns:
-                impute_features.append(col + '_encoded')
-        
-        if not impute_features:
-            self.imputed_datasets = [self.df.copy()]
-            return self.imputed_datasets
-        
-        impute_matrix = encoded_df[impute_features].values.copy()
-        
-        estimator = self._get_estimator()
-        
-        imputed_datasets = []
-        convergence_history = {}
-        
-        for m_idx in range(self.n_imputations):
-            imputer = IterativeImputer(
-                estimator=estimator,
-                max_iter=self.max_iter,
-                random_state=42 + m_idx,
-                sample_posterior=(self.strategy == 'bayesian_ridge'),
-                tol=1e-3
-            )
-            
-            imputed_matrix = imputer.fit_transform(impute_matrix)
-            
-            if m_idx == 0:
-                convergence_history['success'] = True
-            
-            result_df = self.df.copy()
-            
-            for i, col in enumerate(impute_features):
-                if col in numeric_cols:
-                    result_df[col] = imputed_matrix[:, i]
-            
-            for col in categorical_cols:
-                encoded_col = col + '_encoded'
-                if encoded_col in impute_features:
-                    idx = impute_features.index(encoded_col)
-                    imputed_codes = np.round(imputed_matrix[:, idx]).astype(int)
-                    valid_classes = list(range(len(label_encoders[col].classes_)))
-                    imputed_codes = np.clip(imputed_codes, min(valid_classes), max(valid_classes))
-                    result_df[col] = label_encoders[col].inverse_transform(imputed_codes)
-            
-            imputed_datasets.append(result_df)
-        
-        self.imputed_datasets = imputed_datasets
+        matrix = self.df[numeric_cols].apply(pd.to_numeric, errors='raise').to_numpy(dtype=float)
+        if np.isinf(matrix).any():
+            raise ValueError('插补数据不接受无穷值')
+        if any(self.df[c].notna().sum() < 2 for c in missing_cols):
+            raise ValueError('缺失变量至少需要两个已观测值')
+        self.imputed_datasets = []
+        for index in range(self.n_imputations):
+            estimator = {'bayesian_ridge': BayesianRidge, 'linear': LinearRegression,
+                         'ridge': Ridge}[self.strategy]()
+            imputer = IterativeImputer(estimator=estimator, max_iter=self.max_iter,
+                                      random_state=42 + index,
+                                      sample_posterior=self.strategy == 'bayesian_ridge', tol=1e-3)
+            values = imputer.fit_transform(matrix)
+            if values.shape != matrix.shape or not np.isfinite(values).all():
+                raise ValueError('插补未产生完整有限数值矩阵')
+            result = self.df.copy()
+            for position, col in enumerate(numeric_cols):
+                mask = self.df[col].isna()
+                if mask.any():
+                    result[col] = result[col].astype(float)
+                    result.loc[mask, col] = values[mask.to_numpy(), position]
+            self.imputed_datasets.append(result)
         self.comparison_stats = self._compute_comparison(numeric_cols)
-        
         return self.imputed_datasets
-    
-    def _get_estimator(self):
-        """
-        获取回归估计器
-        """
-        if self.strategy == 'bayesian_ridge':
-            return BayesianRidge()
-        elif self.strategy == 'linear':
-            return LinearRegression()
-        elif self.strategy == 'ridge':
-            return Ridge(alpha=1.0)
-        else:
-            return BayesianRidge()
-    
+
     def _compute_comparison(self, numeric_cols):
-        """
-        计算插补前后对比统计
-        """
-        comparison = {}
-        
+        def finite(value):
+            return float(value) if np.isfinite(value) else None
+        result = {}
         for col in numeric_cols:
             original = self.df[col]
-            imputed_values = [ds[col] for ds in self.imputed_datasets]
-            
-            if original.isnull().sum() == 0:
+            mask = original.isna()
+            if not mask.any():
                 continue
-            
-            comparison[col] = {
-                'original_mean': round(float(original.mean()), 4),
-                'original_std': round(float(original.std()), 4),
-                'original_missing': int(original.isnull().sum()),
-                'imputed_mean': round(float(np.mean([v.mean() for v in imputed_values])), 4),
-                'imputed_std': round(float(np.mean([v.std() for v in imputed_values])), 4),
-                'imputed_values_mean': round(float(np.mean([
-                    v[original.isnull()].mean() for v in imputed_values
-                ])), 4),
-                'imputed_values_std': round(float(np.nanmean([
-                    v[original.isnull()].std() for v in imputed_values
-                ])), 4)
+            values = [ds[col] for ds in self.imputed_datasets]
+            # Dispersion of inserted values is descriptive, not an inferential SE.
+            inserted = np.concatenate([v[mask].to_numpy() for v in values])
+            result[col] = {
+                'original_mean': finite(original.mean()),
+                'original_std': finite(original.std(ddof=1)),
+                'original_missing': int(mask.sum()),
+                'imputed_mean': finite(np.mean([v.mean() for v in values])),
+                'imputed_std': finite(np.mean([v.std(ddof=1) for v in values])),
+                'imputed_values_mean': finite(inserted.mean()),
+                'imputed_values_std': finite(inserted.std(ddof=1)) if len(inserted) > 1 else None,
             }
-        
-        return comparison
-    
-    def pool_results(self, analysis_func, *args, **kwargs):
+        return result
+
+    def pool_results(self, analysis_func, *args, df_complete=None, **kwargs):
+        """Pool scalar (estimate, variance) pairs; never silently omit failed fits.
+
+        df_complete must be the complete-data analysis residual degrees of freedom
+        when finite-sample CI is wanted. None explicitly assumes large-sample df.
+        Formula specification: mice pool.scalar / Barnard-Rubin (1999).
         """
-        使用Rubin规则合并结果
-        
-        Parameters:
-        -----------
-        analysis_func : function
-            对每个插补数据集进行分析的函数，返回 (estimate, variance)
-        *args, **kwargs : 
-            传递给analysis_func的参数
-            
-        Returns:
-        --------
-        dict
-            合并后的估计结果
-        """
-        if not self.imputed_datasets:
-            raise ValueError("请先执行插补")
-        
-        estimates = []
-        variances = []
-        
-        for df in self.imputed_datasets:
+        if not self.imputed_datasets or len(self.imputed_datasets) < 2:
+            raise ValueError('Rubin合并至少需要两个插补数据集；单次插补不提供MI推断')
+        if df_complete is not None and (not np.isscalar(df_complete) or
+                                       not np.isfinite(df_complete) or df_complete <= 0):
+            raise ValueError('完整数据模型的残差自由度必须为正有限数；未知时传None并采用大样本假设')
+        estimates, variances = [], []
+        for index, dataset in enumerate(self.imputed_datasets):
             try:
-                est, var = analysis_func(df, *args, **kwargs)
-                estimates.append(est)
-                variances.append(var)
-            except:
-                continue
-        
-        if not estimates:
-            raise ValueError("所有数据集分析失败")
-        
+                estimate, variance = analysis_func(dataset, *args, **kwargs)
+                estimate, variance = float(estimate), float(variance)
+                if not np.isfinite(estimate) or not np.isfinite(variance) or variance < 0:
+                    raise ValueError('估计值和方差必须有限，方差非负')
+            except Exception as error:
+                raise ValueError(f'第{index + 1}份插补分析失败，未输出部分合并结果') from error
+            estimates.append(estimate)
+            variances.append(variance)
         m = len(estimates)
-        Q_bar = np.mean(estimates)
-        U_bar = np.mean(variances)
-        
-        B = np.var(estimates, ddof=1) if m > 1 else 0
-        T = U_bar + (1 + 1/m) * B
-        df_complete = len(self.df) - 1
-        
-        if B > 0 and m > 1:
-            gamma = ((1 + 1/m) * B) / T
-            df_old = (m - 1) / (gamma ** 2)
-            lambda_ = df_complete / (df_complete + 3)
-            df_adj = df_old * lambda_
+        q_bar, u_bar = float(np.mean(estimates)), float(np.mean(variances))
+        b = float(np.var(estimates, ddof=1))
+        total = u_bar + (1 + 1 / m) * b
+        if u_bar <= 0 or total <= 0:
+            raise ValueError('合并方差退化，不能提供有限样本置信区间')
+        fraction = (1 + 1 / m) * b / total
+        df_old = (m - 1) / fraction ** 2 if fraction > 0 else np.inf
+        if df_complete is None:
+            degrees = df_old
         else:
-            df_adj = df_complete
-        
-        se = np.sqrt(T)
-        t_crit = stats.t.ppf(0.975, df_adj) if df_adj > 0 else 1.96
-        ci_lower = Q_bar - t_crit * se
-        ci_upper = Q_bar + t_crit * se
-        
+            df_observed = ((df_complete + 1) / (df_complete + 3)) * df_complete * (1 - fraction)
+            degrees = 1 / (1 / df_old + 1 / df_observed)
+        se = np.sqrt(total)
+        critical = stats.norm.ppf(.975) if np.isinf(degrees) else stats.t.ppf(.975, degrees)
+        riv = (1 + 1 / m) * b / u_bar
+        fmi = (riv + (0 if np.isinf(degrees) else 2 / (degrees + 3))) / (riv + 1)
         return {
-            'pooled_estimate': float(Q_bar),
-            'pooled_standard_error': float(se),
-            'ci_lower': float(ci_lower),
-            'ci_upper': float(ci_upper),
-            'degrees_of_freedom': float(df_adj) if df_adj > 0 else None,
-            'within_variance': float(U_bar),
-            'between_variance': float(B),
-            'total_variance': float(T),
-            'n_imputations_used': m
+            'pooled_estimate': q_bar, 'pooled_standard_error': float(se),
+            'ci_lower': float(q_bar - critical * se), 'ci_upper': float(q_bar + critical * se),
+            'degrees_of_freedom': None if np.isinf(degrees) else float(degrees),
+            'complete_data_df': None if df_complete is None else float(df_complete),
+            'df_assumption': 'large_sample' if df_complete is None else 'supplied_complete_data_df',
+            'within_variance': u_bar, 'between_variance': b, 'total_variance': total,
+            'relative_increase_variance': riv, 'fraction_missing_information': float(fmi),
+            'n_imputations_used': m, 'n_imputations_failed': 0,
         }
-    
+
+    def pooled_means(self):
+        """Shared Web/CLI mean-pooling path: each U is sample variance / n."""
+        if not self.imputed_datasets:
+            raise ValueError('请先执行插补')
+        if len(self.imputed_datasets) < 2:
+            return []
+        rows = []
+        for column in self.comparison_stats:
+            n = len(self.df)
+            pooled = self.pool_results(lambda ds: (ds[column].mean(), ds[column].var(ddof=1) / n),
+                                       df_complete=n - 1)
+            rows.append({'variable': column, 'q_bar': pooled['pooled_estimate'],
+                         'u_bar': pooled['within_variance'], 'b': pooled['between_variance'],
+                         't': pooled['total_variance'], 'fmi': pooled['fraction_missing_information'],
+                         'riv': pooled['relative_increase_variance'], **pooled})
+        return rows
+
     def get_comparison(self):
-        """
-        获取插补前后对比统计
-        """
         return self.comparison_stats

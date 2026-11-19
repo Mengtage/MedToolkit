@@ -9,67 +9,53 @@ from scipy import stats
 
 
 class MissingDataAnalyzer:
+    """One missing mask for summaries, plots and downstream normalization.
+
+    Numeric sentinels are missing only when declared for a column. An explicit
+    column list replaces the default text-code policy (use [] for native NA only).
     """
-    缺失值分析器
-    """
-    
-    def __init__(self, df):
+    DEFAULT_TEXT_CODES = ('', 'na', 'n/a', 'n.a.', 'nan', 'none', 'null',
+                          'nil', '.', '-', '--', '---', '?', '??', '???',
+                          'missing', 'unknown', '不适用', '缺失', '无', '空')
+
+    def __init__(self, df, missing_codes=None):
         self.df = df
+        if missing_codes is not None and not isinstance(missing_codes, dict):
+            raise ValueError('missing_codes必须是按变量名定义的字典')
+        self.missing_codes = missing_codes or {}
+        if set(self.missing_codes) - set(df.columns):
+            raise ValueError('缺失码字典包含不存在的变量')
+        if any(not isinstance(v, (list, tuple)) for v in self.missing_codes.values()):
+            raise ValueError('每个变量的缺失码必须是列表')
         self.missing_stats = None
-    
-    def analyze(self):
-        """
-        分析缺失值情况
-        
-        Returns:
-        --------
-        dict
-            包含缺失值统计信息
-        """
-        results = []
-        
-        for col in self.df.columns:
-            null_count = self.df[col].isnull().sum()
-            
-            other_missing_count = 0
-            if self.df[col].dtype == 'object' or self.df[col].dtype.name == 'category':
-                str_values = self.df[col].astype(str).str.strip()
-                missing_placeholders = ['', ' ', 'na', 'n/a', 'n.a.', 'nan', 'none',
-                                      'null', 'nil', '.', '-', '--', '---',
-                                      '?', '??', '???', 'missing', 'unknown',
-                                      '不适用', '缺失', '无', '空']
-                for placeholder in missing_placeholders:
-                    other_missing_count += (str_values.str.lower() == placeholder.lower()).sum()
-            elif pd.api.types.is_numeric_dtype(self.df[col]):
-                numeric_placeholders = [-999, -9999, -99999, 999, 9999]
-                for placeholder in numeric_placeholders:
-                    other_missing_count += (self.df[col] == placeholder).sum()
-            
-            total_missing = null_count + other_missing_count
-            total = len(self.df[col])
-            missing_percent = round(total_missing / total * 100, 2) if total > 0 else 0
-            
-            results.append({
-                'variable': col,
-                'missing_count': int(total_missing),
-                'missing_percent': missing_percent,
-                'total': int(total)
-            })
-        
-        self.missing_stats = pd.DataFrame(results)
-        return self.missing_stats.to_dict('records')
-    
+
     def get_missing_matrix(self):
-        """
-        获取缺失值矩阵（用于可视化）
-        """
-        return self.df.isnull().astype(int)
-    
+        mask = self.df.isna().copy()
+        for col in self.df:
+            codes = self.missing_codes.get(col, self.DEFAULT_TEXT_CODES)
+            text_codes = {v.strip().casefold() for v in codes if isinstance(v, str)}
+            numeric_codes = [v for v in codes if not isinstance(v, str) and v is not None]
+            # Test values, rather than dtype, so object/string/category behave alike.
+            text_mask = self.df[col].map(lambda v: isinstance(v, str) and v.strip().casefold() in text_codes)
+            mask[col] = mask[col] | text_mask.fillna(False).astype(bool)
+            if numeric_codes:
+                mask[col] = mask[col] | self.df[col].isin(numeric_codes)
+        return mask.astype(int)
+
+    def normalized_data(self):
+        return self.df.mask(self.get_missing_matrix().astype(bool))
+
+    def analyze(self):
+        mask = self.get_missing_matrix()
+        total = len(self.df)
+        results = [{'variable': col, 'missing_count': int(mask[col].sum()),
+                    'missing_percent': round(float(mask[col].sum()) / total * 100, 2) if total else 0,
+                    'total': total} for col in self.df]
+        self.missing_stats = pd.DataFrame(results)
+        return results
+
     def has_missing_data(self):
-        """
-        检查是否存在缺失值
-        """
-        return self.df.isnull().sum().sum() > 0
+        return bool(self.get_missing_matrix().to_numpy().any())
 
 
 class OutlierDetector:

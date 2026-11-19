@@ -4,7 +4,7 @@
 
 ## 运行
 
-Python 3.11以上；在本目录建立独立虚拟环境并安装requirements.txt。
+Linux/macOS、Python 3.11以上；在本目录建立独立虚拟环境并安装requirements.txt。
 
 ```bash
 python3 -m venv .venv
@@ -45,7 +45,7 @@ SQLite保存任务和输入，项目目录权限0700、数据库及产物0600；
 
 任务状态queued/running/completed/failed/needs_review。完成任务不可重复运行，同项目同输入复用任务ID。进程中断后先确认没有工作线程，再运行`python -m workbench recover`将不确定任务标记为待复核，避免重复远端调用。未提供自动重试付费任务或强制取消正在进行的HTTP请求。
 
-Skills中旧版流程不自动生效；本目录README与统一入口描述当前实际能力。modules中的旧版应用仅作为源码与迁移对象，不要直接运行并开放公网。兼容性和统计逻辑变更须先决定，来源版本见source-version.json。
+Skills中旧版流程不自动生效；本目录README与统一入口描述当前实际能力。modules中的旧版应用仅作为源码与迁移对象，不要直接运行并开放公网。本版已按修复要求更新统计逻辑；后续改变研究范围或方法选择仍需决定，来源版本见source-version.json。
 
 Gemini接口依据：[Google官方generateContent文档](https://ai.google.dev/api/generate-content)。
 
@@ -56,3 +56,9 @@ Gemini接口依据：[Google官方generateContent文档](https://ai.google.dev/a
 失败/待复核任务可使用`retry JOB_ID --confirmed`建立新任务，旧任务及产物保留；重复确认同一失败任务不会生成多个重试任务。执行中的任务持有跨进程锁，恢复操作不会将活跃工作误标记为中断。
 
 已通过15项本地测试；真实PubMed查询抓取3条并导出RIS，完整命中数大于获取数时标注不完整；合成数据Pearson计算返回r=1、n=4。没有Gemini调用。完整验证记录见validation-tests.txt与validation-live.json。
+
+## 统计修复版
+
+基础15项与统计58项检查通过，完整运行命令：`.venv/bin/python scripts/validate.py`。修复前后对照见reports/ACCEPTANCE_SUMMARY.md、reports/baseline及source-diff.json。统计依赖现要求SciPy>=1.15与statsmodels>=0.14。
+
+分类/离散缺失尚无适用模型，明确拒绝；linear/ridge只允许单次插补，不输出多重插补推断。数值缺失码需按变量字典显式给出，999不再自动认作缺失。Web端均值合并使用真实逐份估计及方差，有限样本自由度采用Barnard–Rubin。

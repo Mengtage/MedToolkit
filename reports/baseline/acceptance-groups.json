@@ -1,0 +1,418 @@
+{
+  "scope": "correlation,group_analysis,categorical_tests,tableone",
+  "summary": {
+    "PASS": 9,
+    "FAIL": 10,
+    "BLOCKED": 0
+  },
+  "results": [
+    {
+      "case": "Pearson非平凡相关系数",
+      "status": "PASS",
+      "basis": "独立中心化乘积公式；不独立验证p值",
+      "observed": {
+        "coefficient": 0.819288030372914,
+        "p_value": 0.08967614387011388,
+        "n": 5
+      },
+      "expected": {
+        "r": 0.8192880303729141,
+        "n": 5
+      },
+      "warnings": []
+    },
+    {
+      "case": "Spearman无并列秩",
+      "status": "PASS",
+      "basis": "独立秩差平方公式",
+      "observed": {
+        "coefficient": -0.7999999999999999,
+        "p_value": 0.10408803866182788,
+        "n": 5
+      },
+      "expected": -0.8,
+      "warnings": []
+    },
+    {
+      "case": "相关性成对缺失剔除",
+      "status": "PASS",
+      "basis": "固定3对完全线性观测",
+      "observed": {
+        "coefficient": 0.9999999999999998,
+        "p_value": 1.3415758552508146e-08,
+        "n": 3
+      },
+      "expected": {
+        "n": 3,
+        "r": 1
+      },
+      "warnings": []
+    },
+    {
+      "case": "相关性常量列",
+      "status": "FAIL",
+      "basis": "零方差导致相关性未定义",
+      "observed": {
+        "coefficient": "nan",
+        "p_value": "nan",
+        "n": 4
+      },
+      "expected": "明确拒绝或结构化不可估计，不能返回NaN数值",
+      "warnings": [
+        "An input array is constant; the correlation coefficient is not defined."
+      ]
+    },
+    {
+      "case": "相关性未知方法",
+      "status": "FAIL",
+      "basis": "输入契约",
+      "observed": {
+        "correlation_matrix": {
+          "x": {
+            "x": 1.0,
+            "y": 0.5
+          },
+          "y": {
+            "x": 0.5,
+            "y": 1.0
+          }
+        },
+        "p_value_matrix": {
+          "x": {
+            "x": 1.0,
+            "y": 0.6666666666666666
+          },
+          "y": {
+            "x": 0.6666666666666666,
+            "y": 1.0
+          }
+        },
+        "method": "unsupported",
+        "variables": [
+          "x",
+          "y"
+        ]
+      },
+      "expected": "拒绝未知方法，不能静默运行Spearman",
+      "warnings": []
+    },
+    {
+      "case": "Welch统计量",
+      "status": "PASS",
+      "basis": "独立均值、样本方差、标准误公式",
+      "observed": {
+        "welch_t_test": {
+          "statistic": -2.393270600234419,
+          "p_value": 0.06284151481578318
+        },
+        "mann_whitney_u": {
+          "statistic": 3.0,
+          "p_value": 0.1083608161727848
+        },
+        "cohens_d": -1.4475004153970135
+      },
+      "expected": {
+        "Welch_t": -2.393270600234419
+      },
+      "warnings": []
+    },
+    {
+      "case": "Mann-Whitney完全分离小样本",
+      "status": "PASS",
+      "basis": "所有20种秩分配，两端各一种",
+      "observed": {
+        "statistic": 0.0,
+        "p_value": 0.1
+      },
+      "expected": {
+        "U": 0,
+        "two_sided_exact_p": 0.1
+      },
+      "warnings": []
+    },
+    {
+      "case": "Cohen d",
+      "status": "PASS",
+      "basis": "两组样本SD均1，均值差-3",
+      "observed": -3.0,
+      "expected": -3,
+      "warnings": []
+    },
+    {
+      "case": "单因素ANOVA",
+      "status": "PASS",
+      "basis": "手算组间/组内平方和",
+      "observed": {
+        "statistic": 27.0,
+        "p_value": 0.0010000000000000002
+      },
+      "expected": {
+        "F": 27,
+        "between_SS": 54,
+        "within_SS": 6,
+        "df": [
+          2,
+          6
+        ]
+      },
+      "warnings": []
+    },
+    {
+      "case": "分类变量某组全缺失",
+      "status": "FAIL",
+      "basis": "缺失数据边界",
+      "observed": "KeyError: 'b'",
+      "expected": "可处理的结构化结果或明确拒绝"
+    },
+    {
+      "case": "Pearson列联表卡方",
+      "status": "PASS",
+      "basis": "独立期望频数与平方残差公式",
+      "observed": {
+        "method": "Pearson卡方检验",
+        "statistic": 6.666666666666667,
+        "statistic_name": "χ²",
+        "p_value": 0.009823274507519235,
+        "expected": [
+          [
+            15.0,
+            15.0
+          ],
+          [
+            15.0,
+            15.0
+          ]
+        ],
+        "min_expected": 15.0,
+        "reason": "所有期望频数≥5，总例数≥20",
+        "recommended": true
+      },
+      "expected": {
+        "chi2": 6.666666666666667
+      },
+      "warnings": []
+    },
+    {
+      "case": "2×2 Fisher精确P值",
+      "status": "PASS",
+      "basis": "独立超几何组合枚举",
+      "observed": {
+        "method": "Fisher精确检验",
+        "statistic": 0.030303030303030304,
+        "statistic_name": "OR",
+        "p_value": 0.0027594561852200836,
+        "or_ci": [
+          0.002671575637462158,
+          0.3437198755183587
+        ],
+        "min_expected": null,
+        "reason": "总例数<20或期望频数<5的单元格过多",
+        "recommended": true
+      },
+      "expected": {
+        "two_sided_p": 0.002759456185220083,
+        "OR": 0.030303030303030304
+      },
+      "warnings": []
+    },
+    {
+      "case": "稀疏RxC方法名称与执行一致",
+      "status": "FAIL",
+      "basis": "静态调用核对 + 数值返回，不宣称精确P值独立基准",
+      "observed": {
+        "method": "Fisher精确检验(Monte Carlo模拟)",
+        "statistic": 3.0,
+        "statistic_name": "χ²",
+        "p_value": 0.5578254003710748,
+        "expected": [
+          [
+            0.6666666666666666,
+            0.6666666666666666,
+            0.6666666666666666
+          ],
+          [
+            0.6666666666666666,
+            0.6666666666666666,
+            0.6666666666666666
+          ],
+          [
+            0.6666666666666666,
+            0.6666666666666666,
+            0.6666666666666666
+          ]
+        ],
+        "min_expected": 0.6666666666666666,
+        "reason": "R×C表，期望频数条件不满足卡方检验",
+        "recommended": true
+      },
+      "expected": {
+        "not_acceptable": "Fisher/Monte Carlo标签实际调用chi2_contingency；此处不提供Fisher基准值"
+      },
+      "warnings": []
+    },
+    {
+      "case": "MH分层检验抵抗混杂",
+      "status": "FAIL",
+      "basis": "每层独立性构造；层内a-Ea=0",
+      "observed": {
+        "method": "Mantel-Haenszel分层分析",
+        "strata": [
+          {
+            "stratum": 0,
+            "a": 9,
+            "b": 81,
+            "c": 1,
+            "d": 9,
+            "or": 1.0,
+            "total": 100
+          },
+          {
+            "stratum": 1,
+            "a": 9,
+            "b": 1,
+            "c": 81,
+            "d": 9,
+            "or": 1.0,
+            "total": 100
+          }
+        ],
+        "pooled_or": 1.0,
+        "pooled_or_ci": [
+          0.0459690802796592,
+          21.75375260754322
+        ],
+        "mh_statistic": 81.9072005,
+        "mh_p_value": 1.42628724991688e-19,
+        "homogeneity_statistic": 0.0,
+        "homogeneity_p": 1.0,
+        "has_heterogeneity": false,
+        "n_strata": 2
+      },
+      "expected": {
+        "MH_conditional_score": 0,
+        "pooled_OR": 1,
+        "explanation": "各层a恰等于独立性期望；无连续性修正的条件得分为0"
+      },
+      "warnings": []
+    },
+    {
+      "case": "同质层的同质性检验",
+      "status": "FAIL",
+      "basis": "完全相同列联表，共同比值比恰与层比值比一致",
+      "observed": {
+        "method": "Mantel-Haenszel分层分析",
+        "strata": [
+          {
+            "stratum": 0,
+            "a": 20,
+            "b": 10,
+            "c": 10,
+            "d": 20,
+            "or": 4.0,
+            "total": 60
+          },
+          {
+            "stratum": 1,
+            "a": 20,
+            "b": 10,
+            "c": 10,
+            "d": 20,
+            "or": 4.0,
+            "total": 60
+          }
+        ],
+        "pooled_or": 4.0,
+        "pooled_or_ci": [
+          0.8764398404042836,
+          18.255673991975907
+        ],
+        "mh_statistic": 13.322224537037037,
+        "mh_p_value": 0.0002622788361300638,
+        "homogeneity_statistic": 13.333333333333334,
+        "homogeneity_p": 0.0002607296328553165,
+        "has_heterogeneity": true,
+        "n_strata": 2
+      },
+      "expected": {
+        "Breslow_Day_statistic": 0,
+        "common_OR": 4
+      },
+      "warnings": []
+    },
+    {
+      "case": "MH区间随信息增加",
+      "status": "FAIL",
+      "basis": "独立复制样本的信息量单调性",
+      "observed": {
+        "one": [
+          1.3672178038905072,
+          11.702597753240894
+        ],
+        "two": [
+          0.8764398404042836,
+          18.255673991975907
+        ],
+        "logwidth_ratio": 1.414213562373095
+      },
+      "expected": "增加独立同分布层后区间应变窄，而非变宽",
+      "warnings": []
+    },
+    {
+      "case": "森林图上下误差方向",
+      "status": "FAIL",
+      "basis": "已给定中心4、区间[2,8]的绘图代数",
+      "observed": {
+        "type": "data",
+        "symmetric": false,
+        "array": [
+          2
+        ],
+        "arrayminus": [
+          4
+        ]
+      },
+      "expected": {
+        "array": [
+          4
+        ],
+        "arrayminus": [
+          2
+        ]
+      },
+      "warnings": []
+    },
+    {
+      "case": "TableOne样本SD",
+      "status": "FAIL",
+      "basis": "[1,2,3]样本方差=1；GroupAnalyzer同变量采用ddof=1",
+      "observed": {
+        "variable": "v",
+        "group": "Overall",
+        "type": "numeric",
+        "n": 3,
+        "mean": 2.0,
+        "sd": 0.816496580927726,
+        "median": 2.0,
+        "q25": 1.5,
+        "q75": 2.5,
+        "display": "2.00 (0.82)"
+      },
+      "expected": {
+        "sample_sd": 1,
+        "population_sd": 0.816496580927726
+      },
+      "warnings": []
+    },
+    {
+      "case": "TableOne分类百分比分母一致性",
+      "status": "FAIL",
+      "basis": "单层/无分层不变性",
+      "observed": {
+        "unstratified_yes_pct": 50.0,
+        "single_group_yes_pct": 66.7
+      },
+      "expected": "同一份数据仅增加单一分层，不应静默切换分母；两种口径须显式说明",
+      "warnings": []
+    }
+  ]
+}
