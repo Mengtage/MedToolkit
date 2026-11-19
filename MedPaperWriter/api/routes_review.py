@@ -1,29 +1,28 @@
 """
 审核流程路由
 处理综述模式和RCT模式的审核流程
+
+设计依据：MedPaperWriter 设计审查 3.1 / 6.4 节
+    - 审核状态、正文、修订意见都必须持久化（重启后可恢复）
+    - 修订意见必须真正触发重写：旧稿留痕 → 新版本 → 差异 → 再审核
+    - 状态判断使用 SectionStatus.value，不能拿 str(枚举) 去比字符串
 """
 
-from fastapi import APIRouter, Form, HTTPException
+from fastapi import APIRouter, Form
 from fastapi.responses import JSONResponse
 from typing import Optional
 
-from services.session_manager import manager, SessionMode, OutlineNode, SectionStatus
+from services.session_manager import manager, OutlineNode, SectionStatus
+from services.writing import unified_diff, write_outline_section
 from services.logger import logger
+from core.llm_client import LLMError
+from datetime import datetime
 
 router = APIRouter()
 
 
 def find_outline_node(node: OutlineNode, target_id: str) -> Optional[OutlineNode]:
-    """
-    在 outline 树中查找指定 id 的节点
-    
-    Args:
-        node: 当前节点
-        target_id: 目标节点 id
-        
-    Returns:
-        找到的节点或 None
-    """
+    """在 outline 树中查找指定 id 的节点"""
     if node.id == target_id:
         return node
     for child in node.children:
@@ -33,11 +32,20 @@ def find_outline_node(node: OutlineNode, target_id: str) -> Optional[OutlineNode
     return None
 
 
+def _status_value(node: OutlineNode) -> str:
+    """统一取状态字符串（SectionStatus 是 str 混入枚举，
+
+    str(SectionStatus.APPROVED) 在 Python 3.11 下得到 'SectionStatus.APPROVED'，
+    旧代码用它做比较导致"待审核列表永远为空、进度永远 0%"。
+    """
+    return node.status.value if isinstance(node.status, SectionStatus) else str(node.status)
+
+
 @router.post("/submit")
 async def submit_for_review(
     session_id: str = Form(...),
     section_id: str = Form(...),
-    content: str = Form(...)
+    content: str = Form("")
 ):
     """
     提交章节供审核
@@ -45,31 +53,36 @@ async def submit_for_review(
     Args:
         session_id: 会话ID
         section_id: 章节ID
-        content: 章节内容
+        content: 章节内容（可选；若传入则以该内容为准）
 
     Returns:
         提交结果
     """
-    logger.info(f"[routes_review] submit_for_review called", session_id=session_id, section_id=section_id, content_length=len(content))
+    logger.info("[routes_review] submit_for_review called", session_id=session_id,
+                section_id=section_id, content_length=len(content))
 
     session = manager.get_session(session_id)
     if not session:
-        logger.warning(f"[routes_review] session not found", session_id=session_id)
+        logger.warning("[routes_review] session not found", session_id=session_id)
         return JSONResponse({
             "success": False,
             "message": "会话不存在"
         }, status_code=404)
 
-    # 更新 outline 中的节点状态
+    # 优先更新 outline 中的节点状态
     if session.outline:
         node = find_outline_node(session.outline, section_id)
         if node:
+            if content.strip():
+                node.content_zh = content
             node.status = SectionStatus.PENDING_REVIEW
-            logger.info(f"[routes_review] section submitted (outline)", session_id=session_id, section_id=section_id)
+            manager.save(session_id)
+            logger.info("[routes_review] section submitted (outline)", session_id=session_id, section_id=section_id)
             return JSONResponse({
                 "success": True,
                 "message": "章节已提交审核",
-                "section_id": section_id
+                "section_id": section_id,
+                "status": "pending_review"
             })
 
     # 兼容旧版本的 sections 列表
@@ -77,14 +90,16 @@ async def submit_for_review(
         "section_id": section_id,
         "content": content,
         "status": "pending_review",
-        "submitted_at": session.updated_at
+        "submitted_at": datetime.now().isoformat(timespec="seconds")
     })
-    logger.info(f"[routes_review] section submitted (legacy)", session_id=session_id, section_id=section_id)
+    manager.save(session_id)
+    logger.info("[routes_review] section submitted (legacy)", session_id=session_id, section_id=section_id)
 
     return JSONResponse({
         "success": True,
         "message": "章节已提交审核",
-        "section_id": section_id
+        "section_id": section_id,
+        "status": "pending_review"
     })
 
 
@@ -103,11 +118,11 @@ async def approve_section(
     Returns:
         审核结果
     """
-    logger.info(f"[routes_review] approve_section called", session_id=session_id, section_id=section_id)
+    logger.info("[routes_review] approve_section called", session_id=session_id, section_id=section_id)
 
     session = manager.get_session(session_id)
     if not session:
-        logger.warning(f"[routes_review] session not found", session_id=session_id)
+        logger.warning("[routes_review] session not found", session_id=session_id)
         return JSONResponse({
             "success": False,
             "message": "会话不存在"
@@ -117,26 +132,36 @@ async def approve_section(
     if session.outline:
         node = find_outline_node(session.outline, section_id)
         if node:
+            if not (node.content_zh or node.content_en):
+                return JSONResponse({
+                    "success": False,
+                    "message": "该章节尚无正文，无法审核通过"
+                }, status_code=400)
             node.status = SectionStatus.APPROVED
-            logger.info(f"[routes_review] section approved (outline)", session_id=session_id, section_id=section_id)
+            node.feedback = ""
+            manager.save(session_id)
+            logger.info("[routes_review] section approved (outline)", session_id=session_id, section_id=section_id)
             return JSONResponse({
                 "success": True,
                 "message": "章节审核通过",
-                "section_id": section_id
+                "section_id": section_id,
+                "status": "approved"
             })
 
     # 兼容旧版本的 sections 列表
     for section in session.sections:
-        if section["section_id"] == section_id:
+        if section.get("section_id") == section_id:
             section["status"] = "approved"
-            logger.info(f"[routes_review] section approved (legacy)", session_id=session_id, section_id=section_id)
+            manager.save(session_id)
+            logger.info("[routes_review] section approved (legacy)", session_id=session_id, section_id=section_id)
             return JSONResponse({
                 "success": True,
                 "message": "章节审核通过",
-                "section_id": section_id
+                "section_id": section_id,
+                "status": "approved"
             })
 
-    logger.warning(f"[routes_review] section not found", session_id=session_id, section_id=section_id)
+    logger.warning("[routes_review] section not found", session_id=session_id, section_id=section_id)
     return JSONResponse({
         "success": False,
         "message": "章节不存在"
@@ -147,87 +172,198 @@ async def approve_section(
 async def request_revision(
     session_id: str = Form(...),
     section_id: str = Form(...),
-    feedback: str = Form(...)
+    feedback: str = Form(...),
+    language: str = Form("中文"),
+    regenerate: bool = Form(True)
 ):
     """
-    请求修订
+    请求修订并生成新版本
+
+    设计依据：审查报告 3.1 节。旧实现只设置 node.feedback 就返回，前端显示
+    "等待 AI 修改"却永远不会变。现在一次调用完成：
+        记录修订事件 → 旧稿快照 → 按意见重写 → 返回差异 → 回到待审核
 
     Args:
         session_id: 会话ID
         section_id: 章节ID
         feedback: 修订意见
+        language: 重新生成使用的语言
+        regenerate: 是否立即重写（默认 True；False 时仅记录意见）
 
     Returns:
-        修订请求结果
+        修订后的正文、版本号、差异、校验问题
     """
-    logger.info(f"[routes_review] request_revision called", session_id=session_id, section_id=section_id, feedback_length=len(feedback))
+    logger.info("[routes_review] request_revision called", session_id=session_id,
+                section_id=section_id, feedback_length=len(feedback), regenerate=regenerate)
 
     session = manager.get_session(session_id)
     if not session:
-        logger.warning(f"[routes_review] session not found", session_id=session_id)
+        logger.warning("[routes_review] session not found", session_id=session_id)
         return JSONResponse({
             "success": False,
             "message": "会话不存在"
         }, status_code=404)
 
-    # 优先更新 outline 中的节点状态
-    if session.outline:
-        node = find_outline_node(session.outline, section_id)
-        if node:
-            node.status = SectionStatus.REVISION
-            if not hasattr(node, 'feedback'):
-                node.feedback = feedback
-            else:
-                node.feedback = feedback
-            logger.info(f"[routes_review] revision requested (outline)", session_id=session_id, section_id=section_id)
-            return JSONResponse({
-                "success": True,
-                "message": "已提交修订意见",
-                "section_id": section_id,
-                "feedback": feedback
-            })
+    node = find_outline_node(session.outline, section_id) if session.outline else None
+    if not node:
+        # 兼容旧版本的 sections 列表：只记录意见，无法自动重写
+        for section in session.sections:
+            if section.get("section_id") == section_id:
+                section["status"] = "revision"
+                section["feedback"] = feedback
+                section.setdefault("revisions", []).append({
+                    "feedback": feedback,
+                    "created_at": datetime.now().isoformat(timespec="seconds")
+                })
+                manager.save(session_id)
+                return JSONResponse({
+                    "success": True,
+                    "message": "已记录修订意见（旧版章节不支持自动重写）",
+                    "section_id": section_id,
+                    "regenerated": False,
+                    "feedback_saved": True,
+                    "feedback": feedback
+                })
+        return JSONResponse({
+            "success": False,
+            "message": "章节不存在"
+        }, status_code=404)
 
-    # 兼容旧版本的 sections 列表
-    for section in session.sections:
-        if section["section_id"] == section_id:
-            section["status"] = "revision"
-            section["feedback"] = feedback
-            logger.info(f"[routes_review] revision requested (legacy)", session_id=session_id, section_id=section_id)
-            return JSONResponse({
-                "success": True,
-                "message": "已提交修订意见",
-                "section_id": section_id,
-                "feedback": feedback
-            })
+    if not (node.content_zh or node.content_en):
+        return JSONResponse({
+            "success": False,
+            "message": "该章节尚无正文，无法提交修订意见；请先撰写本章"
+        }, status_code=400)
 
-    logger.warning(f"[routes_review] section not found", session_id=session_id, section_id=section_id)
+    # 1) 先落盘修订事件：即使重写失败，意见也不会丢
+    node.feedback = feedback
+    node.status = SectionStatus.REVISION
+    node.revisions.append({
+        "feedback": feedback,
+        "created_at": datetime.now().isoformat(timespec="seconds"),
+        "status": "pending_regeneration" if regenerate else "recorded",
+        "version": node.current_version,
+    })
+    manager.save(session_id)
+
+    if not regenerate:
+        return JSONResponse({
+            "success": True,
+            "message": "已记录修订意见",
+            "section_id": section_id,
+            "regenerated": False,
+            "feedback_saved": True,
+            "feedback": feedback
+        })
+
+    # 2) 旧稿已在 apply_revision 内部快照，这里触发生成新版本
+    previous = node.content_zh or node.content_en
+    try:
+        result = write_outline_section(session, node, language=language, feedback=feedback)
+    except (LLMError, ValueError) as e:
+        logger.error("[routes_review] revision regeneration failed", session_id=session_id,
+                     section_id=section_id, error=str(e))
+        return JSONResponse({
+            "success": False,
+            "message": f"修订意见已保存，但重新生成失败：{str(e)}",
+            "feedback_saved": True,
+            "section_id": section_id,
+            "regenerated": False
+        }, status_code=500)
+
+    # 3) 修订后回到待审核，而不是自动通过
+    node.status = SectionStatus.PENDING_REVIEW
+    node.revisions[-1]["status"] = "regenerated"
+    node.revisions[-1]["version"] = result["version"]
+    manager.save(session_id)
+
     return JSONResponse({
-        "success": False,
-        "message": "章节不存在"
-    }, status_code=404)
+        "success": True,
+        "message": "已按修订意见生成新版本",
+        "section_id": section_id,
+        "regenerated": True,
+        "content": result["content"],
+        "version": result["version"],
+        "diff": result["diff"] or unified_diff(previous, result["content"]),
+        "quality": result["quality"],
+        "status": "pending_review"
+    })
+
+
+@router.get("/versions/{session_id}/{section_id}")
+async def get_section_versions(session_id: str, section_id: str):
+    """查看章节的版本历史（修订链可审计）"""
+    session = manager.get_session(session_id)
+    if not session:
+        return JSONResponse({"success": False, "message": "会话不存在"}, status_code=404)
+
+    node = find_outline_node(session.outline, section_id) if session.outline else None
+    if not node:
+        return JSONResponse({"success": False, "message": "章节不存在"}, status_code=404)
+
+    return JSONResponse({
+        "success": True,
+        "section_id": section_id,
+        "title": node.title,
+        "current_version": node.current_version,
+        "status": node.status.value,
+        "versions": [
+            {
+                "version": v.get("version"),
+                "source": v.get("source"),
+                "created_at": v.get("created_at"),
+                "feedback": v.get("feedback", ""),
+                "length": len(v.get("content_zh") or v.get("content_en") or ""),
+                "quality_issues": len(v.get("quality") or []),
+            }
+            for v in node.versions
+        ],
+        "revisions": node.revisions,
+    })
+
+
+@router.post("/rollback")
+async def rollback_section(
+    session_id: str = Form(...),
+    section_id: str = Form(...),
+    version: int = Form(...)
+):
+    """回滚到指定版本（回滚同样留痕，便于事后追溯）"""
+    session = manager.get_session(session_id)
+    if not session:
+        return JSONResponse({"success": False, "message": "会话不存在"}, status_code=404)
+
+    node = find_outline_node(session.outline, section_id) if session.outline else None
+    if not node:
+        return JSONResponse({"success": False, "message": "章节不存在"}, status_code=404)
+
+    if not node.restore_version(int(version)):
+        return JSONResponse({"success": False, "message": f"版本 {version} 不存在"}, status_code=404)
+
+    node.status = SectionStatus.PENDING_REVIEW
+    manager.save(session_id)
+
+    return JSONResponse({
+        "success": True,
+        "message": f"已回滚到版本 {version}",
+        "section_id": section_id,
+        "content": node.content_zh,
+        "version": node.current_version,
+        "status": "pending_review"
+    })
 
 
 def collect_all_sections(node: OutlineNode, result: list = None):
-    """
-    递归收集所有章节节点
-    
-    Args:
-        node: 当前节点
-        result: 结果列表
-        
-    Returns:
-        所有章节节点的列表
-    """
+    """递归收集所有章节节点（level > 0）"""
     if result is None:
         result = []
-    
-    # 只收集有内容的节点（level > 0）
+
     if node.level > 0:
         result.append(node)
-    
+
     for child in node.children:
         collect_all_sections(child, result)
-    
+
     return result
 
 
@@ -244,11 +380,11 @@ async def get_pending_reviews(
     Returns:
         待审核章节列表
     """
-    logger.debug(f"[routes_review] get_pending_reviews called", session_id=session_id)
+    logger.debug("[routes_review] get_pending_reviews called", session_id=session_id)
 
     session = manager.get_session(session_id)
     if not session:
-        logger.warning(f"[routes_review] session not found", session_id=session_id)
+        logger.warning("[routes_review] session not found", session_id=session_id)
         return JSONResponse({
             "success": False,
             "message": "会话不存在"
@@ -256,28 +392,25 @@ async def get_pending_reviews(
 
     pending = []
 
-    # 优先从 outline 中获取
     if session.outline:
-        all_sections = collect_all_sections(session.outline)
-        pending = [
-            {
-                "section_id": s.id,
-                "title": s.title,
-                "status": s.status.value if hasattr(s.status, 'value') else str(s.status),
-                "content_zh": s.content_zh,
-                "content_en": s.content_en
-            }
-            for s in all_sections
-            if s.status and str(s.status) in ["pending_review", "revision"]
-        ]
+        for node in collect_all_sections(session.outline):
+            status = _status_value(node)
+            if status in ("pending_review", "revision"):
+                pending.append({
+                    "section_id": node.id,
+                    "title": node.title,
+                    "status": status,
+                    "content_zh": node.content_zh,
+                    "content_en": node.content_en,
+                    "feedback": node.feedback,
+                })
     else:
-        # 兼容旧版本的 sections 列表
         pending = [
             s for s in session.sections
-            if s["status"] in ["pending_review", "revision"]
+            if s.get("status") in ("pending_review", "revision")
         ]
 
-    logger.debug(f"[routes_review] pending reviews retrieved", session_id=session_id, count=len(pending))
+    logger.debug("[routes_review] pending reviews retrieved", session_id=session_id, count=len(pending))
     return JSONResponse({
         "success": True,
         "pending_count": len(pending),
@@ -298,11 +431,11 @@ async def get_all_sections(
     Returns:
         所有章节及其状态
     """
-    logger.debug(f"[routes_review] get_all_sections called", session_id=session_id)
+    logger.debug("[routes_review] get_all_sections called", session_id=session_id)
 
     session = manager.get_session(session_id)
     if not session:
-        logger.warning(f"[routes_review] session not found", session_id=session_id)
+        logger.warning("[routes_review] session not found", session_id=session_id)
         return JSONResponse({
             "success": False,
             "message": "会话不存在"
@@ -311,32 +444,27 @@ async def get_all_sections(
     all_sections_list = []
     approved_count = 0
 
-    # 优先从 outline 中获取
     if session.outline:
-        all_nodes = collect_all_sections(session.outline)
-        all_sections_list = [
-            {
-                "section_id": s.id,
-                "title": s.title,
-                "status": s.status.value if hasattr(s.status, 'value') else str(s.status),
-                "content_zh": s.content_zh,
-                "content_en": s.content_en
-            }
-            for s in all_nodes
-        ]
-        approved_count = len([
-            s for s in all_nodes
-            if s.status and str(s.status) == "approved"
-        ])
+        nodes = collect_all_sections(session.outline)
+        for node in nodes:
+            status = _status_value(node)
+            if status == "approved":
+                approved_count += 1
+            all_sections_list.append({
+                "section_id": node.id,
+                "title": node.title,
+                "status": status,
+                "content_zh": node.content_zh,
+                "content_en": node.content_en,
+                "version": node.current_version,
+                "quality_issues": len(node.quality_issues),
+            })
     else:
-        # 兼容旧版本的 sections 列表
         all_sections_list = session.sections
-        approved_count = len([
-            s for s in session.sections
-            if s["status"] == "approved"
-        ])
+        approved_count = len([s for s in session.sections if s.get("status") == "approved"])
 
-    logger.debug(f"[routes_review] all sections retrieved", session_id=session_id, total=len(all_sections_list), approved=approved_count)
+    logger.debug("[routes_review] all sections retrieved", session_id=session_id,
+                 total=len(all_sections_list), approved=approved_count)
     return JSONResponse({
         "success": True,
         "total_sections": len(all_sections_list),
@@ -358,37 +486,40 @@ async def get_review_progress(
     Returns:
         审核进度信息
     """
-    logger.debug(f"[routes_review] get_review_progress called", session_id=session_id)
+    logger.debug("[routes_review] get_review_progress called", session_id=session_id)
 
     session = manager.get_session(session_id)
     if not session:
-        logger.warning(f"[routes_review] session not found", session_id=session_id)
+        logger.warning("[routes_review] session not found", session_id=session_id)
         return JSONResponse({
             "success": False,
             "message": "会话不存在"
         }, status_code=404)
 
-    total = 0
-    approved = 0
-    pending = 0
-    writing = 0
+    total = approved = pending = writing = 0
 
-    # 优先从 outline 中获取
     if session.outline:
-        all_nodes = collect_all_sections(session.outline)
-        total = len(all_nodes)
-        approved = len([s for s in all_nodes if s.status and str(s.status) == "approved"])
-        pending = len([s for s in all_nodes if s.status and str(s.status) in ["pending_review", "revision"]])
-        writing = len([s for s in all_nodes if s.status and str(s.status) == "writing"])
+        nodes = [n for n in collect_all_sections(session.outline) if (n.content_zh or n.content_en)
+                 or _status_value(n) != "pending"]
+        total = len(nodes)
+        for node in nodes:
+            status = _status_value(node)
+            if status == "approved":
+                approved += 1
+            elif status in ("pending_review", "revision"):
+                pending += 1
+            elif status == "writing":
+                writing += 1
     else:
-        # 兼容旧版本的 sections 列表
         total = len(session.sections)
-        approved = len([s for s in session.sections if s["status"] == "approved"])
-        pending = len([s for s in session.sections if s["status"] in ["pending_review", "revision"]])
-        writing = len([s for s in session.sections if s["status"] == "writing"])
+        approved = len([s for s in session.sections if s.get("status") == "approved"])
+        pending = len([s for s in session.sections if s.get("status") in ("pending_review", "revision")])
+        writing = len([s for s in session.sections if s.get("status") == "writing"])
 
     progress = (approved / total * 100) if total > 0 else 0
-    logger.debug(f"[routes_review] progress calculated", session_id=session_id, progress=round(progress, 1), total=total, approved=approved, pending=pending, writing=writing)
+    logger.debug("[routes_review] progress calculated", session_id=session_id,
+                 progress=round(progress, 1), total=total, approved=approved,
+                 pending=pending, writing=writing)
 
     return JSONResponse({
         "success": True,

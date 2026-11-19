@@ -10,7 +10,7 @@ from typing import List
 class ContentCleaner:
     """内容清洗器"""
     
-    # 需要移除的引导词模式
+    # 需要移除的引导词模式（保留常量以兼容旧调用，但不再做行内前缀裁剪）
     INTRODUCTION_PATTERNS = [
         r"^以下是.*?[：:]\s*",
         r"^这是.*?[：:]\s*",
@@ -32,6 +32,15 @@ class ContentCleaner:
         r"^请提供.*?[。.]\s*",
         r"^收到.*?后.*?[。.]\s*",
     ]
+
+    # 只删除"整行都是引导语"的行，绝不做行内前缀裁剪。
+    # 旧实现在任意行上执行 ^这是.*?[：:] 这类正则，遇到
+    # "这是……（正文很长）……结论：……" 会把整段正文删掉——审查报告 3.5 节
+    # 指出的正是这种脆弱后处理。
+    LEAD_IN_RE = re.compile(
+        r"^(以下是|这是|本章节|本节|我将|我为您|为您撰写|撰写|生成|原因如下)[^：:\n]{0,30}[：:]\s*$"
+    )
+    REFUSAL_RE = re.compile(r"^(抱歉|很抱歉|无法|请提供|收到|为确保)[^。\n]{0,40}[。]\s*$")
     
     # Markdown标志模式
     MARKDOWN_PATTERNS = [
@@ -80,32 +89,18 @@ class ContentCleaner:
         return cleaned.strip()
     
     def _remove_introduction(self, content: str) -> str:
-        """移除引导词"""
-        lines = content.split('\n')
-        cleaned_lines = []
-        
-        for line in lines:
-            # 检查是否包含引导词
-            should_remove = False
-            for pattern in self.INTRODUCTION_PATTERNS:
-                if re.match(pattern, line.strip(), re.IGNORECASE):
-                    should_remove = True
-                    break
-            
-            # 如果整行都是引导词，跳过
-            if should_remove and len(line.strip()) < 100:
+        """移除整行引导语（不做行内前缀裁剪，避免误删正文段落）"""
+        kept_lines = []
+
+        for line in content.split('\n'):
+            stripped = line.strip()
+            if stripped and len(stripped) <= 80 and (
+                self.LEAD_IN_RE.match(stripped) or self.REFUSAL_RE.match(stripped)
+            ):
                 continue
-            
-            # 如果行首有引导词，移除引导词部分
-            for pattern in self.INTRODUCTION_PATTERNS:
-                match = re.match(pattern, line.strip(), re.IGNORECASE)
-                if match:
-                    line = line[match.end():]
-                    break
-            
-            cleaned_lines.append(line)
-        
-        return '\n'.join(cleaned_lines)
+            kept_lines.append(line)
+
+        return '\n'.join(kept_lines).strip('\n')
     
     def _remove_markdown(self, content: str) -> str:
         """移除Markdown标志"""

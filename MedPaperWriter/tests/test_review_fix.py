@@ -40,6 +40,9 @@ def test_review_routes():
     section1.id = "test-section-1"
     section1.status = SectionStatus.PENDING
     section1.content_zh = "这是测试内容"
+
+    # 关键：提纲必须挂到会话上，否则审核路由按 session.outline 查找章节会返回 404
+    manager.set_outline(session_id, root)
     
     # 3. 测试 approve 路由
     print("\n3. 测试 /api/review/approve 路由...")
@@ -58,12 +61,16 @@ def test_review_routes():
         data={
             "session_id": session_id,
             "section_id": "test-section-1",
-            "feedback": "这里需要修改"
+            "feedback": "这里需要修改",
+            # 仅记录意见，不触发 LLM 重写：本用例只校验路由契约，
+            # 重写链路由 tests/test_writer_flow.py 用 FakeLLM 覆盖
+            "regenerate": "false",
         }
     )
     print(f"   响应状态: {response.status_code}")
     print(f"   响应内容: {response.text}")
     assert response.status_code == 200, f"修订请求路由失败: {response.text}"
+    assert response.json().get("feedback_saved") is True
     
     # 5. 测试进度查询
     print("\n5. 测试 /api/review/progress 路由...")

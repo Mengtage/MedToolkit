@@ -289,6 +289,8 @@ async def upload_references(
             "content": text_content,
             "upload_time": session.updated_at
         })
+        # 参考资料必须落盘：旧实现只改内存，重启后全部丢失
+        manager.save(session_id)
         logger.info(f"[routes_mode] references uploaded successfully", session_id=session_id, filename=safe_filename, total_refs=len(session.reference_materials))
 
         return JSONResponse({

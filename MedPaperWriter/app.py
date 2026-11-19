@@ -28,37 +28,52 @@ app = FastAPI(
 # 简单的速率限制器
 class RateLimiter:
     """简单的内存速率限制器"""
-    
+
     def __init__(self):
         self.requests = defaultdict(list)
         self.window = 60  # 时间窗口（秒）
         self.max_requests = 30  # 时间窗口内最大请求数
-    
+        self._last_cleanup = time.time()
+
+    def _cleanup(self, now: float):
+        """定期清理过期 IP，避免字典随客户端数量无限增长"""
+        if now - self._last_cleanup < self.window * 5:
+            return
+        stale = [key for key, times in self.requests.items()
+                 if not times or now - times[-1] > self.window]
+        for key in stale:
+            self.requests.pop(key, None)
+        self._last_cleanup = now
+
     def is_allowed(self, client_id: str) -> bool:
         """检查是否允许请求"""
         now = time.time()
-        
+        self._cleanup(now)
+
         # 清理过期请求
         self.requests[client_id] = [
             req_time for req_time in self.requests[client_id]
             if now - req_time < self.window
         ]
-        
+
         # 检查是否超限
         if len(self.requests[client_id]) >= self.max_requests:
             return False
-        
+
         # 记录请求
         self.requests[client_id].append(now)
         return True
 
 rate_limiter = RateLimiter()
 
-# CORS配置
+# CORS配置：allow_origins=["*"] 与 allow_credentials=True 同时使用会被浏览器拒绝，
+# 这里按配置区分：通配时不带凭据，指定来源时才允许凭据。
+_cors_origins = [origin.strip() for origin in settings.CORS_ORIGINS if origin and origin.strip()]
+_wildcard = "*" in _cors_origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 生产环境应限制具体域名
-    allow_credentials=True,
+    allow_origins=["*"] if _wildcard else _cors_origins,
+    allow_credentials=not _wildcard,
     allow_methods=["*"],
     allow_headers=["*"],
 )

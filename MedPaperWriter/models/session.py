@@ -1,5 +1,10 @@
 """
-数据模型模块
+数据模型模块（已废弃，仅保留向后兼容）
+
+⚠️ 会话的唯一真实来源是 ``services/session_manager.py``（含版本历史、修订链、
+参考资料与持久化）。本文件是早期设计的 Pydantic 影子模型，运行时已不再使用；
+两套模型并存会导致字段漂移（例如 feedback/versions 只存在于 session_manager）。
+新代码请直接使用 services.session_manager，不要在此扩展。
 """
 
 from pydantic import BaseModel, Field

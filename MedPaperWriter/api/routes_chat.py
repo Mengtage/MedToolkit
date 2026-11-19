@@ -3,7 +3,7 @@
 处理综述模式和RCT模式的对话交互
 """
 
-from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi import APIRouter, Form
 from fastapi.responses import JSONResponse, StreamingResponse
 from typing import Optional
 import re
@@ -13,8 +13,14 @@ import asyncio
 from services.session_manager import manager, SessionMode, OutlineNode
 from core.llm_client import LLMClient, LLMError
 from core.expert_factory import ExpertFactory
-from core.content_cleaner import cleaner
+from core.reporting_guidelines import GUIDELINES, list_guidelines, resolve
+from services.writing import (
+    select_reference_materials,
+    write_outline_section,
+    write_rct_section,
+)
 from services.logger import logger
+from config.settings import settings
 
 router = APIRouter()
 
@@ -45,7 +51,10 @@ def parse_outline(outline_text: str) -> OutlineNode:
         if not line:
             continue
 
-        match = re.match(r'^(\d+(?:\.\d+)*)\.\s*(.+)$', line)
+        # 编号兼容三种写法："1. 摘要"、"2.1 研究对象"（无尾点）、"2.1. 研究对象"
+        # 旧正则要求编号后必须紧跟句点，导致 "2.1 研究对象" 被解析成
+        # 一级标题 "1 研究对象"，整棵提纲的层级与父子关系错乱。
+        match = re.match(r'^(\d+(?:\.\d+)*)\.?\s+(.+)$', line)
         if match:
             level = len(match.group(1).split("."))
             title = match.group(2).strip()
@@ -62,6 +71,47 @@ def parse_outline(outline_text: str) -> OutlineNode:
             stack.append((new_node, level))
 
     return root
+
+
+def merge_outline_state(new_root: OutlineNode, old_root: Optional[OutlineNode]) -> OutlineNode:
+    """把旧提纲的正文、状态、版本历史按"层级 + 标题"继承到新提纲
+
+    设计依据：审查报告 3.1 节。重新生成或修改提纲要重新解析文本，
+    若直接替换整棵树，节点 id 会全部变化，已写好的正文、审核状态和修订
+    历史都会丢失（前端还持有旧 id，写入直接 404）。这里按标题做一次
+    确定性合并，命中则复用旧 id 与内容。
+    """
+    if not old_root:
+        return new_root
+
+    def walk(node: OutlineNode):
+        yield node
+        for child in node.children:
+            yield from walk(child)
+
+    index: dict = {}
+    for node in walk(old_root):
+        index.setdefault((node.level, node.title.strip()), []).append(node)
+
+    for node in walk(new_root):
+        if node.level == 0:
+            continue
+        candidates = index.get((node.level, node.title.strip()))
+        if not candidates:
+            continue
+        old = candidates.pop(0)
+        node.id = old.id
+        node.title_en = old.title_en
+        node.content_zh = old.content_zh
+        node.content_en = old.content_en
+        node.status = old.status
+        node.feedback = old.feedback
+        node.revisions = old.revisions
+        node.versions = old.versions
+        node.quality_issues = old.quality_issues
+        node.updated_at = old.updated_at
+
+    return new_root
 
 
 @router.post("/qa/stream")
@@ -256,84 +306,125 @@ async def confirm_research_question(
     })
 
 
-def build_references_text(session) -> str:
-    """
-    构建参考资料文本
-    
+def build_references_text(session, section_title: str = "", section_kind: str = "") -> str:
+    """构建参考资料文本（按章节检索，而非整包灌入）
+
+    旧实现把全部参考资料拼成一段塞进每个章节，既浪费上下文，也让模型
+    在不同章节间串用证据。现在按章节标题与关键词挑最相关的材料。
+
     Args:
         session: 会话对象
-        
+        section_title: 当前章节标题（用于检索）
+        section_kind: 章节类型（methods/results/...）
+
     Returns:
-        格式化的参考资料文本
+        与本节最相关的参考资料片段
     """
     if not session.reference_materials:
         return ""
-    
-    references = []
-    for i, ref in enumerate(session.reference_materials, 1):
-        references.append(f"--- 参考资料 {i}: {ref['filename']} ---\n{ref['content']}")
-    
-    return "\n\n".join(references)
+    budget = int(getattr(settings, "CONTEXT_CHAR_BUDGET", 12000) * 0.5)
+    text, stats = select_reference_materials(
+        session,
+        section_title or session.research_question or session.research_topic,
+        section_kind,
+        budget,
+    )
+    logger.debug(
+        "[routes_chat] reference selection",
+        total=stats.get("total"),
+        selected=stats.get("selected"),
+        chars=stats.get("chars"),
+    )
+    return text
+
+
+@router.get("/guidelines")
+async def get_reporting_guidelines():
+    """获取可选的报告规范规则包（供前端研究类型选择）"""
+    return JSONResponse({"success": True, "guidelines": list_guidelines()})
 
 
 @router.post("/outline/generate")
 async def generate_outline(
     session_id: str = Form(...),
-    study_type: str = Form("综述")
+    study_type: str = Form(""),
+    guideline_id: str = Form("")
 ):
     """
     生成论文提纲
 
     Args:
         session_id: 会话ID
-        study_type: 研究类型
+        study_type: 研究类型（用于路由报告规范）
+        guideline_id: 显式指定报告规范（优先于 study_type）
 
     Returns:
-        生成的提纲
+        生成的提纲 + 实际采用的报告规范
     """
-    logger.info(f"[routes_chat] generate_outline called", session_id=session_id, study_type=study_type)
+    logger.info("[routes_chat] generate_outline called", session_id=session_id,
+                study_type=study_type, guideline_id=guideline_id)
 
     session = manager.get_session(session_id)
     if not session:
-        logger.warning(f"[routes_chat] session not found", session_id=session_id)
+        logger.warning("[routes_chat] session not found", session_id=session_id)
         return JSONResponse({
             "success": False,
             "message": "会话不存在"
         }, status_code=404)
 
+    # 未显式传入时沿用会话里已保存的研究类型；RCT 模式默认 CONSORT
+    resolved_type = study_type or session.study_type or ("RCT" if session.mode == SessionMode.RCT else "综述")
+    guideline, note = resolve(resolved_type)
+    if guideline_id and guideline_id in {g["id"] for g in list_guidelines()}:
+        from core.reporting_guidelines import GUIDELINES
+        guideline = GUIDELINES[guideline_id]
+        note = ""
+
     llm = LLMClient()
 
     try:
         reference_text = build_references_text(session)
-        logger.debug(f"[routes_chat] generating outline with references", session_id=session_id, ref_length=len(reference_text))
+        logger.debug("[routes_chat] generating outline with references", session_id=session_id,
+                     ref_length=len(reference_text), guideline=guideline.id)
 
         outline_text, usage = llm.generate(
             prompt="",
             system_prompt=ExpertFactory.get_outline_expert_prompt(
                 research_question=session.research_question or session.research_topic,
-                study_type=study_type,
-                reference_materials=reference_text
+                study_type=resolved_type,
+                reference_materials=reference_text,
+                guideline_id=guideline.id,
             ),
             temperature=0.7,
             max_tokens=3000
         )
 
         manager.update_token_usage(session_id, usage["total_tokens"])
-        logger.debug(f"[routes_chat] outline generated", session_id=session_id, outline_length=len(outline_text))
+        logger.debug("[routes_chat] outline generated", session_id=session_id, outline_length=len(outline_text))
 
-        outline = parse_outline(outline_text)
+        outline = merge_outline_state(parse_outline(outline_text), session.outline)
         manager.set_outline(session_id, outline)
-        logger.info(f"[routes_chat] outline generated and saved", session_id=session_id, token_usage=usage)
+
+        # 记录规范路由结果，导出前的完整性检查会用到
+        session.study_type = resolved_type
+        session.guideline_id = guideline.id
+        session.guideline_note = note
+        manager.save(session_id)
+
+        logger.info("[routes_chat] outline generated and saved", session_id=session_id,
+                    guideline=guideline.id, token_usage=usage)
 
         return JSONResponse({
             "success": True,
             "outline": outline.to_dict(),
             "outline_text": outline_text,
+            "guideline": guideline.to_dict(),
+            "guideline_note": note,
             "token_usage": usage
         })
 
     except LLMError as e:
-        logger.error(f"[routes_chat] outline generation failed", session_id=session_id, error=str(e))
+        logger.error("[routes_chat] outline generation failed", session_id=session_id, error=str(e))
         return JSONResponse({
             "success": False,
             "message": f"提纲生成失败: {str(e)}"
@@ -366,7 +457,7 @@ async def modify_outline(
         }, status_code=404)
 
     try:
-        outline = parse_outline(outline_text)
+        outline = merge_outline_state(parse_outline(outline_text), session.outline)
         manager.set_outline(session_id, outline)
         logger.info(f"[routes_chat] outline modified", session_id=session_id)
 
@@ -420,31 +511,34 @@ async def confirm_outline(
 async def write_section(
     session_id: str = Form(...),
     section_id: str = Form(...),
-    language: str = Form("中文")
+    language: str = Form("中文"),
+    feedback: str = Form("")
 ):
     """
-    撰写章节内容
+    撰写章节内容（feedback 非空时进入修订模式）
 
     Args:
         session_id: 会话ID
         section_id: 章节ID
         language: 写作语言
+        feedback: 修订意见（可选）。传入时保留旧稿、按意见重写并返回差异
 
     Returns:
-        撰写的内容
+        正文、版本号、与上一稿的差异、确定性校验结果
     """
-    logger.info(f"[routes_chat] write_section called", session_id=session_id, section_id=section_id, language=language)
+    logger.info("[routes_chat] write_section called", session_id=session_id,
+                section_id=section_id, language=language, has_feedback=bool(feedback))
 
     session = manager.get_session(session_id)
     if not session:
-        logger.warning(f"[routes_chat] session not found", session_id=session_id)
+        logger.warning("[routes_chat] session not found", session_id=session_id)
         return JSONResponse({
             "success": False,
             "message": "会话不存在"
         }, status_code=404)
 
     if not session.outline:
-        logger.warning(f"[routes_chat] no outline found", session_id=session_id)
+        logger.warning("[routes_chat] no outline found", session_id=session_id)
         return JSONResponse({
             "success": False,
             "message": "请先生成提纲"
@@ -452,62 +546,52 @@ async def write_section(
 
     section_node = find_section_by_id(session.outline, section_id)
     if not section_node:
-        logger.warning(f"[routes_chat] section not found", session_id=session_id, section_id=section_id)
+        logger.warning("[routes_chat] section not found", session_id=session_id, section_id=section_id)
         return JSONResponse({
             "success": False,
             "message": "章节不存在"
         }, status_code=404)
 
-    llm = LLMClient()
+    # 修订必须基于已有正文，否则退回普通撰写（否则会把空稿当旧稿，产生空 diff）
+    if feedback and not (section_node.content_zh or section_node.content_en):
+        return JSONResponse({
+            "success": False,
+            "message": "该章节尚无正文，无法提交修订意见；请先撰写本章"
+        }, status_code=400)
 
     try:
-        reference_text = build_references_text(session)
-        logger.debug(f"[routes_chat] writing section", session_id=session_id, section_id=section_id, section_title=section_node.title)
-
-        content, usage = llm.generate(
-            prompt="",
-            system_prompt=ExpertFactory.get_writer_expert_prompt(
-                chapter_name=section_node.title,
-                language=language,
-                background=session.research_question,
-                outline=build_outline_text(session.outline),
-                section_title=section_node.title,
-                reference_materials=reference_text
-            ),
-            temperature=0.3,
-            max_tokens=3000
-        )
-
-        # 清洗内容
-        cleaned_content = cleaner.clean_content(content)
-        if not cleaner.is_valid_content(cleaned_content):
-            logger.warning(f"[routes_chat] invalid content detected", session_id=session_id, section_id=section_id, original_length=len(content))
-            return JSONResponse({
-                "success": False,
-                "message": "生成的内容无效，请检查参考资料是否完整"
-            }, status_code=400)
-
-        section_node.content_zh = cleaned_content
-        logger.debug(f"[routes_chat] section content generated and cleaned", session_id=session_id, section_id=section_id, original_length=len(content), cleaned_length=len(cleaned_content))
-
-        manager.update_token_usage(session_id, usage["total_tokens"])
-        logger.info(f"[routes_chat] section write completed", session_id=session_id, section_id=section_id, token_usage=usage)
-
+        result = write_outline_section(session, section_node, language=language, feedback=feedback)
+    except ValueError as e:
+        logger.warning("[routes_chat] invalid content generated", session_id=session_id,
+                       section_id=section_id, error=str(e))
         return JSONResponse({
-            "success": True,
-            "section_id": section_id,
-            "content": content,
-            "token_usage": usage,
-            "total_tokens": session.total_tokens
-        })
-
+            "success": False,
+            "message": str(e)
+        }, status_code=400)
     except LLMError as e:
-        logger.error(f"[routes_chat] section write failed", session_id=session_id, section_id=section_id, error=str(e))
+        logger.error("[routes_chat] section write failed", session_id=session_id,
+                     section_id=section_id, error=str(e))
         return JSONResponse({
             "success": False,
             "message": f"内容撰写失败: {str(e)}"
         }, status_code=500)
 
+    logger.info("[routes_chat] section write completed", session_id=session_id,
+                section_id=section_id, version=result["version"],
+                revision=result["revision"], quality_issues=len(result["quality"]))
+
+    return JSONResponse({
+        "success": True,
+        "section_id": section_id,
+        "content": result["content"],
+        "version": result["version"],
+        "diff": result["diff"],
+        "quality": result["quality"],
+        "revision": result["revision"],
+        "section_kind": result["section_kind"],
+        "token_usage": result["usage"],
+        "total_tokens": session.total_tokens
+    })
 
 def find_section_by_id(node: OutlineNode, target_id: str) -> Optional[OutlineNode]:
     """根据ID查找章节节点"""
@@ -522,20 +606,6 @@ def find_section_by_id(node: OutlineNode, target_id: str) -> Optional[OutlineNod
     return None
 
 
-def build_outline_text(node: OutlineNode, prefix: str = "") -> str:
-    """构建提纲文本"""
-    if node.level > 0:
-        lines = [f"{prefix}{node.title}"]
-    else:
-        lines = []
-
-    for child in node.children:
-        child_prefix = prefix if node.level == 0 else prefix
-        lines.append(build_outline_text(child, child_prefix))
-
-    return "\n".join(filter(None, lines))
-
-
 @router.post("/rct/write")
 async def write_rct_chapter(
     session_id: str = Form(...),
@@ -544,7 +614,7 @@ async def write_rct_chapter(
     revision_feedback: str = Form("")
 ):
     """
-    RCT模式 - 撰写章节内容
+    RCT模式 - 撰写章节内容（revision_feedback 非空时进入修订模式）
 
     Args:
         session_id: 会话ID
@@ -553,105 +623,63 @@ async def write_rct_chapter(
         revision_feedback: 修订反馈（可选）
 
     Returns:
-        撰写的内容
+        正文、版本号、与上一稿的差异、确定性校验结果
     """
-    logger.info(f"[routes_chat] write_rct_chapter called", session_id=session_id, chapter=chapter, language=language, has_revision=bool(revision_feedback))
+    logger.info("[routes_chat] write_rct_chapter called", session_id=session_id, chapter=chapter,
+                language=language, has_revision=bool(revision_feedback))
 
     session = manager.get_session(session_id)
     if not session:
-        logger.warning(f"[routes_chat] session not found", session_id=session_id)
+        logger.warning("[routes_chat] session not found", session_id=session_id)
         return JSONResponse({
             "success": False,
             "message": "会话不存在"
         }, status_code=404)
 
     if session.mode != SessionMode.RCT:
-        logger.warning(f"[routes_chat] wrong mode for rct write", session_id=session_id, mode=session.mode.value)
+        logger.warning("[routes_chat] wrong mode for rct write", session_id=session_id, mode=session.mode.value)
         return JSONResponse({
             "success": False,
             "message": "此操作仅适用于RCT模式"
         }, status_code=400)
 
-    llm = LLMClient()
+    entry = session.rct_section(chapter)
+    if revision_feedback and not (entry and (entry.get("content_zh") or entry.get("content"))):
+        return JSONResponse({
+            "success": False,
+            "message": f"{chapter} 章节尚无正文，无法提交修订意见；请先撰写本章"
+        }, status_code=400)
 
     try:
-        study_info = f"研究方案：\n{session.protocol_text[:2000]}" if session.protocol_text else "暂无研究方案"
-        analysis_results = f"统计分析结果：\n{session.analysis_text[:2000]}" if session.analysis_text else "暂无分析结果"
-        
-        # 获取章节的修订历史
-        chapter_entry = next((s for s in session.sections if s.get("chapter") == chapter), None)
-        revision_history = ""
-        if chapter_entry and chapter_entry.get("revisions"):
-            revision_history = "\n\n【修订意见历史】：\n" + "\n".join([f"{i+1}. {r}" for i, r in enumerate(chapter_entry["revisions"][-3:])])
-        
-        # 如果有新的修订反馈，添加到历史
-        if revision_feedback:
-            revision_history += f"\n\n【最新修订意见】：\n{revision_feedback}"
-        
-        if revision_history:
-            analysis_results += revision_history
-            logger.debug(f"[routes_chat] revision feedback added", session_id=session_id, chapter=chapter, feedback_length=len(revision_feedback))
-        
-        logger.debug(f"[routes_chat] writing RCT chapter", session_id=session_id, chapter=chapter, study_info_length=len(study_info), analysis_length=len(analysis_results))
-
-        content, usage = llm.generate(
-            prompt="",
-            system_prompt=ExpertFactory.get_rct_writer_prompt(
-                chapter=chapter,
-                language=language,
-                study_info=study_info,
-                analysis_results=analysis_results
-            ),
-            temperature=0.3,
-            max_tokens=3000
-        )
-
-        # 清洗内容
-        cleaned_content = cleaner.clean_content(content)
-        if not cleaner.is_valid_content(cleaned_content):
-            logger.warning(f"[routes_chat] invalid RCT content detected", session_id=session_id, chapter=chapter, original_length=len(content))
-            return JSONResponse({
-                "success": False,
-                "message": "生成的内容无效，请检查研究方案和统计分析结果是否完整"
-            }, status_code=400)
-
-        manager.update_token_usage(session_id, usage["total_tokens"])
-        logger.debug(f"[routes_chat] RCT chapter generated and cleaned", session_id=session_id, chapter=chapter, original_length=len(content), cleaned_length=len(cleaned_content))
-
-        # 更新章节内容
-        session.current_chapter = chapter
-        if chapter_entry:
-            chapter_entry["content_zh"] = cleaned_content
-            chapter_entry["content"] = cleaned_content  # 保持向后兼容
-            chapter_entry["status"] = "pending_review"
-        else:
-            session.sections.append({
-                "chapter": chapter,
-                "content_zh": cleaned_content,
-                "content": cleaned_content,  # 保持向后兼容
-                "status": "pending_review"
-            })
-
-        # 保存会话
-        manager._save_session(session_id)
-        logger.debug(f"[routes_chat] session saved after writing chapter", session_id=session_id, chapter=chapter)
-
-        logger.info(f"[routes_chat] RCT chapter write completed", session_id=session_id, chapter=chapter, token_usage=usage)
-
+        result = write_rct_section(session, chapter, language=language, feedback=revision_feedback)
+    except ValueError as e:
+        logger.warning("[routes_chat] invalid RCT content", session_id=session_id, chapter=chapter, error=str(e))
         return JSONResponse({
-            "success": True,
-            "chapter": chapter,
-            "content": cleaned_content,
-            "token_usage": usage,
-            "total_tokens": session.total_tokens
-        })
-
+            "success": False,
+            "message": str(e)
+        }, status_code=400)
     except LLMError as e:
-        logger.error(f"[routes_chat] RCT chapter write failed", session_id=session_id, chapter=chapter, error=str(e))
+        logger.error("[routes_chat] RCT chapter write failed", session_id=session_id, chapter=chapter, error=str(e))
         return JSONResponse({
             "success": False,
             "message": f"内容撰写失败: {str(e)}"
         }, status_code=500)
+
+    logger.info("[routes_chat] RCT chapter write completed", session_id=session_id, chapter=chapter,
+                version=result["version"], revision=result["revision"])
+
+    return JSONResponse({
+        "success": True,
+        "chapter": chapter,
+        "content": result["content"],
+        "version": result["version"],
+        "diff": result["diff"],
+        "quality": result["quality"],
+        "revision": result["revision"],
+        "section_kind": result["section_kind"],
+        "token_usage": result["usage"],
+        "total_tokens": session.total_tokens
+    })
 
 
 @router.post("/rct/approve")
@@ -669,25 +697,34 @@ async def approve_rct_chapter(
     Returns:
         审核结果
     """
-    logger.info(f"[routes_chat] approve_rct_chapter called", session_id=session_id, chapter=chapter)
+    logger.info("[routes_chat] approve_rct_chapter called", session_id=session_id, chapter=chapter)
 
     session = manager.get_session(session_id)
     if not session:
-        logger.warning(f"[routes_chat] session not found", session_id=session_id)
+        logger.warning("[routes_chat] session not found", session_id=session_id)
         return JSONResponse({
             "success": False,
             "message": "会话不存在"
         }, status_code=404)
 
-    chapter_entry = next((s for s in session.sections if s.get("chapter") == chapter), None)
-    if chapter_entry:
-        chapter_entry["status"] = "approved"
-        logger.debug(f"[routes_chat] RCT chapter approved", session_id=session_id, chapter=chapter)
+    chapter_entry = session.rct_section(chapter)
+    if not chapter_entry:
+        return JSONResponse({
+            "success": False,
+            "message": f"{chapter} 章节不存在或无正文"
+        }, status_code=404)
 
-    logger.info(f"[routes_chat] RCT chapter approval completed", session_id=session_id, chapter=chapter)
+    chapter_entry["status"] = "approved"
+    chapter_entry["approved_at"] = __import__("datetime").datetime.now().isoformat(timespec="seconds")
+    # 审核状态必须落盘，否则重启后回到"待审核"
+    manager.save(session_id)
+
+    logger.info("[routes_chat] RCT chapter approval completed", session_id=session_id, chapter=chapter)
     return JSONResponse({
         "success": True,
-        "message": f"{chapter} 章节已审核通过"
+        "message": f"{chapter} 章节已审核通过",
+        "chapter": chapter,
+        "status": "approved"
     })
 
 
@@ -695,42 +732,83 @@ async def approve_rct_chapter(
 async def revise_rct_chapter(
     session_id: str = Form(...),
     chapter: str = Form(...),
-    feedback: str = Form(...)
+    feedback: str = Form(...),
+    regenerate: bool = Form(True)
 ):
     """
-    RCT模式 - 提交修订意见
+    RCT模式 - 提交修订意见并生成新版本
+
+    设计依据：审查报告 3.1 节。旧实现只把意见记在会话里、等前端另发一次
+    写作请求，导致"提交了意见但稿子没变"。现在一次调用完成：
+        记录意见 → 保留旧稿 → 生成新稿 → 返回差异 → 回到待审核
 
     Args:
         session_id: 会话ID
         chapter: 章节名称
         feedback: 修订意见
+        regenerate: 是否立即重新生成（默认 True）
 
     Returns:
-        修订结果
+        修订后的正文、版本、差异
     """
-    logger.info(f"[routes_chat] revise_rct_chapter called", session_id=session_id, chapter=chapter, feedback_length=len(feedback))
+    logger.info("[routes_chat] revise_rct_chapter called", session_id=session_id,
+                chapter=chapter, feedback_length=len(feedback), regenerate=regenerate)
 
     session = manager.get_session(session_id)
     if not session:
-        logger.warning(f"[routes_chat] session not found", session_id=session_id)
+        logger.warning("[routes_chat] session not found", session_id=session_id)
         return JSONResponse({
             "success": False,
             "message": "会话不存在"
         }, status_code=404)
 
-    chapter_entry = next((s for s in session.sections if s.get("chapter") == chapter), None)
-    if chapter_entry:
-        chapter_entry["status"] = "revision"
-        chapter_entry.setdefault("revisions", []).append(feedback)
-        logger.debug(f"[routes_chat] revision added", session_id=session_id, chapter=chapter)
+    chapter_entry = session.rct_section(chapter)
+    if not chapter_entry:
+        return JSONResponse({
+            "success": False,
+            "message": f"{chapter} 章节不存在或无正文"
+        }, status_code=404)
 
-    logger.info(f"[routes_chat] revision submitted", session_id=session_id, chapter=chapter)
+    chapter_entry.setdefault("revisions", []).append({
+        "feedback": feedback,
+        "created_at": __import__("datetime").datetime.now().isoformat(timespec="seconds"),
+        "status": "pending_regeneration",
+    })
+    chapter_entry["status"] = "revision"
+    chapter_entry["feedback"] = feedback
+    manager.save(session_id)
+
+    if not regenerate:
+        return JSONResponse({
+            "success": True,
+            "message": "修订意见已记录",
+            "chapter": chapter,
+            "regenerated": False
+        })
+
+    try:
+        result = write_rct_section(session, chapter, feedback=feedback)
+    except (LLMError, ValueError) as e:
+        logger.error("[routes_chat] RCT revision regeneration failed", session_id=session_id,
+                     chapter=chapter, error=str(e))
+        # 意见已保存，稿件仍是旧版——明确告知，避免用户误以为已修改
+        return JSONResponse({
+            "success": False,
+            "message": f"修订意见已保存，但重新生成失败：{str(e)}",
+            "feedback_saved": True,
+            "chapter": chapter
+        }, status_code=500)
+
     return JSONResponse({
         "success": True,
-        "message": "修订意见已提交"
+        "message": "已按修订意见生成新版本",
+        "chapter": chapter,
+        "regenerated": True,
+        "content": result["content"],
+        "version": result["version"],
+        "diff": result["diff"],
+        "quality": result["quality"]
     })
-
-
 @router.get("/status")
 async def get_chat_status(
     session_id: str

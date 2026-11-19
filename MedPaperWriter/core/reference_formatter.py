@@ -1,9 +1,69 @@
 """
 参考文献格式化服务
 支持多种参考文献格式
+
+设计依据：MedPaperWriter 设计审查 3.6 节
+    MedPaperHunter 输出的是 ``pub_date``、``journal_title``、作者对象列表，
+    Writer 早期只认 ``year`` / ``journal`` / 字符串作者，直接传入 Hunter 的
+    文章字典会丢年份。这里增加一层规范化（canonical schema adapter），
+    让三个子模块的字段差异在入口处被吸收，而不是各写一套。
 """
 
-from typing import Dict, Any, Optional
+import re
+from typing import Any, Dict, List, Optional
+
+
+def _author_to_text(author: Any) -> str:
+    """把 Hunter / PubMed / 手工录入的作者统一成字符串"""
+    if isinstance(author, str):
+        return author.strip()
+    if isinstance(author, dict):
+        # PubMed 风格：LastName + Initials；也兼容 CollectiveName
+        if author.get("collective_name") or author.get("CollectiveName"):
+            return str(author.get("collective_name") or author.get("CollectiveName"))
+        last = author.get("last_name") or author.get("LastName") or author.get("last") or ""
+        initials = author.get("initials") or author.get("Initials") or author.get("first") or ""
+        name = " ".join(part for part in (last, initials) if part).strip()
+        return name or str(author.get("name", "")).strip()
+    return str(author)
+
+
+def _derive_year(article: Dict[str, Any]) -> str:
+    """年份字段容错：year / pub_date / publication_date / date"""
+    year = article.get("year")
+    if year:
+        match = re.search(r"(19|20)\d{2}", str(year))
+        return match.group(0) if match else str(year)
+
+    for key in ("pub_date", "publication_date", "date", "published_at", "epub_date"):
+        value = article.get(key)
+        if value:
+            match = re.search(r"(19|20)\d{2}", str(value))
+            if match:
+                return match.group(0)
+    return ""
+
+
+def normalize_reference(article: Dict[str, Any]) -> Dict[str, str]:
+    """把不同来源的文献字典规范化为格式化器可消费的字段"""
+    authors = article.get("authors") or article.get("author_list") or article.get("author")
+    if isinstance(authors, list):
+        author_text = ", ".join(filter(None, (_author_to_text(a) for a in authors)))
+    else:
+        author_text = _author_to_text(authors) if authors else ""
+
+    return {
+        "authors": author_text,
+        "title": (article.get("title") or "").strip(),
+        "journal": (article.get("journal") or article.get("journal_title")
+                    or article.get("source") or article.get("ta") or "").strip(),
+        "year": _derive_year(article),
+        "volume": str(article.get("volume") or "").strip(),
+        "issue": str(article.get("issue") or "").strip(),
+        "pages": str(article.get("pages") or article.get("page_info") or article.get("pages_or_elocation") or "").strip(),
+        "doi": (article.get("doi") or "").strip(),
+        "pmid": str(article.get("pmid") or "").strip(),
+    }
 
 
 class ReferenceFormatter:
@@ -25,31 +85,26 @@ class ReferenceFormatter:
         格式化参考文献
 
         Args:
-            article: 文献信息字典
-                - authors: 作者列表或字符串
-                - title: 标题
-                - journal: 期刊名
-                - year: 年份
-                - volume: 卷
-                - issue: 期
-                - pages: 页码
-                - doi: DOI
+            article: 文献信息字典（字段可来自 PubMed/Hunter/手工录入，
+                由 normalize_reference 统一）
 
         Returns:
             格式化后的参考文献字符串
         """
-        if self.style == "vancouver":
-            return self._format_vancouver(article)
-        elif self.style == "apa":
+        article = normalize_reference(article)
+
+        if self.style == "apa":
             return self._format_apa(article)
-        elif self.style == "mla":
+        if self.style == "mla":
             return self._format_mla(article)
-        elif self.style == "chicago":
+        if self.style == "chicago":
             return self._format_chicago(article)
-        elif self.style == "gb7714":
+        if self.style == "gb7714":
             return self._format_gb7714(article)
-        else:
-            return self._format_vancouver(article)
+        return self._format_vancouver(article)
+
+    def format_references(self, references: List[Dict[str, Any]]) -> List[str]:
+        return [self.format_reference(ref) for ref in references or []]
 
     def _format_authors(self, authors: Any, max_display: int = 6) -> str:
         """格式化作者列表"""
@@ -60,10 +115,10 @@ class ReferenceFormatter:
             return authors
 
         if isinstance(authors, list):
-            if len(authors) <= max_display:
-                return ", ".join(authors)
-            else:
-                return ", ".join(authors[:max_display]) + ", et al."
+            names = [_author_to_text(a) for a in authors]
+            if len(names) <= max_display:
+                return ", ".join(names)
+            return ", ".join(names[:max_display]) + ", et al."
 
         return str(authors)
 
@@ -96,6 +151,10 @@ class ReferenceFormatter:
 
         if pages:
             parts.append(f":{pages}")
+
+        # DOI 是引用可核验性的关键：有就附上，便于读者定位原文
+        if article.get("doi"):
+            parts.append(f"doi: {article['doi']}")
 
         return " ".join(parts) + "."
 

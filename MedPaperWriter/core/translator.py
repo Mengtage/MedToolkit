@@ -12,7 +12,17 @@ class AcademicTranslator:
     """学术翻译器"""
     
     def __init__(self):
-        self.llm = LLMClient()
+        # 懒加载：避免在缺少 LLM_API_KEY 的环境里，仅导入本模块就抛错，
+        # 导致主应用（以及不需要翻译的导出流程）无法启动。
+        self._llm: Optional[LLMClient] = None
+        # 最近一次翻译失败的原因；调用方可据此在导出结果中如实提示
+        self.last_error: Optional[str] = None
+
+    @property
+    def llm(self) -> LLMClient:
+        if self._llm is None:
+            self._llm = LLMClient()
+        return self._llm
     
     def translate_to_english(self, text: str, context: str = "") -> str:
         """
@@ -25,9 +35,10 @@ class AcademicTranslator:
         Returns:
             英文翻译结果
         """
+        self.last_error = None
         if not text or not text.strip():
             return ""
-        
+
         system_prompt = "You are a professional medical/academic translator. Translate the given Chinese text into fluent, natural academic English.\n\nRequirements:\n- Maintain scientific accuracy and terminology\n- Use appropriate academic vocabulary\n- Preserve original meaning and structure\n- Do not add extra content\n- Keep statistical values, numbers, and formulas unchanged\n- Ensure proper grammar and sentence structure\n- For medical terms, use standard English medical terminology"
 
         user_prompt = f"Please translate this into academic English:\n{text}\n\n{'-' * 50}\nContext/Research Topic (for reference):\n{context if context else 'Not provided'}"
@@ -41,6 +52,7 @@ class AcademicTranslator:
             )
             return result.strip()
         except Exception as e:
+            self.last_error = str(e)
             print(f"[Translator] English translation failed: {e}")
             return text
     
@@ -55,9 +67,10 @@ class AcademicTranslator:
         Returns:
             中文翻译结果
         """
+        self.last_error = None
         if not text or not text.strip():
             return ""
-        
+
         system_prompt = "You are a professional medical/academic translator. Translate the given English text into fluent, natural academic Chinese.\n\nRequirements:\n- Maintain scientific accuracy and terminology\n- Use appropriate academic vocabulary\n- Preserve original meaning and structure\n- Do not add extra content\n- Keep statistical values, numbers, and formulas unchanged\n- Ensure proper grammar and sentence structure\n- For medical terms, use standard Chinese medical terminology"
 
         user_prompt = f"Please translate this into academic Chinese:\n{text}\n\n{'-' * 50}\nContext/Research Topic (for reference):\n{context if context else 'Not provided'}"
@@ -71,10 +84,12 @@ class AcademicTranslator:
             )
             return result.strip()
         except Exception as e:
+            self.last_error = str(e)
             print(f"[Translator] Chinese translation failed: {e}")
             return text
     
     def translate_outline_title(self, title: str, context: str = "") -> str:
+        self.last_error = None
         """
         翻译提纲标题（更简洁）
         
@@ -101,6 +116,7 @@ class AcademicTranslator:
             )
             return result.strip()
         except Exception as e:
+            self.last_error = str(e)
             print(f"[Translator] Title translation failed: {e}")
             return title
 

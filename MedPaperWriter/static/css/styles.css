@@ -1105,3 +1105,28 @@ body {
     margin-right: 0;
   }
 }
+
+/* ===== 确定性校验结果（写作后 / 导出后展示） ===== */
+.quality-item {
+    margin: 6px 0;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    line-height: 1.5;
+    border-left: 3px solid transparent;
+}
+.quality-item.quality-error {
+    background: #fef2f2;
+    border-left-color: #ef4444;
+    color: #991b1b;
+}
+.quality-item.quality-warning {
+    background: #fffbeb;
+    border-left-color: #f59e0b;
+    color: #92400e;
+}
+.quality-item.quality-info {
+    background: #f0f9ff;
+    border-left-color: #3b82f6;
+    color: #1e40af;
+}

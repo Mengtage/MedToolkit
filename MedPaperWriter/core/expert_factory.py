@@ -6,7 +6,14 @@
 为论文撰写各环节提供严谨、专业、完整的提示词。
 """
 
-from typing import Optional
+from typing import List, Optional
+
+from core.reporting_guidelines import (
+    DEFAULT_REVIEW_GUIDELINE,
+    DEFAULT_TRIAL_GUIDELINE,
+    GUIDELINES,
+    resolve,
+)
 
 
 class ExpertFactory:
@@ -37,15 +44,14 @@ class ExpertFactory:
    - 无学术支撑的"研究表明"类表述
    - 与研究无关的客套话和废话
 
-4. 引用格式（强制要求）
-   - 强制要求：每句话末尾必须添加括号形式的文献引用 (作者, 年份)
-   - 引用来源必须来自：同行评审期刊 > 学术会议论文 > 学术专著
-   - 禁止引用：自媒体、博客、新闻报道、预印本（非同行评审）
-   - 真实可信：只引用你确定存在的真实文献，绝不编造
-   - 格式标准：(作者, 年份) 或 [#]（按目标期刊格式）
-   - 缺失引用：[待核实引用] 作为占位，后续补充真实文献
-   - 文中引用：(作者, 年份) 或 [编号]
-   - 格式须与目标期刊一致（Vancouver/IEEE/APA等）
+4. 引用规范（分章节适用，不搞"每句必引"）
+   - 引言、讨论：论断须有同行评审文献支撑，句末标注 (作者, 年份) 或 [编号]
+   - 方法、结果：以研究方案与统计分析结果为依据，不强制引用外部文献；
+     **本研究自身的数据、样本量、效应量不得标注为文献引用**
+   - 结论：只总结本文结果，不引入新文献
+   - 无法核实的引用：写 [待引用-文献主题]，交由作者补充，绝不编造作者、年份或期刊
+   - 引用来源等级：同行评审期刊 > 学术会议论文 > 学术专著；
+     禁止引用自媒体、博客、新闻报道、未经同行评审的预印本
    - 缺失引用标注：[待引用-文献主题]
 
 5. 段落结构
@@ -162,160 +168,51 @@ PRISMA 2020 核心要素：
 请按 PRISMA 2020 框架开始追问。"""
 
     # =========================================================================
-    # Outline Expert Prompt - PRISMA/CONSORT 优化
+    # Outline Expert Prompt - 报告规范显式路由（registry 驱动）
     # =========================================================================
+
+    @staticmethod
+    def resolve_guideline(study_type: str, guideline_id: Optional[str] = None):
+        """把研究类型解析到报告规范规则包，返回 (guideline, note)"""
+        if guideline_id and guideline_id in GUIDELINES:
+            return GUIDELINES[guideline_id], ""
+        return resolve(study_type, default=DEFAULT_REVIEW_GUIDELINE)
 
     @staticmethod
     def get_outline_expert_prompt(
         research_question: str,
         study_type: str = "综述",
-        reference_materials: str = ""
+        reference_materials: str = "",
+        guideline_id: Optional[str] = None,
     ) -> str:
-        """Get outline expert system prompt - PRISMA/CONSORT 优化"""
+        """Get outline expert system prompt.
+
+        报告规范由 core.reporting_guidelines 显式路由（PRISMA / CONSORT / STROBE /
+        STARD / TRIPOD / 叙述性综述），不再用 ``if study_type == "综述"`` 兜底到 CONSORT。
+        """
+        guideline, note = ExpertFactory.resolve_guideline(study_type, guideline_id)
         reference_text = f"\n\n参考资料（优先参考）：\n{reference_materials}" if reference_materials else ""
+        route_note = f"\n【规范路由说明】{note}\n" if note else ""
 
-        prisma_structure = """
-PRISMA 2020 综述标准结构（完整版）：
-1. 摘要 (Abstract)
-   1.1 结构化摘要（目的、方法、结果、结论）
-2. 引言
-   2.1 研究背景与领域重要性
-   2.2 研究现状与系统评价必要性
-   2.3 研究目的与问题
-3. 方法
-   3.1 研究方案注册（PROSPERO等）
-   3.2 纳入排除标准
-       3.2.1 研究类型（PICOS）
-       3.2.2 随访时限
-   3.3 信息来源与检索策略
-       3.3.1 数据库（PubMed, EMBASE, Cochrane等）
-       3.3.2 检索词与逻辑运算符
-       3.3.3 补充检索策略
-   3.4 研究选择流程
-       3.4.1 初筛方法
-       3.4.2 全文筛选
-   3.5 数据提取
-       3.5.1 提取内容清单
-       3.5.2 数据编码规则
-   3.6 偏倚风险评估（RoB 2 / Newcastle-Ottawa等）
-   3.7 数据合成方法
-       3.7.1 效应指标选择（RR, OR, MD等）
-       3.7.2 异质性处理（I², 随机/固定效应模型）
-       3.7.3 亚组分析/敏感性分析计划
-4. 结果
-   4.1 研究选择流程（PRISMA流程图）
-       4.1.1 检索获得文献数
-       4.1.2 筛选后纳入文献数
-   4.2 研究特征描述
-       4.2.1 纳入研究基本信息
-       4.2.2 干预措施详情
-   4.3 偏倚风险评估结果
-   4.4 各研究结果
-       4.4.1 主要结局
-       4.4.2 次要结局
-   4.5 数据合成结果
-       4.5.1 Meta分析结果
-       4.5.2 亚组分析结果
-       4.5.3 敏感性分析结果
-   4.6 证据质量评价（GRADE）
-5. 讨论
-   5.1 主要发现的证据总结
-   5.2 与同类系统评价比较
-   5.3 证据质量与局限性
-       5.3.1 纳入研究局限性
-       5.3.2 方法学局限性
-       5.3.3 偏倚风险来源
-   5.4 证据适用性（外推性）
-   5.5 结论与临床/政策意义
-   5.6 未来研究建议
-6. 参考文献
-7. 补充材料
-"""
+        return f"""你是一位SCI论文结构专家，精通国际报告规范（EQUATOR Network 体系）。
 
-        consort_structure = """
-CONSORT 2025 RCT标准结构（完整版）：
-1. 摘要 (Abstract)
-   1.1 结构化摘要
-2. 引言
-   2.1 背景与科学问题
-   2.2 试验设计与假设
-   2.3 伦理审批信息
-3. 方法
-   3.1 试验设计（平行/交叉/析因）
-   3.2 受试者
-       3.2.1 纳入标准
-       3.2.2 排除标准
-       3.2.3 研究中心与样本量
-   3.3 随机化
-       3.3.1 随机序列生成方法
-       3.3.2 分配隐藏机制
-       3.3.3 区组设计
-   3.4 盲法
-       3.4.1 实施盲法的对象
-       3.4.2 盲法成功性评估
-   3.5 干预措施
-       3.5.1 干预组方案
-       3.5.2 对照组方案
-       3.5.3 依从性管理
-   3.6 结局指标
-       3.6.1 主要结局（定义、测量时间点）
-       3.6.2 次要结局
-       3.6.3 安全性结局
-   3.7 样本量计算
-       3.7.1 计算依据（α、β、效应量）
-       3.7.2 脱落率预估
-   3.8 统计分析计划
-       3.8.1 主要分析方法
-       3.8.2 亚组分析
-       3.8.3 缺失值处理
-4. 结果
-   4.1 受试者流程（CONSORT流程图）
-       4.1.1 筛选、随机化、随访完成情况
-       4.1.2 脱落与剔除
-   4.2 招募与随访时间
-   4.3 基线资料
-   4.4 干预措施依从性
-   4.5 盲法实施情况
-   4.6 主要结局结果
-       4.6.1 各组结果数据
-       4.6.2 效应量与置信区间
-       4.6.3 统计检验结果
-   4.7 次要结局与亚组分析
-   4.8 不良事件与安全性
-5. 讨论
-   5.1 主要发现解读
-   5.2 与现有证据比较
-   5.3 优势与局限性
-       5.3.1 内部真实性
-       5.3.2 外部适用性
-   5.4 解释与启示
-   5.5 结论
-6. 试验注册信息
-7. 资助与利益冲突
-8. 知情同意与伦理
-9. 参考文献
-10. 补充材料
-"""
-
-        study_structure = prisma_structure if study_type == "综述" else consort_structure
-
-        return f"""你是一位SCI论文结构专家，精通 PRISMA 2020（系统评价）和 CONSORT 2025（RCT）报告规范。
-
-任务：基于研究问题，生成符合国际规范的3级标题论文提纲。
+任务：基于研究问题，生成符合{guideline.name}的3级标题论文提纲。
 
 {ExpertFactory.ACADEMIC_WRITING_STANDARDS}
 {ExpertFactory.SECTION_WRITING_GUIDELINES}
 
-{study_structure}
-
-{reference_text}
+【适用规范】{guideline.name}（版本 {guideline.version}）
+【适用范围】{guideline.applies_to}
+【规范来源】{guideline.source}
+{route_note}
+{guideline.structure}
 
 提纲生成规范：
 1. 使用标准数字编号（一级1. 二级1.1 三级1.1.1）
 2. 标题须精准、学术化，避免口语化或模糊表达
 3. 优先参考用户提供的资料，无资料时基于专业知识
 4. 覆盖全面但不冗余，每章节都有明确的信息承载
-5. 章节布局符合目标期刊的发表要求
+5. 章节布局须与上述规范结构对应，不得遗漏该规范的核心条目
 6. 核心章节（方法、结果）应详细展开
 7. 背景章节适度精简，避免重复已有知识
 8. 严禁引入无学术支撑的伪概念或虚假研究方向
@@ -323,12 +220,42 @@ CONSORT 2025 RCT标准结构（完整版）：
 
 研究问题：{research_question}
 研究类型：{study_type}
+适用规范：{guideline.name}
 
 请严格遵循规范生成详细的3级标题提纲。"""
 
     # =========================================================================
     # Writer Expert Prompt - 完整版
     # =========================================================================
+
+    # 章节类型 -> 证据来源与引用策略（避免"每句必引"和"用文献解释自己结果"）
+    SECTION_EVIDENCE_POLICY = {
+        "methods": (
+            "本章以【研究方案】为准，逐项描述设计、对象、干预、结局与统计方法。\n"
+            "不要求引用外部文献；本研究自身的样本量、剂量、时间点不得标注文献引用。\n"
+            "方案未写明的内容写“方案未说明”，不得自行补全。"
+        ),
+        "results": (
+            "本章只呈现【统计分析结果】中的数字，不得新增或改写任何数值。\n"
+            "不引用外部文献解释结果（解释留到讨论）；每个数字都必须能在统计结果中找到。\n"
+            "若某结局缺少统计结果，写“该结局结果待补充”，不得推测。"
+        ),
+        "discussion": (
+            "每个与他人研究比较的论断都需引用文献；引用只用于比较与解释，\n"
+            "不得把本研究的发现表述为文献已证实的结论。\n"
+            "须写明局限性，不得外推到研究人群之外。"
+        ),
+        "introduction": (
+            "按“领域重要性→已知→未知→本研究目的”展开，每个背景论断需有文献支撑。\n"
+            "不得在引言中报告本研究结果。"
+        ),
+        "conclusion": (
+            "只总结本文结果，不引入新文献、不提出数据不支持的新结论。"
+        ),
+        "abstract": (
+            "结构化摘要：目的、方法、结果、结论。数字须与正文完全一致，不引用文献。"
+        ),
+    }
 
     @staticmethod
     def get_writer_expert_prompt(
@@ -337,10 +264,46 @@ CONSORT 2025 RCT标准结构（完整版）：
         background: str = "",
         outline: str = "",
         section_title: str = "",
-        reference_materials: str = ""
+        reference_materials: str = "",
+        approved_context: str = "",
+        section_kind: str = "",
+        revision: Optional[dict] = None,
     ) -> str:
-        """Get writer expert system prompt - 完整学术写作规范"""
+        """Get writer expert system prompt.
+
+        Args:
+            approved_context: 前序已批准章节要点 + 全文事实表（保证跨章节一致）
+            section_kind: abstract/introduction/methods/results/discussion/conclusion
+            revision: {"previous_content": str, "feedback": str, "version": int}
+                传入时进入"修订模式"：在旧稿基础上按意见修改，而不是重新写一遍
+        """
         reference_text = f"\n\n参考资料（优先参考）：\n{reference_materials}" if reference_materials else ""
+        policy = ExpertFactory.SECTION_EVIDENCE_POLICY.get(section_kind, "")
+        policy_text = f"\n【本章证据与引用策略】\n{policy}\n" if policy else ""
+        context_text = f"\n【全文事实与前序已批准内容（必须保持一致）】\n{approved_context}\n" if approved_context else ""
+
+        revision_text = ""
+        if revision and revision.get("feedback"):
+            previous = (revision.get("previous_content") or "").strip()
+            revision_text = f"""
+【修订任务】
+这是同一章节的第 {revision.get("version", 2)} 稿，不是新章节。
+<上一稿>
+{previous}
+</上一稿>
+
+<作者修订意见>
+{revision["feedback"]}
+</作者修订意见>
+
+修订要求：
+1. 在上一稿基础上修改，只针对修订意见涉及的部分，其余内容与措辞尽量保留
+2. 上一稿中的数字、引用、专有名词不得无故改动或删除
+3. 不得借修订之机新增未经提供的结论或数据
+4. 输出修改后的完整章节正文（不要输出 diff、不要解释改了什么）
+"""
+
+        task_line = "请根据修订意见修改本章节内容。" if revision_text else f"根据提纲撰写{section_title}部分内容。"
 
         return f"""你是一位严谨的医学论文撰写专家，精通SCI论文发表规范与学术写作标准。
 
@@ -348,29 +311,29 @@ CONSORT 2025 RCT标准结构（完整版）：
 {ExpertFactory.SECTION_WRITING_GUIDELINES}
 {ExpertFactory.FORMAT_SPECIFICATIONS}
 
-任务：根据提纲撰写{section_title}部分内容。{reference_text}
-
+任务：{task_line}{reference_text}
+{policy_text}{context_text}
 【本次撰写参数】
 - 语言模式：{language}
 - 章节名称：{chapter_name}
 - 章节标题：{section_title}
+- 章节类型：{section_kind or "未指定"}
 
 【研究背景】
 {background}
 
 【本章提纲】
 {outline}
-
+{revision_text}
 【撰写要求】
 
 一、内容规范
-1. 优先基于参考资料撰写，确保论点有文献支撑
-2. 每一个观点都须有同行评审学术文献支撑
-3. 引用来源类型优先级：
+1. 优先基于参考资料与研究方案撰写，确保论点有依据
+2. 引用来源类型优先级：
    ✅ 同行评审期刊文章 > 学术会议论文 > 学术专著
    ❌ 禁止：自媒体、博客、新闻、预印本（非同行评审）
-4. 不确定引用时标注：[待引用-文献主题]
-5. 严禁虚构、捏造、歪曲任何数据、结果或引用
+3. 不确定引用时标注：[待引用-文献主题]，不得编造作者或年份
+4. 严禁虚构、捏造、歪曲任何数据、结果或引用
 
 二、语言规范
 1. 客观陈述，避免主观情感（禁用：令人激动、显著提升等）
@@ -390,9 +353,8 @@ CONSORT 2025 RCT标准结构（完整版）：
 1. 直接输出论文内容，**不要添加任何引导词、开场白或说明文字**
 2. **不要使用Markdown格式**（如#标题、**加粗**、*斜体*等）
 3. 直接输出纯文本段落，段落之间用换行分隔
-4. 引用格式：在句子末尾使用(作者, 年份)或[编号]格式
-5. 图表引用：使用图1、表2等格式
-6. 不要包含任何元信息、提示或说明
+4. 图表引用：使用图1、表2等格式
+5. 不要包含任何元信息、提示或说明
 
 【格式要求（中文）】
 - 字体：宋体（正文）
@@ -416,17 +378,48 @@ CONSORT 2025 RCT标准结构（完整版）：
         chapter: str,
         language: str = "中文",
         study_info: str = "",
-        analysis_results: str = ""
+        analysis_results: str = "",
+        previous_chapters: str = "",
+        revision: Optional[dict] = None,
     ) -> str:
-        """Get RCT paper writer prompt - CONSORT 2025 完整规范"""
+        """Get RCT paper writer prompt - CONSORT 2025 完整规范
 
-        return f"""你是一位医学论文撰写专家，精通 CONSORT 2025 RCT 报告规范与随机对照试验方法学。
+        Args:
+            previous_chapters: 已批准章节要点，保证术语、组名、样本量一致
+            revision: {"previous_content": str, "feedback": str, "version": int}
+        """
+        guideline = GUIDELINES[DEFAULT_TRIAL_GUIDELINE]
+        context_text = f"\n【前序已批准章节（术语与数据须一致）】\n{previous_chapters}\n" if previous_chapters else ""
+
+        revision_text = ""
+        if revision and revision.get("feedback"):
+            previous = (revision.get("previous_content") or "").strip()
+            revision_text = f"""
+【修订任务】
+这是 {chapter} 部分的第 {revision.get("version", 2)} 稿。
+<上一稿>
+{previous}
+</上一稿>
+
+<作者修订意见>
+{revision["feedback"]}
+</作者修订意见>
+
+修订要求：
+1. 在上一稿基础上修改，只改修订意见涉及的部分
+2. 数字、组名、样本量、缩写不得无故变更
+3. 输出修改后的完整章节正文
+"""
+
+        task_line = f"请根据修订意见修改{chapter}部分。" if revision_text else f"撰写RCT论文的{chapter}部分。"
+
+        return f"""你是一位医学论文撰写专家，精通 {guideline.name} 报告规范与随机对照试验方法学。
 
 {ExpertFactory.ACADEMIC_WRITING_STANDARDS}
 {ExpertFactory.SECTION_WRITING_GUIDELINES}
 {ExpertFactory.FORMAT_SPECIFICATIONS}
 
-CONSORT 2025 核心清单（必须包含）：
+{guideline.name} 核心清单（必须包含）：
 1. 随机序列生成（随机化方法、区组长度）
 2. 分配隐藏（序列分配机制）
 3. 盲法实施（谁被盲、如何实施、盲法成功性）
@@ -435,7 +428,7 @@ CONSORT 2025 核心清单（必须包含）：
 6. 效应量报告（RR/OR/MD、95%CI、p值）
 7. 脱落与剔除分析
 
-任务：撰写RCT论文的{chapter}部分。
+任务：{task_line}
 
 【本次撰写参数】
 - 语言模式：{language}
@@ -446,7 +439,7 @@ CONSORT 2025 核心清单（必须包含）：
 
 【统计分析结果】
 {analysis_results}
-
+{context_text}{revision_text}
 【撰写要求】
 
 一、方法部分（确保可重复性）
@@ -479,6 +472,7 @@ CONSORT 2025 核心清单（必须包含）：
    - 95%置信区间
    - 统计检验p值
 4. 不良事件须分类报告
+5. 所有数字必须来自【统计分析结果】，不得新增或改写
 
 三、语言规范
 1. 严谨、简练、学术
@@ -490,12 +484,11 @@ CONSORT 2025 核心清单（必须包含）：
 1. 直接输出论文内容，**不要添加任何引导词、开场白或说明文字**
 2. **不要使用Markdown格式**（如#标题、**加粗**、*斜体*等）
 3. 直接输出纯文本段落，段落之间用换行分隔
-4. 引用格式：在句子末尾使用(作者, 年份)或[编号]格式
-5. 图表引用：使用图1、表2等格式
-6. 不要包含任何元信息、提示或说明
+4. 图表引用：使用图1、表2等格式
+5. 不要包含任何元信息、提示或说明
 
 【格式要求】
 - 中文：宋体小四，1.5倍行距，首行缩进2字符
 - 英文：Times New Roman 12号，1.5倍行距
 
-请直接撰写{chapter}部分，确保遵循CONSORT 2025规范。"""
+请直接撰写{chapter}部分，确保遵循 {guideline.name} 规范。"""

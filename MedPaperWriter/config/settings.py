@@ -55,6 +55,12 @@ class Settings:
         self.SESSION_DATA_DIR: Path = self.BASE_DIR / "data" / "sessions"
         self.MAX_QA_CONTEXT_LENGTH: int = 50  # 最大QA上下文轮数
 
+        # === 写作上下文预算 ===
+        # 替代原来的硬编码 [:2000] 截断：按章节检索证据后，再按预算组装上下文
+        self.CONTEXT_CHAR_BUDGET: int = int(os.getenv("CONTEXT_CHAR_BUDGET", "12000"))
+        self.SECTION_SUMMARY_CHARS: int = int(os.getenv("SECTION_SUMMARY_CHARS", "400"))
+        self.WRITER_MAX_TOKENS: int = int(os.getenv("WRITER_MAX_TOKENS", "3000"))
+
         # === 日志配置 ===
         self.LOG_DIR: Path = self.BASE_DIR / "logs"
         self.LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
