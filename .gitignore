@@ -1,0 +1,14 @@
+# Uploads and OS junk
+.uploads/
+.DS_Store
+__pycache__/
+*.py[cod]
+
+# Runtime data
+*.db
+*.db-shm
+*.db-wal
+logs/
+
+# Secrets
+.env
