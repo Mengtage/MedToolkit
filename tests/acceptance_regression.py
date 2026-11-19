@@ -36,3 +36,5 @@ def parser():
  df=pd.DataFrame({'y':[1,2,3,4],'g':['a','b','a','b']});y,X,n=r.FormulaParser.parse_formula('y ~ C(g)',df);assert X.shape==(4,1);return n
 for name,fn,dep in [('OLS independent least-squares',ols,True),('Logit analytic two-stratum MLE',logistic,True),('OLS missing-row count',missing,True),('Logit invalid outcomes',bad_input,True),('Confusion matrix arithmetic',counts,False),('AUC pairwise known 0.75',auc,False),('Constant probability threshold',constant,False),('Calibration boundary count',calibration_count,False),('ROC strict JSON constant scores',constant_json,False),('FormulaParser categorical',parser,False)]:check(name,fn,dep)
 (ROOT/'reports/acceptance-regression.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2));print(json.dumps(rows,ensure_ascii=False,indent=2))
+
+raise SystemExit(1 if any(row['status'] != 'PASS' for row in rows) else 0)

@@ -81,3 +81,5 @@ check('app_rubin_matches_dataset_level_estimates',ui_pool)
 output={'scope':'legacy missing-data and MICE acceptance; synthetic inputs only','pandas':pd.__version__,'numpy':np.__version__,'results':results,'counts':{s:sum(r['status']==s for r in results) for s in ['PASS','FAIL','BLOCKED']}}
 (ROOT/'reports/acceptance-missing.json').write_text(json.dumps(output,ensure_ascii=False,indent=2))
 print(json.dumps(output,ensure_ascii=False,indent=2))
+
+raise SystemExit(1 if any(row['status'] != 'PASS' for row in results) else 0)
