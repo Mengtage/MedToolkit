@@ -822,8 +822,10 @@ def generate_tableone():
                         row_values.append('-')
                 if pval:
                     p_row = next((p for p in result['p_values'] if p['variable'] == var), None)
-                    if p_row:
+                    if p_row and p_row.get('p_value') is not None:
                         row_values.append(f"{p_row['p_value']:.4f}")
+                    elif p_row:
+                        row_values.append('不可估计')
                     else:
                         row_values.append('-')
                 if smd and len(groups) == 2:
@@ -855,8 +857,10 @@ def generate_tableone():
                             row_values.append('-')
                     if pval and level == levels[0]:
                         p_row = next((p for p in result['p_values'] if p['variable'] == var), None)
-                        if p_row:
+                        if p_row and p_row.get('p_value') is not None:
                             row_values.append(f"{p_row['p_value']:.4f}")
+                        elif p_row:
+                            row_values.append('不可估计')
                         else:
                             row_values.append('-')
                     else:
@@ -1925,7 +1929,7 @@ def stats_normality():
         if test_all:
             results = {}
             for col in df.columns:
-                if var_types.get(col) in ['continuous', 'count']:
+                if var_types.get(col) in ['numeric_continuous', 'numeric_discrete']:
                     data = df[col].dropna().values
                     if len(data) >= 3:
                         results[col] = NormalityTests.all_tests(data)
@@ -2085,7 +2089,7 @@ def stats_correlation():
         matrix = request_data.get('matrix', False)
 
         if matrix:
-            numeric_cols = [c for c in df.columns if var_types.get(c) in ['continuous', 'count']]
+            numeric_cols = [c for c in df.columns if var_types.get(c) in ['numeric_continuous', 'numeric_discrete']]
             if len(numeric_cols) < 2:
                 return jsonify({'error': '需要至少2个数值变量'}), 400
 

@@ -16,9 +16,9 @@ try:
         pearsonr, spearmanr, chi2_contingency, fisher_exact,
         shapiro, kstest, normaltest, anderson
     )
-    STATSMODELS_AVAILABLE = True
+    SCIPY_AVAILABLE = True
 except ImportError:
-    STATSMODELS_AVAILABLE = False
+    SCIPY_AVAILABLE = False
 
 try:
     import statsmodels.api as sm
@@ -27,8 +27,8 @@ try:
         lilliefors, het_breuschpagan, het_white, acorr_ljungbox,
         normal_ad, breaks_hansen, spec_white
     )
-    from statsmodels.stats.proportion import binom_test, binom_proportion_test
-    from statsmodels.stats.multicomp import pairwise_tukeyhsd, multi_comparison
+    from statsmodels.stats.proportion import binom_test
+    from statsmodels.stats.multicomp import pairwise_tukeyhsd
     STATSMODELS_AVAILABLE = True
 except ImportError:
     STATSMODELS_AVAILABLE = False
@@ -56,14 +56,27 @@ class NormalityTests:
 
     @staticmethod
     def kolmogorov_smirnov(data: np.ndarray) -> Dict:
-        """Kolmogorov-Smirnov检验"""
-        stat, p_value = kstest(data, 'norm', args=(np.mean(data), np.std(data)))
+        """Kolmogorov-Smirnov检验。
+
+        SciPy 1.16+ 不再接受 ``kstest(data, 'norm', args=(mu, sigma))`` 的
+        位置参数形式，因此显式构造冻结分布。参数由样本估计，KS 的 P 值仅为
+        近似值；小样本应优先使用 Lilliefors 检验。
+        """
+        data = np.asarray(data, dtype=float)
+        if data.size < 2:
+            return {'error': '样本量至少需要2个'}
+        mu = float(np.mean(data))
+        sigma = float(np.std(data, ddof=1))
+        if not np.isfinite(sigma) or sigma <= 0:
+            return {'error': '数据方差为0，正态性检验不可估计'}
+        stat, p_value = kstest(data, scipy_stats.norm(loc=mu, scale=sigma).cdf)
         return {
             'test': 'Kolmogorov-Smirnov',
             'statistic': float(stat),
             'p_value': float(p_value),
             'normal': "true" if p_value > 0.05 else "false",
-            'interpretation': '数据服从正态分布' if p_value > 0.05 else '数据不服从正态分布'
+            'interpretation': '数据服从正态分布' if p_value > 0.05 else '数据不服从正态分布',
+            'note': '参数由样本估计，P值为近似值；建议同时参考Lilliefors检验'
         }
 
     @staticmethod
@@ -96,7 +109,7 @@ class NormalityTests:
             'test': 'Lilliefors',
             'statistic': float(stat),
             'p_value': float(p_value),
-            'normal': p_value > 0.05,
+            'normal': "true" if p_value > 0.05 else "false",
             'interpretation': '数据服从正态分布' if p_value > 0.05 else '数据不服从正态分布'
         }
 
@@ -114,11 +127,20 @@ class NormalityTests:
         if STATSMODELS_AVAILABLE:
             results['lilliefors'] = NormalityTests.lilliefors_test(data)
 
-        normal_count = sum(1 for r in results.values() if isinstance(r, dict) and r.get('normal') == "true")
+        evaluable = [
+            r for r in results.values()
+            if isinstance(r, dict) and r.get('normal') in ('true', 'false')
+        ]
+        normal_count = sum(1 for r in evaluable if r.get('normal') == 'true')
         results['summary'] = {
             'total_tests': len(results),
-            'tests_rejecting_normality': len(results) - normal_count,
-            'conclusion': '数据可能服从正态分布' if normal_count >= len(results) / 2 else '数据可能不服从正态分布'
+            'evaluable_tests': len(evaluable),
+            'tests_rejecting_normality': len(evaluable) - normal_count,
+            'conclusion': (
+                '无法判断（所有正态性检验均失败）' if not evaluable else
+                '数据可能服从正态分布' if normal_count >= len(evaluable) / 2 else
+                '数据可能不服从正态分布'
+            )
         }
 
         return results
@@ -578,16 +600,18 @@ class MultipleComparisons:
                                              alpha=alpha)
 
             results = []
+            pair_index = 0
             for i in range(len(tukey_result.groupsunique)):
                 for j in range(i + 1, len(tukey_result.groupsunique)):
                     results.append({
                         'comparison': f"{tukey_result.groupsunique[i]} vs {tukey_result.groupsunique[j]}",
-                        'meandiff': float(tukey_result.meandiffs[i, j]),
-                        'p_adj': float(tukey_result.pvalues[i, j]),
-                        'lower': float(tukey_result.confint[:, 0][i, j]),
-                        'upper': float(tukey_result.confint[:, 1][i, j]),
-                        'reject': bool(tukey_result.reject[i, j])
+                        'meandiff': float(tukey_result.meandiffs[pair_index]),
+                        'p_adj': float(tukey_result.pvalues[pair_index]),
+                        'lower': float(tukey_result.confint[pair_index][0]),
+                        'upper': float(tukey_result.confint[pair_index][1]),
+                        'reject': bool(tukey_result.reject[pair_index])
                     })
+                    pair_index += 1
 
             return {
                 'method': 'Tukey HSD',

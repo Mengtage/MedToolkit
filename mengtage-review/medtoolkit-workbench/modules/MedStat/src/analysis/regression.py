@@ -382,6 +382,23 @@ class GLMAnalyzer:
         self.model = None
         self.results = None
 
+    def _prepare_xy(self, y_var: str, X_vars: List[str]):
+        """构造带列名的 y/X，保证 GLM 结果可按变量名序列化。"""
+        columns = [y_var] + list(X_vars)
+        missing = [c for c in columns if c not in self.df.columns]
+        if missing:
+            raise ValueError(f"数据中缺少列: {', '.join(missing)}")
+        data = self.df[columns].dropna()
+        if data.empty:
+            raise ValueError('剔除缺失值后没有可用样本')
+        try:
+            y = data[y_var].astype(float)
+            X = sm.add_constant(
+                data[list(X_vars)].astype(float), has_constant='add')
+        except (TypeError, ValueError) as error:
+            raise ValueError(f'y/X 必须是数值型变量: {error}')
+        return y, X
+
     def fit_poisson(self, formula: str = None, y_var: str = None, X_vars: List[str] = None) -> Dict:
         """拟合Poisson回归（计数数据）"""
         if not STATSMODELS_AVAILABLE:
@@ -391,8 +408,7 @@ class GLMAnalyzer:
             if formula:
                 self.model = smf.poisson(formula, data=self.df)
             elif y_var and X_vars:
-                y = self.df[y_var].values
-                X = sm.add_constant(self.df[X_vars].values)
+                y, X = self._prepare_xy(y_var, X_vars)
                 self.model = sm.GLM(y, X, family=sm.families.Poisson())
             else:
                 return {'error': '需要提供formula或(y_var, X_vars)'}
@@ -412,8 +428,7 @@ class GLMAnalyzer:
             if formula:
                 self.model = smf.glm(formula, data=self.df, family=sm.families.Gamma())
             elif y_var and X_vars:
-                y = self.df[y_var].values
-                X = sm.add_constant(self.df[X_vars].values)
+                y, X = self._prepare_xy(y_var, X_vars)
                 self.model = sm.GLM(y, X, family=sm.families.Gamma())
             else:
                 return {'error': '需要提供formula或(y_var, X_vars)'}
@@ -424,17 +439,28 @@ class GLMAnalyzer:
         except Exception as e:
             return {'error': str(e)}
 
+    @staticmethod
+    def _as_named_dict(values, names: List[str]) -> Dict[str, float]:
+        """兼容 Series 与 ndarray 的参数序列化。"""
+        if hasattr(values, 'to_dict'):
+            return {str(k): float(v) for k, v in values.to_dict().items()}
+        array = np.asarray(values, dtype=float).ravel()
+        if len(names) != len(array):
+            names = [f'x{i}' for i in range(len(array))]
+        return {str(name): float(value) for name, value in zip(names, array)}
+
     def _format_glm_results(self) -> Dict:
         """格式化GLM结果"""
         if self.results is None:
             return {'error': '模型未拟合'}
 
+        names = list(getattr(self.model, 'exog_names', []) or [])
         result = {
             'success': True,
-            'coefficients': self.results.params.to_dict(),
-            'std_errors': self.results.bse.to_dict(),
-            't_values': self.results.tvalues.to_dict(),
-            'p_values': self.results.pvalues.to_dict(),
+            'coefficients': self._as_named_dict(self.results.params, names),
+            'std_errors': self._as_named_dict(self.results.bse, names),
+            't_values': self._as_named_dict(self.results.tvalues, names),
+            'p_values': self._as_named_dict(self.results.pvalues, names),
             'aic': float(self.results.aic),
             'bic': float(self.results.bic),
             'log_likelihood': float(self.results.llf),
