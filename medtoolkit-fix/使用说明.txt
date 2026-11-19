@@ -1,0 +1,37 @@
+MedToolkit —— 可靠性修复版（分支 fix/reliability-and-design-baseline）
+=====================================================================
+
+这个 zip 里是一个完整的 git 仓库，已经切到修复分支，共 4 个提交：
+
+  eba1d38  chore(test): unify pytest entry point
+  ae78371  refactor(medpaperwriter): fix broken export path and align with design review
+  4157151  fix(medstat): implement real MICE, ANCOVA, survival and regression
+  caa7b91  fix(medpaperhunter): make screening parsing, dedup and fetching verifiable
+
+一、跑测试（不需要联网、不需要 LLM key）
+
+    cd MedToolkit
+    pytest                    # 预期 144 passed
+
+二、推到 GitHub（需要你本机的 Git 凭据）
+
+    cd MedToolkit
+    git remote -v             # 应指向 https://github.com/Mengtage/MedToolkit.git
+    git push -u origin fix/reliability-and-design-baseline
+
+推完开 PR：
+
+    gh pr create --base main --head fix/reliability-and-design-baseline \
+      --title "fix: 可靠性修复与 MedPaperWriter 设计对齐" \
+      --body-file ../../PR-body.md      # PR 正文见对话里的 PR-body.md
+
+三、想回到改动前的状态
+
+    git checkout main                  # 原始代码
+    git diff main..HEAD --stat         # 看改了哪些文件
+
+四、已知未处理（不在本次范围）
+
+  - MedPaperWriter/legacy/ 下 4 个文件在上游就存在 HTML 转义损坏（-> 被写成 -&gt;），
+    无法被 Python 解析。属于死代码，建议单独删除。
+  - MedStat/simple_test.py 是手工冒烟脚本，需要先起服务才能跑。

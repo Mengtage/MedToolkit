@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+runtime/
+.env
+*.log
+runtime-*/
+*.sqlite
+*.sqlite-*
+*.bundle
+*.zip
+.env.*

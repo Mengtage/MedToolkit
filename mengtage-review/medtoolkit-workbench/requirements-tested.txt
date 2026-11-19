@@ -1,0 +1,24 @@
+# Pinned dependency lockfile, generated from the environment in which
+# scripts/validate.py and tests/ last passed (Python 3.14.8, Linux).
+# All pins verified against official PyPI (pypi.org); regional mirrors may lag.
+anyio==4.14.1
+certifi==2026.7.22
+h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
+idna==3.20
+joblib==1.5.3
+narwhals==2.25.0
+numpy==2.5.3
+packaging==26.3
+pandas==3.0.6
+patsy==1.0.2
+python-dateutil==2.9.0.post0
+scikit-learn==1.9.0
+scipy==1.18.1
+six==1.17.0
+statsmodels==0.14.6
+threadpoolctl==3.6.0
+typing_extensions==4.16.0
+exceptiongroup==1.3.0; python_version < "3.11"
+tzdata==2025.2; sys_platform == "win32"

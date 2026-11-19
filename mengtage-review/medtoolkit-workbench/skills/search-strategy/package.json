@@ -1,0 +1,29 @@
+{
+  "name": "openclaw-skill-medical-search-strategy-builder",
+  "version": "3.0.0",
+  "description": "Build structured medical literature search strategies from natural language research questions using PICO/PEO frameworks with progressive clarification dialogue. Supports funnel-style questioning to transform vague user queries into precise research objectives.",
+  "keywords": [
+    "medical",
+    "systematic-review",
+    "search-strategy",
+    "pico",
+    "peo",
+    "pubmed",
+    "embase",
+    "cochrane",
+    "evidence-based-medicine",
+    "mesh",
+    "literature-search",
+    "clarification-dialogue"
+  ],
+  "license": "MIT",
+  "author": "Mengtage",
+  "files": [
+    "SKILL.md",
+    "references/"
+  ],
+  "repository": {
+    "type": "git",
+    "url": ""
+  }
+}

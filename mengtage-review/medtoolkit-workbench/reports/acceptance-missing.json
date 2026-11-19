@@ -1,0 +1,196 @@
+{
+  "scope": "repaired missing-data and numeric-only MI; actual app function extracted with mocked session/storage; synthetic inputs only",
+  "pandas": "3.0.6",
+  "numpy": "2.5.3",
+  "results": [
+    {
+      "name": "native_missing_count",
+      "status": "PASS",
+      "detail": "1/3 native missing counted"
+    },
+    {
+      "name": "placeholder_dtype_consistency",
+      "status": "PASS",
+      "detail": {
+        "object_missing": 1,
+        "string_missing": 1,
+        "expected": "same declared placeholder policy across string dtypes"
+      }
+    },
+    {
+      "name": "missing_summary_matrix_consistency",
+      "status": "PASS",
+      "detail": {
+        "reported_missing": 1,
+        "heatmap_missing": 1
+      }
+    },
+    {
+      "name": "valid_numeric_value_not_missing_without_dictionary",
+      "status": "PASS",
+      "detail": {
+        "reported_missing": 0,
+        "expected": 0,
+        "condition": "999 is a valid measured value; no missing-code dictionary supplied"
+      }
+    },
+    {
+      "name": "fixed_seed_reproducibility",
+      "status": "PASS",
+      "detail": "same seed sequence yields identical completed datasets"
+    },
+    {
+      "name": "observed_values_preserved",
+      "status": "PASS",
+      "detail": "observed values preserved"
+    },
+    {
+      "name": "complete_categorical_values_preserved",
+      "status": "PASS",
+      "detail": "all completed categorical values belong to observed categories in this fixture"
+    },
+    {
+      "name": "posterior_draws_vary",
+      "status": "PASS",
+      "detail": "posterior draws produce different imputations"
+    },
+    {
+      "name": "linear_multiple_imputation_uncertainty",
+      "status": "PASS",
+      "detail": "linear多次插补被明确拒绝；不再输出重复数据冒充MI"
+    },
+    {
+      "name": "all_missing_column_validation",
+      "status": "PASS",
+      "detail": "all-missing column rejected with ValueError"
+    },
+    {
+      "name": "rubin_point_and_variance_hand_calculation",
+      "status": "PASS",
+      "detail": {
+        "actual": {
+          "pooled_estimate": 2.0,
+          "pooled_standard_error": 1.2583057392117916,
+          "ci_lower": -2.1527665225581574,
+          "ci_upper": 6.152766522558157,
+          "degrees_of_freedom": 2.8203125000000004,
+          "complete_data_df": null,
+          "df_assumption": "large_sample",
+          "within_variance": 0.25,
+          "between_variance": 1.0,
+          "total_variance": 1.5833333333333333,
+          "relative_increase_variance": 5.333333333333333,
+          "fraction_missing_information": 0.8963617096432356,
+          "n_imputations_used": 3,
+          "n_imputations_failed": 0
+        },
+        "expected": {
+          "pooled_estimate": 2.0,
+          "within_variance": 0.25,
+          "between_variance": 1.0,
+          "total_variance": 1.5833333333333333
+        }
+      }
+    },
+    {
+      "name": "app_rubin_matches_dataset_level_estimates",
+      "status": "PASS",
+      "detail": {
+        "actual_web_function": {
+          "variable": "y",
+          "q_bar": 5.258535099076757,
+          "u_bar": 0.9833359886353067,
+          "b": 0.0008971194135586877,
+          "t": 0.9845321478533849,
+          "fmi": 0.23367507511715815,
+          "riv": 0.001216429818396359,
+          "pooled_estimate": 5.258535099076757,
+          "pooled_standard_error": 0.9922359335628724,
+          "ci_lower": 2.7871641151691007,
+          "ci_upper": 7.729906082984413,
+          "degrees_of_freedom": 5.593173180204223,
+          "complete_data_df": 7.0,
+          "df_assumption": "supplied_complete_data_df",
+          "within_variance": 0.9833359886353067,
+          "between_variance": 0.0008971194135586877,
+          "total_variance": 0.9845321478533849,
+          "relative_increase_variance": 0.001216429818396359,
+          "fraction_missing_information": 0.23367507511715815,
+          "n_imputations_used": 3,
+          "n_imputations_failed": 0
+        },
+        "independent_moments": {
+          "q_bar": 5.258535099076757,
+          "u_bar": 0.9833359886353067,
+          "b": 0.0008971194135586877
+        }
+      }
+    },
+    {
+      "name": "actual_web_missing_summary_and_heatmap",
+      "status": "PASS",
+      "detail": {
+        "summary": 2,
+        "matrix": 2
+      }
+    },
+    {
+      "name": "explicit_numeric_missing_code",
+      "status": "PASS",
+      "detail": "explicit numeric dictionary applied"
+    },
+    {
+      "name": "unsupported_categorical_missing_rejected",
+      "status": "PASS",
+      "detail": "categorical missing outcome rejected pending dedicated categorical MI model"
+    },
+    {
+      "name": "failed_imputation_analysis_not_omitted",
+      "status": "PASS",
+      "detail": "one failed analysis aborts pool; no silent deletion"
+    },
+    {
+      "name": "barnard_rubin_degrees_of_freedom",
+      "status": "PASS",
+      "detail": {
+        "actual_df": 1.3865062091921654,
+        "Barnard_Rubin_hand_formula": 1.3865062091921654
+      }
+    },
+    {
+      "name": "no_missing_data_not_claimed_multiple_imputation",
+      "status": "PASS",
+      "detail": "single_completed_dataset_no_mi_inference"
+    },
+    {
+      "name": "strict_json_outputs",
+      "status": "PASS",
+      "detail": "finite JSON mean pooling"
+    },
+    {
+      "name": "web_unsupported_multiple_imputation_status_400",
+      "status": "PASS",
+      "detail": [
+        {
+          "error": "linear/ridge仅支持单次插补，不能提供多重插补间不确定性"
+        },
+        400
+      ]
+    },
+    {
+      "name": "web_all_missing_status_400",
+      "status": "PASS",
+      "detail": [
+        {
+          "error": "全缺失列不可估计，请补充数据或明确移除该变量"
+        },
+        400
+      ]
+    }
+  ],
+  "counts": {
+    "PASS": 21,
+    "FAIL": 0,
+    "BLOCKED": 0
+  }
+}
