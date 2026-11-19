@@ -1,0 +1,90 @@
+{
+  "scope": "legacy missing-data and MICE acceptance; synthetic inputs only",
+  "pandas": "3.1.1",
+  "numpy": "2.5.5",
+  "results": [
+    {
+      "name": "native_missing_count",
+      "status": "PASS",
+      "detail": "1/3 native missing counted"
+    },
+    {
+      "name": "placeholder_dtype_consistency",
+      "status": "FAIL",
+      "detail": "{'object_missing': 1, 'string_missing': 0, 'expected': 'same declared placeholder policy across string dtypes'}"
+    },
+    {
+      "name": "missing_summary_matrix_consistency",
+      "status": "FAIL",
+      "detail": "{'reported_missing': 1, 'heatmap_missing': 0}"
+    },
+    {
+      "name": "valid_numeric_value_not_missing_without_dictionary",
+      "status": "FAIL",
+      "detail": "{'reported_missing': 1, 'expected': 0, 'condition': '999 is a valid measured value; no missing-code dictionary supplied'}"
+    },
+    {
+      "name": "fixed_seed_reproducibility",
+      "status": "PASS",
+      "detail": "same seed sequence yields identical completed datasets"
+    },
+    {
+      "name": "observed_values_preserved",
+      "status": "PASS",
+      "detail": "observed values preserved"
+    },
+    {
+      "name": "categorical_support",
+      "status": "PASS",
+      "detail": "all completed categorical values belong to observed categories in this fixture"
+    },
+    {
+      "name": "posterior_draws_vary",
+      "status": "PASS",
+      "detail": "posterior draws produce different imputations"
+    },
+    {
+      "name": "linear_multiple_imputation_uncertainty",
+      "status": "FAIL",
+      "detail": "{'identical_datasets': True, 'm': 3}"
+    },
+    {
+      "name": "all_missing_column_validation",
+      "status": "FAIL",
+      "detail": "{'actual_error': 'IndexError', 'expected': 'explicit unsupported-column validation, not indexing crash'}"
+    },
+    {
+      "name": "rubin_point_and_variance_hand_calculation",
+      "status": "PASS",
+      "detail": {
+        "actual": {
+          "pooled_estimate": 2.0,
+          "pooled_standard_error": 1.2583057392117916,
+          "ci_lower": -2.5840790736984127,
+          "ci_upper": 6.584079073698413,
+          "degrees_of_freedom": 2.435724431818182,
+          "within_variance": 0.25,
+          "between_variance": 1.0,
+          "total_variance": 1.5833333333333333,
+          "n_imputations_used": 3
+        },
+        "expected": {
+          "pooled_estimate": 2.0,
+          "within_variance": 0.25,
+          "between_variance": 1.0,
+          "total_variance": 1.5833333333333333
+        }
+      }
+    },
+    {
+      "name": "app_rubin_matches_dataset_level_estimates",
+      "status": "FAIL",
+      "detail": "{'app_formula': {'Q': 5.1722, 'U': 0.94882200125, 'B': 0.011881813333333343}, 'dataset_level_pooling': {'Q': 5.172235679114228, 'U': 0.953080085013026, 'B': 0.17704249950081136}}"
+    }
+  ],
+  "counts": {
+    "PASS": 6,
+    "FAIL": 6,
+    "BLOCKED": 0
+  }
+}

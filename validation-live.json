@@ -1,0 +1,30 @@
+{
+  "search": {
+    "artifact": "331973f627534a8090196d1ce33fe4b7-search.json",
+    "total_hits": 43256,
+    "retrieved": 3,
+    "complete": false
+  },
+  "statistics": {
+    "artifact": "e13a01fc5e634a20a23d8d0b597a7795-statistics.json",
+    "coefficient": 1.0,
+    "p_value": 0.0,
+    "n": 4,
+    "method": "pearson",
+    "x": "x",
+    "y": "y",
+    "input_sha256": "206bddaf9e27e070d3e32b9661422e5202f8eb69983c524c538c65272c492bfe",
+    "input_rows": 4,
+    "complete_rows": 4,
+    "excluded_missing_rows": 0,
+    "llm_calls": 0,
+    "classification": "synthetic",
+    "source": "MedStat/src/analysis/correlation.py",
+    "environment": {
+      "pandas": "3.1.1",
+      "scipy": "1.18.1"
+    }
+  },
+  "ris_records": 3,
+  "gemini_calls": 0
+}

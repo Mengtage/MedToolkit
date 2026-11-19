@@ -1,0 +1,20 @@
+test_citation_gate (test_core.CoreTest.test_citation_gate) ... ok
+test_extra_fields_not_saved (test_core.CoreTest.test_extra_fields_not_saved) ... ok
+test_failure_logs_no_data (test_core.CoreTest.test_failure_logs_no_data) ... ok
+test_idempotent_job (test_core.CoreTest.test_idempotent_job) ... ok
+test_isolation (test_core.CoreTest.test_isolation) ... ok
+test_no_patient_input_persisted (test_core.CoreTest.test_no_patient_input_persisted) ... ok
+test_no_repeat_completed (test_core.CoreTest.test_no_repeat_completed) ... ok
+test_patient_data_rejected_before_llm (test_core.CoreTest.test_patient_data_rejected_before_llm) ... ok
+test_recovery_requires_review (test_core.CoreTest.test_recovery_requires_review) ... ok
+test_reject_private_evidence (test_core.CoreTest.test_reject_private_evidence) ... ok
+test_retry_and_lock (test_core.CoreTest.test_retry_and_lock) ... ok
+test_ris_injection (test_core.CoreTest.test_ris_injection) ... ok
+test_search_truncation (test_core.CoreTest.test_search_truncation) ... ok
+test_statistics_known_result (test_core.CoreTest.test_statistics_known_result) ... ok
+test_auth_and_private_response (test_http.HttpTest.test_auth_and_private_response) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.694s
+
+OK

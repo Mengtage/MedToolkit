@@ -1,14 +1,11 @@
-# Uploads and OS junk
-.uploads/
-.DS_Store
+.venv/
 __pycache__/
-*.py[cod]
-
-# Runtime data
-*.db
-*.db-shm
-*.db-wal
-logs/
-
-# Secrets
+runtime/
 .env
+*.log
+runtime-*/
+*.sqlite
+*.sqlite-*
+*.bundle
+*.zip
+.env.*

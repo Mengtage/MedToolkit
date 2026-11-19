@@ -1,0 +1,679 @@
+{
+  "source_sha256": "28f0e156a90b214375431a11b02f39ec11978185233e47fe1842f2361ef0ac2b",
+  "skills": [
+    {
+      "name": "giiisp-paper-search-apis",
+      "description": "调用 Giiisp/集思谱论文检索 POST 接口，按用户问题选择 OA 标题摘要检索或 arXiv 摘要、编号、多字段、标题检索。用于论文检索、文献初筛、arXiv 定位、开放论文补充和引用审计。",
+      "referenced_resources": [
+        {
+          "path": "examples/end_to_end_example.json",
+          "available": true
+        },
+        {
+          "path": "scripts/dry_run_paper_search.py",
+          "available": false
+        },
+        {
+          "path": "scripts/progressive_paper_search.py",
+          "available": false
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "9534a9eaa39abfc5c37142de1411c5fc020eac3cbeb79705d890952511677fa6"
+    },
+    {
+      "name": "sci-employee-deep-research",
+      "description": "调用或模拟 Deep Research 流程，把论文检索、关键词拆解、候选证据和最终 answer 组织成可核验研究报告。适用于赛题讲解、开题调研、方案依据整理。",
+      "referenced_resources": [
+        {
+          "path": "scripts/parse_deep_research_sse.py",
+          "available": false
+        },
+        {
+          "path": "scripts/stream_deep_research.py",
+          "available": false
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "5cda0173b08123deb76d1a2cf4815912daaf183097bb0ae21e9698c41fc9e962"
+    },
+    {
+      "name": "scispark",
+      "description": "Generate evidence-tracked research ideas through an arXiv-based, skill-native Scispark workflow. Use when Codex needs to turn a research keyword, question, paper set, Zotero/library material, or arXiv results into structured facts, testable hypotheses, an initial research idea, technical optimization, mechanism-of-action analysis, human-AI collaboration review, or optional academic slides. Also use when the user mentions Scispark, 科研想法生成, 研究假设生成, 机制优化, MoA, literature-backed idea generation, or 从关键词到研究方案.",
+      "referenced_resources": [
+        {
+          "path": "assets/final_idea_template.md",
+          "available": false
+        },
+        {
+          "path": "references/arxiv-integration.md",
+          "available": true
+        },
+        {
+          "path": "references/stage-contracts.md",
+          "available": true
+        },
+        {
+          "path": "scripts/init_scispark_workspace.py",
+          "available": false
+        },
+        {
+          "path": "scripts/search_arxiv.py",
+          "available": false
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "3db61b5a541fac1b76a93920bbf4a0cffba9f9e017e8dfcf80179de883baa4ca"
+    },
+    {
+      "name": "find-science-skills",
+      "description": "Use when a user asks which research Skill, MCP service, academic workflow, experimental tool, simulation capability, analysis resource, writing aid, or publication resource is available for a scientific task.",
+      "referenced_resources": [
+        {
+          "path": "scripts/build_science_mcp_catalog.py",
+          "available": false
+        },
+        {
+          "path": "scripts/filter_science_resources.py",
+          "available": false
+        },
+        {
+          "path": "scripts/filter_science_skills.py",
+          "available": false
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "3589d40c2d354100895c316e394dd0ba73ce2f35ae4035505d6ddc66f040ec5c"
+    },
+    {
+      "name": "experiment-design",
+      "description": "在采集数据之前，把\"想验证什么\"变成统计上站得住、可复现、可解释的研究设计。当用户要设计实验/研究方案、选择设计类型（完全随机/随机区组/析因/部分析因/交叉/重复测量/整群随机/响应面）、做随机化与区组、估算样本量与统计功效、规划机器学习消融/基准、或制定统计分析计划与预注册时使用。只管\"采集前的设计\"；采集后的统计/组学执行交给数据分析类技能。",
+      "referenced_resources": [
+        {
+          "path": "scripts/doe_designs.py",
+          "available": false
+        },
+        {
+          "path": "scripts/power.py",
+          "available": false
+        },
+        {
+          "path": "scripts/randomization.py",
+          "available": false
+        },
+        {
+          "path": "templates/preregistration.md",
+          "available": true
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "a862f0d5a94add91d2cc9559f6e9777796e478f5e6a6597c9a1acd4ea6d2d524"
+    },
+    {
+      "name": "statistical-analysis",
+      "description": "数据采集完成后，按采集前锁定的分析计划执行验证性统计分析。当用户要做组间比较（t 检验/ANOVA/非参数检验）、配对前后对比、列联表卡方、相关分析、效应量与置信区间计算、多重比较校正、检验前提检查（正态性/方差齐性）、或要把统计结果写成可报告的结论时使用。只管\"采集后的验证性分析\"；采集前的设计与样本量交给实验设计技能，机器学习建模交给数据处理技能。",
+      "referenced_resources": [
+        {
+          "path": "scripts/run_stat_tests.py",
+          "available": false
+        },
+        {
+          "path": "templates/analysis_report.md",
+          "available": true
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "2654232c003e11f5a9a3e8a415ef2fac4f3ebc7757a8a4704404b229afdbe093"
+    },
+    {
+      "name": "research-baseline-builder",
+      "description": "Translate scientific questions into clear data inputs, outputs, and baseline workflows. Use when Codex needs to help researchers clarify what data goes in, what target or result should come out, how samples/labels/features are defined, and how to solve the resulting data problem through visualization, preprocessing, baseline design, training, evaluation, and reporting.",
+      "referenced_resources": [
+        {
+          "path": "references/framework-selection.md",
+          "available": true
+        },
+        {
+          "path": "references/goal-check.md",
+          "available": true
+        },
+        {
+          "path": "references/problem-to-data-routing.md",
+          "available": true
+        },
+        {
+          "path": "scripts/baseline_gru.py",
+          "available": false
+        },
+        {
+          "path": "scripts/baseline_randomforest.py",
+          "available": false
+        },
+        {
+          "path": "scripts/baseline_xgboost_optuna.py",
+          "available": false
+        },
+        {
+          "path": "scripts/baseline_xxx.py",
+          "available": false
+        },
+        {
+          "path": "scripts/init_research_baseline_workspace.py",
+          "available": false
+        },
+        {
+          "path": "scripts/run_research_baseline_workflow.py",
+          "available": false
+        },
+        {
+          "path": "templates/baseline_efficientnet.py",
+          "available": true
+        },
+        {
+          "path": "templates/scripts",
+          "available": false
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "33cf25899bc5458ce8b73bd72925799d294c02f1fab97b9bcada386737054c2d"
+    },
+    {
+      "name": "academic-writing",
+      "description": "面向科研成果的\"写—审—改—投\"学术写作全流程。当用户要撰写/改写论文或某个章节、做同行评审或生成审稿意见、回复审稿人(rebuttal)与规划修订、撰写基金/项目申请书、或准备投稿材料(摘要/标题/cover letter/期刊适配)时使用。聚焦学术文本的产出与打磨；不负责文献检索与综述综合(文献模块)，也不负责引用真实性与格式合规(引用合规技能)。",
+      "referenced_resources": [
+        {
+          "path": "references/grant_agencies.md",
+          "available": true
+        },
+        {
+          "path": "references/peer_review_checklist.md",
+          "available": true
+        },
+        {
+          "path": "templates/cover_letter.md",
+          "available": true
+        },
+        {
+          "path": "templates/editorial_decision.md",
+          "available": true
+        },
+        {
+          "path": "templates/nih_specific_aims.md",
+          "available": true
+        },
+        {
+          "path": "templates/peer_review_report.md",
+          "available": true
+        },
+        {
+          "path": "templates/response_to_reviewers.md",
+          "available": true
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "c2df79119e9989e32596d2c9c2800605d6af698721d6a3a338a0621a9871cc03"
+    },
+    {
+      "name": "scientific-humanization",
+      "description": "用于中文科研文本的 scientific humanization：把论文、综述、基金、项目书、技术方案、答辩、课程讲稿、PPT讲稿和投资人科研表达改得更像专业作者或讲师本人在说，同时保护事实、术语、数字、引用、图表编号和证据强度。适用于用户说“别AI味”“人一点”“别太官方”“像我讲的”“去模板腔”“改顺但别改事实”的场景。",
+      "referenced_resources": [],
+      "status": "reference_only",
+      "sha256": "8c6a0ed99eb52a1493f9f1bc34a3bdc573eeeb87a0908b879027d3c6e0090e28"
+    },
+    {
+      "name": "thesis-audit-reviewer",
+      "description": "Use this skill when the user asks to review, audit, proofread, or produce a formal evaluation report for a degree thesis, dissertation, academic paper, or thesis PDF/DOCX, especially when they require checklist-based, line-by-line, evidence-grounded comments, PDF page locations, external fact verification, MinerU/VLM parsing, or a standardized Chinese 学位论文审阅报告.",
+      "referenced_resources": [
+        {
+          "path": "references/audit_operating_protocol.md",
+          "available": true
+        },
+        {
+          "path": "references/comment_language.md",
+          "available": true
+        },
+        {
+          "path": "references/completion_gate.md",
+          "available": true
+        },
+        {
+          "path": "references/default_review_sources.md",
+          "available": true
+        },
+        {
+          "path": "references/docx_integrity_gate.md",
+          "available": true
+        },
+        {
+          "path": "references/evidence_rules.md",
+          "available": true
+        },
+        {
+          "path": "references/input_output_policy.md",
+          "available": true
+        },
+        {
+          "path": "references/issue_taxonomy.md",
+          "available": true
+        },
+        {
+          "path": "references/method_and_fact_audit.md",
+          "available": true
+        },
+        {
+          "path": "references/standard_report_template.md",
+          "available": true
+        },
+        {
+          "path": "references/work_products.md",
+          "available": true
+        },
+        {
+          "path": "scripts/doctor.py",
+          "available": false
+        },
+        {
+          "path": "scripts/docx_integrity_scan.py",
+          "available": false
+        },
+        {
+          "path": "scripts/init_audit_workspace.py",
+          "available": false
+        },
+        {
+          "path": "scripts/mineru_vlm_extract.py",
+          "available": false
+        },
+        {
+          "path": "scripts/pdf_local_fallback_extract.py",
+          "available": false
+        },
+        {
+          "path": "scripts/render_md_report_pdf.py",
+          "available": false
+        },
+        {
+          "path": "scripts/scan_verifiable_claims.py",
+          "available": false
+        },
+        {
+          "path": "scripts/split_mineru_vlm_pages.py",
+          "available": false
+        },
+        {
+          "path": "scripts/validate_audit_report.py",
+          "available": false
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "61ae7486fc75d9cd556b58a3e2d36bbda18230b71a40642f475b4acc4cb1965d"
+    },
+    {
+      "name": "papercheck",
+      "description": "Run no-key citation audits for academic papers using local evidence extraction, bundled TaShan-PaperChecker rules, and the current Codex model. Use when Codex needs to check .docx论文引用合规、正文引文和参考文献是否匹配、引用真实性、引文与上下文相关性、GB/T 7714 or UCAS reference-format issues, or when the user mentions PaperCheck, TaShan-PaperChecker, citation compliance, reference audit, citation authenticity, or 引文核验.",
+      "referenced_resources": [
+        {
+          "path": "assets/paperchecker-rules",
+          "available": false
+        },
+        {
+          "path": "references/runtime.md",
+          "available": true
+        },
+        {
+          "path": "scripts/check_papercheck_env.py",
+          "available": false
+        },
+        {
+          "path": "scripts/extract_citation_evidence.py",
+          "available": false
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "772732131468d8f4736ef6272c18c4956d5c49db507c63da5538d2f78d2749f7"
+    },
+    {
+      "name": "visual-deck-builder",
+      "description": ">-",
+      "referenced_resources": [
+        {
+          "path": "examples/data",
+          "available": false
+        },
+        {
+          "path": "references/aesthetic-generation.md",
+          "available": true
+        },
+        {
+          "path": "references/editable-reconstruction-route.md",
+          "available": true
+        },
+        {
+          "path": "references/image-runtime.md",
+          "available": true
+        },
+        {
+          "path": "references/input-routing.md",
+          "available": true
+        },
+        {
+          "path": "references/qa-and-originality.md",
+          "available": true
+        },
+        {
+          "path": "references/reconstructed-editable.md",
+          "available": true
+        },
+        {
+          "path": "references/slide-spec-contract.md",
+          "available": true
+        },
+        {
+          "path": "scripts/audit_image_only_deck.py",
+          "available": false
+        },
+        {
+          "path": "scripts/audit_layered_layout.py",
+          "available": false
+        },
+        {
+          "path": "scripts/audit_pptx_editability.py",
+          "available": false
+        },
+        {
+          "path": "scripts/audit_pptx_text_against_spec.py",
+          "available": false
+        },
+        {
+          "path": "scripts/audit_visible_text_review.py",
+          "available": false
+        },
+        {
+          "path": "scripts/audit_visual_acceptance.py",
+          "available": false
+        },
+        {
+          "path": "scripts/audit_visual_quality.py",
+          "available": false
+        },
+        {
+          "path": "scripts/build_slide_image_prompt.py",
+          "available": false
+        },
+        {
+          "path": "scripts/build_style_contract.py",
+          "available": false
+        },
+        {
+          "path": "scripts/compose_layered_deck.py",
+          "available": false
+        },
+        {
+          "path": "scripts/deck_progress.py",
+          "available": false
+        },
+        {
+          "path": "scripts/generate_slide_spec.py",
+          "available": false
+        },
+        {
+          "path": "scripts/gorden_image2pptx/build_extraction_prompt_pack.py",
+          "available": false
+        },
+        {
+          "path": "scripts/gorden_image2pptx/build_frame_residue_contract.py",
+          "available": false
+        },
+        {
+          "path": "scripts/gorden_image2pptx/compose_pptx.py",
+          "available": false
+        },
+        {
+          "path": "scripts/gorden_image2pptx/frame_residue_audit.py",
+          "available": false
+        },
+        {
+          "path": "scripts/gorden_image2pptx/icon_coverage_audit.py",
+          "available": false
+        },
+        {
+          "path": "scripts/preflight_extraction_backend.py",
+          "available": false
+        },
+        {
+          "path": "scripts/render_layered_preview.py",
+          "available": false
+        },
+        {
+          "path": "scripts/repair_layered_layout.py",
+          "available": false
+        },
+        {
+          "path": "scripts/repair_visual_deck.py",
+          "available": false
+        },
+        {
+          "path": "scripts/self_test_visual_deck.py",
+          "available": false
+        },
+        {
+          "path": "scripts/semantic_review_dashscope.py",
+          "available": false
+        },
+        {
+          "path": "scripts/style_presets.py",
+          "available": false
+        },
+        {
+          "path": "scripts/stylist_refine_slide.py",
+          "available": false
+        },
+        {
+          "path": "scripts/validate_content_density_and_roles.py",
+          "available": false
+        },
+        {
+          "path": "scripts/validate_style_contract_richness.py",
+          "available": false
+        },
+        {
+          "path": "scripts/validate_visual_deck.py",
+          "available": false
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "7b9907bbb2c4897f4f30fc066d54e504128fb5ebe14ece02939bad3818fa4dd1"
+    },
+    {
+      "name": "manim-agent",
+      "description": ">-",
+      "referenced_resources": [
+        {
+          "path": "references/pipeline-workflow.md",
+          "available": true
+        },
+        {
+          "path": "references/production-quality.md",
+          "available": true
+        },
+        {
+          "path": "references/recovery-and-review.md",
+          "available": true
+        },
+        {
+          "path": "references/repo-runtime.md",
+          "available": true
+        },
+        {
+          "path": "scripts/check_manim_agent_env.py",
+          "available": false
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "55ceee230af57bfafb686f325c834aaee16171a392f3e0c1436cbf611a0fa54d"
+    },
+    {
+      "name": "practical-course-producer",
+      "description": "Generate and audit evidence-based practical course videos for executable software, research-tool, or AI-assisted workflows with observable real interaction and verification. Use when a user needs a publishable hands-on tutorial built from genuine terminal, browser, or tool operation, narration, demonstrations, corrections, and checks instead of simulated output. Route concept-only animation, formula, or proof explainers to manim-agent.",
+      "referenced_resources": [
+        {
+          "path": "assets/course-project.json",
+          "available": false
+        },
+        {
+          "path": "examples/verified-cli-workflow.md",
+          "available": true
+        },
+        {
+          "path": "references/editing-audit.md",
+          "available": true
+        },
+        {
+          "path": "references/product-boundary.md",
+          "available": true
+        },
+        {
+          "path": "references/recording-workflow.md",
+          "available": true
+        },
+        {
+          "path": "references/scene-plan.md",
+          "available": true
+        },
+        {
+          "path": "scripts/advance_course_project.py",
+          "available": false
+        },
+        {
+          "path": "scripts/build_course_video.py",
+          "available": false
+        },
+        {
+          "path": "scripts/smoke_course_project.py",
+          "available": false
+        },
+        {
+          "path": "scripts/synthesize_narration.py",
+          "available": false
+        },
+        {
+          "path": "scripts/validate_course_project.py",
+          "available": false
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "7fea7ea59b84f35df0970cbb3ce491c2de567854b82d27d1459b5b756da8afae"
+    },
+    {
+      "name": "giiisp-scientific-image-generation",
+      "description": "使用 Giiisp Imagine 科研图像生成接口，把论文段落、图题、实验流程或机制描述整理成作图简报、生成请求、图片结果和检查记录。适用于论文配图、科研流程图、机制通路图、实验示意图和学术汇报图。",
+      "referenced_resources": [
+        {
+          "path": "scripts/build_figure_manifest.py",
+          "available": false
+        },
+        {
+          "path": "scripts/build_figure_package.py",
+          "available": false
+        },
+        {
+          "path": "scripts/dry_run_scientific_image.py",
+          "available": false
+        },
+        {
+          "path": "scripts/generate_scientific_image_smoke.py",
+          "available": false
+        },
+        {
+          "path": "scripts/run_scientific_image_workflow.py",
+          "available": false
+        },
+        {
+          "path": "scripts/select_figure_variant.py",
+          "available": false
+        },
+        {
+          "path": "scripts/semantic_review_dashscope.py",
+          "available": false
+        },
+        {
+          "path": "templates/check_report_template.md",
+          "available": true
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "a484edfed4c9db473673086e87f1a44f8a28a228eaaf1e25ba8c11ee3570696d"
+    },
+    {
+      "name": "cognitive-profile",
+      "description": "|",
+      "referenced_resources": [
+        {
+          "path": "references/calibrate.md",
+          "available": true
+        },
+        {
+          "path": "references/collect-evidence.md",
+          "available": true
+        },
+        {
+          "path": "references/dream.md",
+          "available": true
+        },
+        {
+          "path": "references/form-profile.md",
+          "available": true
+        },
+        {
+          "path": "references/recall-answer.md",
+          "available": true
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "698716305458898c939aa003480442b93558e523fb127578502ea89bff3716eb"
+    },
+    {
+      "name": "research-dream",
+      "description": "Research Dream。面向科研场景的记忆巩固技能。在任何挂载环境（OpenClaw、Codex、Claude Code、Cursor 等）里长期陪伴科研用户时，通过日常对话逐步更新 USER.md、SOUL.md、MEMORY.md 与 memory/YYYY-MM-DD.md，并周期性做一次像“做梦”一样的深度整理，使记忆文件逐步向他山式科研数字分身靠拢。",
+      "referenced_resources": [],
+      "status": "reference_only",
+      "sha256": "a668571731b6c161f2fe7c4a1f6e56616f22e0af8be3484bc35ebd43fea73d9e"
+    },
+    {
+      "name": "skill-criticagent",
+      "description": "Evaluate Agent Skills (SKILL.md directories) and answer \"is this skill any good / safe to install\" — spec compliance with security scanning, with/without behavior comparison, and description trigger testing, ending in a clear install / fix-first / reject verdict. Use this skill whenever the user asks to evaluate, audit, test, review, or score an Agent Skill or a skill collection, wants to know whether a skill actually helps or is safe, or wants to check if a skill's description triggers correctly, even if they just ask \"is this skill any good\".",
+      "referenced_resources": [
+        {
+          "path": "scripts/grade_runs.py",
+          "available": false
+        },
+        {
+          "path": "scripts/grade_triggers.py",
+          "available": false
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "9616afec468a7298966edad9e1af072abdce0fc81899e6bacc91e02aa8f9b524"
+    },
+    {
+      "name": "mcp-criticagent",
+      "description": "Evaluate MCP (Model Context Protocol) servers and tools end to end — deploy from a GitHub URL or npm package, test protocol communication and tool calls, run AI-generated smart tests, and score repository sustainability and popularity. Use this skill whenever the user wants to test, evaluate, audit, score, or vet an MCP server, MCP tool, or MCP package, or asks \"does this MCP work\" or \"is this MCP any good\", even if they only paste a GitHub URL or a package name.",
+      "referenced_resources": [],
+      "status": "reference_only",
+      "sha256": "74847da95ed6b0f6292c6a4423a31c215e507480785a47016ae71d66d793e965"
+    },
+    {
+      "name": "world-threads-entry",
+      "description": "Use when working with TopicLab / 他山世界 / OpenClaw world threads, world.tashan.chat, openclaw bootstrap or skill URLs, heartbeat, notifications, topic replies, skill installation through TopicLab, points progress, or any request to connect, test, or operate the user's OpenClaw instance. Prefer topiclab-cli for all supported TopicLab tasks.",
+      "referenced_resources": [
+        {
+          "path": "references/website-skill.md",
+          "available": true
+        }
+      ],
+      "status": "reference_only",
+      "sha256": "d1374f032c502b64d6dd15191b8a2084819015ff7c09101b2bc8de86870f45c3"
+    }
+  ],
+  "support_documents": 58
+}
