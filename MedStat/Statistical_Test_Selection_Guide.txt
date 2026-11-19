@@ -1,0 +1,168 @@
+# Statistical Test Selection Guide
+
+## I. Key Decision Factors
+
+When choosing a statistical method, consider these three critical factors:
+1. **Data Distribution**: whether the data follows a normal distribution
+2. **Homoscedasticity**: whether variances are similar across groups
+3. **Number of Groups**: how many groups are being compared
+
+---
+
+## II. Main Statistical Methods and Their Applications
+
+### Parametric vs Nonparametric Tests
+
+| Feature | Parametric Tests | Nonparametric Tests |
+|---------|-----------------|---------------------|
+| Distribution Requirement | Normal distribution | No strict requirement (distribution-free) |
+| Data Type | Continuous data | Continuous or ordinal data |
+| Statistical Power | Stronger when assumptions are met | More robust when assumptions are violated |
+| Typical Methods | t-test, ANOVA | Mann-Whitney U, Kruskal-Wallis |
+
+---
+
+## III. Two Group Comparison
+
+### 1. Independent Samples t-test
+**When to use:**
+- 2 independent groups
+- Normally distributed data
+- Homoscedasticity (similar variances between groups)
+- Continuous data
+
+**Note:** If variances are unequal, use **Welch's t-test**.
+
+### 2. Mann-Whitney U Test (Wilcoxon Rank-Sum Test)
+**When to use:**
+- 2 independent groups
+- Non-normally distributed data
+- Ordinal data or presence of extreme outliers
+- Can be used with unequal variances
+
+---
+
+## IV. Three or More Groups Comparison
+
+### 1. One-way ANOVA (Analysis of Variance)
+**When to use:**
+- 3 or more independent groups
+- Normally distributed data
+- Homoscedasticity
+- Continuous data
+
+**Note:** After a significant ANOVA, perform post-hoc tests (e.g., Tukey, Bonferroni) to identify which specific groups differ.
+
+### 2. Kruskal-Wallis H Test
+**When to use:**
+- 3 or more independent groups
+- Non-normally distributed data
+- Ordinal data or presence of extreme outliers
+- Can be used with unequal variances
+
+**Note:** After a significant result, perform post-hoc tests like Dunn's test.
+
+---
+
+## V. Decision Flow Process
+
+### Step 1: Determine the number of groups
+- 2 groups: consider t-test or Mann-Whitney U test
+- 3 or more groups: consider ANOVA or Kruskal-Wallis test
+
+### Step 2: Check data distribution
+- **Methods to check normality:**
+  - Histograms, Q-Q plots
+  - Shapiro-Wilk test
+- **Situations indicating non-normality:**
+  - Severe skewness
+  - Presence of extreme outliers
+  - Small sample size (<15-20 per group)
+  - Ordinal data (e.g., Likert scales)
+
+### Step 3: Check homoscedasticity
+- **Parametric test requirement:** similar variances across groups
+- If variances are unequal:
+  - 2 groups: use Welch's t-test or Mann-Whitney U
+  - 3+ groups: consider Kruskal-Wallis
+
+---
+
+## VI. Quick Selection Table
+
+| Number of Groups | Data Distribution | Variances | Recommended Method |
+|------------------|-------------------|-----------|--------------------|
+| 2 groups | Normal | Equal | Independent Samples t-test |
+| 2 groups | Normal | Unequal | Welch's t-test |
+| 2 groups | Non-normal/Ordinal | Any | Mann-Whitney U Test |
+| 3+ groups | Normal | Equal | One-way ANOVA |
+| 3+ groups | Non-normal/Ordinal | Any | Kruskal-Wallis H Test |
+
+---
+
+## VII. Complete Correspondence Table
+
+| Study Design | Parametric Test | Nonparametric Test |
+|--------------|-----------------|--------------------|
+| 2 independent groups | Independent Samples t-test | Mann-Whitney U Test |
+| 2 paired groups | Paired Samples t-test | Wilcoxon Signed-Rank Test |
+| 3+ independent groups | One-way ANOVA | Kruskal-Wallis H Test |
+| 3+ paired groups | Repeated Measures ANOVA | Friedman Test |
+| 2 continuous variables | Pearson Correlation | Spearman Rank Correlation |
+
+---
+
+## VIII. Common Scenario Examples
+
+### Example 1: Normal Data → t-test
+- Question: Do two classes differ in quiz scores?
+- Data: Class A [78, 80, 82, 79, 81]; Class B [72, 74, 73, 75, 71]
+- Check: Data appears normal, no extreme outliers
+- Selection: Independent Samples t-test
+
+### Example 2: With Outliers → Mann-Whitney U
+- Question: Do two groups differ in daily study minutes?
+- Data: Group A [10, 12, 15, 18, 120]; Group B [20, 22, 25, 28, 30]
+- Check: Outlier (120) present, not normal
+- Selection: Mann-Whitney U Test
+
+### Example 3: 3 Groups with Normal Data → ANOVA
+- Question: Do 3 study methods lead to different test scores?
+- Data: A [78, 80, 79, 81]; B [74, 75, 73, 76]; C [82, 83, 84, 81]
+- Check: Data appears normal, similar variances
+- Selection: One-way ANOVA
+
+### Example 4: Ordinal Data → Kruskal-Wallis
+- Question: Do 3 sections differ in stress rating (1-5)?
+- Data: Sec A [2, 2, 3, 3, 4]; Sec B [4, 4, 5, 3, 4]; Sec C [1, 2, 2, 1, 3]
+- Check: Ordinal data (1-5 rating scale)
+- Selection: Kruskal-Wallis Test
+
+---
+
+## IX. Important Considerations
+
+1. **Data transformations**: If data is skewed, consider transformations (log, square root, etc.) to normalize it, then use parametric tests.
+2. **Sample size**: With large samples (>30 per group), parametric tests are relatively robust even with mild departures from normality.
+3. **Effect sizes**: In addition to p-values, always report effect sizes (e.g., Cohen's d, η², r) to indicate the practical magnitude of differences.
+4. **Independence**: All tests require observations to be independent of each other.
+5. **Avoid overusing nonparametric tests**: Parametric tests are more efficient when assumptions are met; don't use nonparametric tests just because they're "safer."
+
+---
+
+## X. Common Mistakes
+
+| Mistake | Why it happens | Do this instead |
+|---------|----------------|-----------------|
+| Using t-test "because it's common" | Skipping the checklist | Check normality and outliers first |
+| Thinking p < .05 means "big effect" | Confusing p-value with effect size | Report effect size too |
+| Using ANOVA on Likert ratings | Ignoring data type | Use Kruskal-Wallis for ordinal data |
+| Ignoring unequal variances | Only looking at means | Use Welch's t-test or nonparametric tests |
+| "Non-normal = always nonparametric" | Oversimplified rule | Consider design, outliers, variance together |
+
+---
+
+## References
+1. StatMate - When to Use Nonparametric Tests
+2. BrainMatters Learning - Parametric vs Nonparametric Tests
+3. PMC8483143 - How to choose and interpret a statistical test

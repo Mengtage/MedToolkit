@@ -1,0 +1,115 @@
+# MedStats-Automate 配置文件
+# 医学统计分析自动化系统配置
+# 
+# 版本: 1.0.0
+# 
+# 配置说明:
+#   - 井号(#)开头的为注释行
+#   - 参数格式: 参数名: 值
+#   - 布尔值: true / false
+#   - 列表: [值1, 值2, 值3]
+
+# ============================================
+# 基础设置
+# ============================================
+seed: 42                    # 随机种子(保证可重复性)
+verbose: true               # 详细输出模式
+output_format: "xlsx"       # 输出格式: xlsx / csv / txt
+
+# ============================================
+# 数据设置
+# ============================================
+data:
+  missing_threshold: 0.5    # 缺失率阈值(超过此值建议剔除变量)
+  encoding: "UTF-8"        # 数据文件编码
+  na_strings: ["NA", "na", "N/A", "null", ""]  # 缺失值标记
+
+# ============================================
+# 多重插补(MICE)设置
+# ============================================
+mice:
+  m: 5                      # 插补数据集数量(推荐5-20)
+  maxit: 10                # 最大迭代次数
+  auto_select_method: true  # 自动选择插补方法
+  # 可选方法:
+  #   - pmm: 预测均值匹配(默认,连续变量)
+  #   - norm: 贝叶斯线性回归
+  #   - logreg: Logistic回归(二分类)
+  #   - polyreg: 多项Logistic(多分类)
+  #   - proportional: 比例优势模型(有序分类)
+
+# ============================================
+# TableOne设置
+# ============================================
+tableone:
+  nonnormal_vars: []       # 非正态变量列表(留空则自动检测)
+  exact_vars: []           # 使用精确检验的变量
+  auto_detect_nonnormal: true  # 自动检测非正态变量
+  show_all_levels: true    # 显示所有分类水平
+  smd: true                # 计算标准化均数差
+  pvalue_decimal: 3        # P值保留小数位数
+
+# ============================================
+# 效应量设置
+# ============================================
+effect_size:
+  confidence_level: 0.95    # 置信水平
+  correction_method: "BH"  # 多重比较校正方法: bonferroni / BH / holm
+  # 效应量类型(自动根据变量类型选择):
+  #   - 连续变量: Cohen's d, Hedges' g, Mean Difference
+  #   - 二分类变量: OR, RR, RD, NNT
+  #   - 生存数据: HR
+
+# ============================================
+# 可视化设置
+# ============================================
+visualization:
+  dpi: 300                 # 图片分辨率
+  width: 10                # 图片宽度(英寸)
+  height: 8                # 图片高度(英寸)
+  theme: "minimal"         # 主题: minimal / classic / bw
+  color_palette: "Set2"    # 颜色方案
+  max_correlation_vars: 15  # 相关矩阵最大变量数
+
+# ============================================
+# 统计检验设置
+# ============================================
+statistics:
+  normality_alpha: 0.05    # 正态性检验显著性水平
+  variance_alpha: 0.05     # 方差齐性检验显著性水平
+  # 正态性检验方法:
+  #   - Shapiro-Wilk: 样本量 < 5000
+  #   - Kolmogorov-Smirnov: 样本量 >= 5000
+  # 方差齐性检验: Levene检验
+  # 组间比较:
+  #   - 2组正态: 独立样本t检验/Welch t检验
+  #   - 2组非正态: Mann-Whitney U检验
+  #   - 多组正态: 单因素ANOVA
+  #   - 多组非正态: Kruskal-Wallis检验
+  # 分类变量:
+  #   - 期望频数>=5: 卡方检验
+  #   - 期望频数<5: Fisher精确检验
+
+# ============================================
+# ROC分析设置
+# ============================================
+roc:
+  bootstrap_n: 2000        # Bootstrap重采样次数(计算CI)
+  optimal_criterion: "youden"  # 最佳截断值标准: youden / closest.topleft
+  # roc.test比较方法: delong / bootstrap / venkatraman
+
+# ============================================
+# 相关与回归设置
+# ============================================
+regression:
+  correlation_method: "auto"  # 相关分析方法: pearson / spearman / auto
+  vif_threshold: 10          # VIF多重共线性阈值
+  stepwise: false            # 是否使用逐步回归
+
+# ============================================
+# 导出设置
+# ============================================
+export:
+  excel_engine: "openxlsx"  # Excel引擎: openxlsx / xlsx
+  include_plots: true       # 是否在Excel中嵌入图表
+  separate_sheets: true     # 每个分析结果单独一个sheet
