@@ -1,0 +1,72 @@
+[
+  {
+    "case": "OLS independent least-squares",
+    "status": "PASS",
+    "detail": "{'Intercept': 2.000000000000007, 'x': 2.9999999999999982}"
+  },
+  {
+    "case": "Logit analytic two-stratum MLE",
+    "status": "PASS",
+    "detail": "{'Intercept': -1.0986122886681098, 'x': 2.1972245773362196}"
+  },
+  {
+    "case": "OLS missing-row count",
+    "status": "PASS",
+    "detail": "n_obs=5"
+  },
+  {
+    "case": "Logit invalid outcomes",
+    "status": "PASS",
+    "detail": "invalid binary outcome rejected"
+  },
+  {
+    "case": "Confusion matrix arithmetic",
+    "status": "PASS",
+    "detail": "{'TP': 1, 'TN': 1, 'FP': 1, 'FN': 1, 'matrix': [[1, 1], [1, 1]]}"
+  },
+  {
+    "case": "AUC pairwise known 0.75",
+    "status": "PASS",
+    "detail": "0.75"
+  },
+  {
+    "case": "Constant probability threshold",
+    "status": "PASS",
+    "detail": "{'TP': 2, 'TN': 0, 'FP': 2, 'FN': 0, 'matrix': [[0, 2], [0, 2]]}"
+  },
+  {
+    "case": "Calibration boundary count",
+    "status": "PASS",
+    "detail": "all observations retained"
+  },
+  {
+    "case": "ROC strict JSON constant scores",
+    "status": "PASS",
+    "detail": "strict JSON"
+  },
+  {
+    "case": "FormulaParser categorical",
+    "status": "PASS",
+    "detail": "['g_b']"
+  },
+  {
+    "case": "FormulaParser derived matrix",
+    "status": "PASS",
+    "detail": "['x', 'z', 'x:z', 'x**2']"
+  },
+  {
+    "case": "Input rejects invalid scores",
+    "status": "PASS",
+    "detail": "length/nonfinite rejected"
+  },
+  {
+    "case": "Single-class ROC explicit rejection",
+    "status": "PASS",
+    "detail": "single-class ROC rejected"
+  },
+  {
+    "case": "Calibration endpoint probabilities",
+    "status": "PASS",
+    "detail": "[{'bin': 1, 'mean_predicted': 0.0, 'mean_observed': 0.0, 'n': 1}, {'bin': 2, 'mean_predicted': 1.0, 'mean_observed': 1.0, 'n': 1}]"
+  }
+]

@@ -1,0 +1,13 @@
+name: MedExtract v2.0
+description: 医学文献筛选与结构化数据提取工具，支持PRISMA流程、自动化去重、多格式引用导出
+version: "2.0"
+author: Assistant
+avatar: 📚
+tags:
+  - 医学文献
+  - 系统综述
+  - PRISMA
+  - 数据提取
+  - 文献筛选
+inputs: []
+outputs: []

@@ -1,0 +1,333 @@
+{
+  "nodes": [
+    {
+      "id": "prisma_title",
+      "type": "text",
+      "x": 400,
+      "y": 20,
+      "width": 500,
+      "height": 60,
+      "text": "# PRISMA Flow Diagram\n## 系统评价文献筛选流程图"
+    },
+    {
+      "id": "identification_header",
+      "type": "group",
+      "x": 50,
+      "y": 100,
+      "width": 280,
+      "height": 800,
+      "color": "2",
+      "label": "Identification 识别"
+    },
+    {
+      "id": "screening_header",
+      "type": "group",
+      "x": 360,
+      "y": 100,
+      "width": 280,
+      "height": 600,
+      "color": "3",
+      "label": "Screening 筛选"
+    },
+    {
+      "id": "included_header",
+      "type": "group",
+      "x": 670,
+      "y": 100,
+      "width": 280,
+      "height": 600,
+      "color": "4",
+      "label": "Included 纳入"
+    },
+    {
+      "id": "db_search",
+      "type": "text",
+      "x": 70,
+      "y": 120,
+      "width": 240,
+      "height": 80,
+      "text": "## Database Searching\n**数据库检索**\n\n- PubMed: {pubmed_count}\n- Web of Science: {wos_count}\n- Scopus: {scopus_count}\n- Other: {other_count}"
+    },
+    {
+      "id": "db_count_box",
+      "type": "text",
+      "x": 120,
+      "y": 210,
+      "width": 140,
+      "height": 50,
+      "text": "**Records identified: {total_records}**",
+      "color": "2"
+    },
+    {
+      "id": "register_search",
+      "type": "text",
+      "x": 70,
+      "y": 280,
+      "width": 240,
+      "height": 60,
+      "text": "## Registers\n**注册库检索**\n(e.g., PROSPERO, ClinicalTrials.gov)"
+    },
+    {
+      "id": "register_count_box",
+      "type": "text",
+      "x": 120,
+      "y": 350,
+      "width": 140,
+      "height": 50,
+      "text": "**Additional records: {register_count}**",
+      "color": "2"
+    },
+    {
+      "id": "dedup_arrow",
+      "type": "text",
+      "x": 70,
+      "y": 420,
+      "width": 240,
+      "height": 50,
+      "text": "## Duplicates Removed\n**去除重复文献**"
+    },
+    {
+      "id": "dedup_count_box",
+      "type": "text",
+      "x": 120,
+      "y": 480,
+      "width": 140,
+      "height": 50,
+      "text": "**Duplicates: {duplicates_removed}**",
+      "color": "1"
+    },
+    {
+      "id": "records_after_dedup",
+      "type": "text",
+      "x": 120,
+      "y": 540,
+      "width": 140,
+      "height": 60,
+      "text": "**Records after deduplication: {records_after_dedup}**",
+      "color": "2"
+    },
+    {
+      "id": "screening_start",
+      "type": "text",
+      "x": 380,
+      "y": 120,
+      "width": 240,
+      "height": 60,
+      "text": "## Screening\n**文献筛选**\nTitle & Abstract Review"
+    },
+    {
+      "id": "screening_count",
+      "type": "text",
+      "x": 420,
+      "y": 190,
+      "width": 160,
+      "height": 50,
+      "text": "**Records screened: {records_after_dedup}**",
+      "color": "3"
+    },
+    {
+      "id": "excluded_reason1",
+      "type": "text",
+      "x": 380,
+      "y": 260,
+      "width": 240,
+      "height": 80,
+      "text": "## Excluded\n**排除文献**\n\n- Not relevant: {not_relevant_count}\n- Wrong study type: {wrong_study_type}\n- Other reasons: {other_excluded}"
+    },
+    {
+      "id": "excluded_count_box",
+      "type": "text",
+      "x": 420,
+      "y": 350,
+      "width": 160,
+      "height": 50,
+      "text": "**Excluded: {excluded_count}**",
+      "color": "1"
+    },
+    {
+      "id": "full_text_header",
+      "type": "text",
+      "x": 380,
+      "y": 420,
+      "width": 240,
+      "height": 60,
+      "text": "## Full-text Assessment\n**全文评估**"
+    },
+    {
+      "id": "full_text_count",
+      "type": "text",
+      "x": 420,
+      "y": 490,
+      "width": 160,
+      "height": 50,
+      "text": "**Full-text assessed: {full_text_count}**",
+      "color": "3"
+    },
+    {
+      "id": "full_text_excluded",
+      "type": "text",
+      "x": 380,
+      "y": 560,
+      "width": 240,
+      "height": 80,
+      "text": "## Excluded\n**排除文献（全文）**\n\n- No access: {no_access_count}\n- Wrong outcomes: {wrong_outcomes}\n- Other: {ft_other_excluded}"
+    },
+    {
+      "id": "ft_excluded_count",
+      "type": "text",
+      "x": 420,
+      "y": 650,
+      "width": 160,
+      "height": 50,
+      "text": "**Excluded: {ft_excluded_count}**",
+      "color": "1"
+    },
+    {
+      "id": "included_final_header",
+      "type": "text",
+      "x": 690,
+      "y": 120,
+      "width": 240,
+      "height": 60,
+      "text": "## Included Studies\n**纳入研究**"
+    },
+    {
+      "id": "included_count",
+      "type": "text",
+      "x": 730,
+      "y": 190,
+      "width": 160,
+      "height": 50,
+      "text": "**Studies included: {included_count}**",
+      "color": "4"
+    },
+    {
+      "id": "qualitative_header",
+      "type": "text",
+      "x": 690,
+      "y": 260,
+      "width": 240,
+      "height": 80,
+      "text": "## Qualitative Synthesis\n**定性合成**\n\nSystematic review narrative analysis"
+    },
+    {
+      "id": "qualitative_count",
+      "type": "text",
+      "x": 730,
+      "y": 350,
+      "width": 160,
+      "height": 50,
+      "text": "**Studies: {included_count}**",
+      "color": "4"
+    },
+    {
+      "id": "quantitative_header",
+      "type": "text",
+      "x": 690,
+      "y": 420,
+      "width": 240,
+      "height": 80,
+      "text": "## Quantitative Synthesis\n**定量合成**\n\nMeta-analysis (if applicable)"
+    },
+    {
+      "id": "quantitative_count",
+      "type": "text",
+      "x": 730,
+      "y": 510,
+      "width": 160,
+      "height": 50,
+      "text": "**Studies in meta-analysis: {quantitative_count}**",
+      "color": "4"
+    }
+  ],
+  "edges": [
+    {
+      "id": "db_to_count",
+      "fromNode": "db_search",
+      "toNode": "db_count_box",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "count_to_register",
+      "fromNode": "db_count_box",
+      "toNode": "register_search",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "register_to_dedup",
+      "fromNode": "register_count_box",
+      "toNode": "dedup_arrow",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "dedup_to_records",
+      "fromNode": "dedup_count_box",
+      "toNode": "records_after_dedup",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "records_to_screening",
+      "fromNode": "records_after_dedup",
+      "toNode": "screening_start",
+      "fromSide": "right",
+      "toSide": "left",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "screening_to_excluded",
+      "fromNode": "screening_count",
+      "toNode": "excluded_reason1",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "excluded_to_fulltext",
+      "fromNode": "excluded_count_box",
+      "toNode": "full_text_header",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "fulltext_to_ft_excluded",
+      "fromNode": "full_text_count",
+      "toNode": "full_text_excluded",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "ft_excluded_to_included",
+      "fromNode": "ft_excluded_count",
+      "toNode": "included_final_header",
+      "fromSide": "right",
+      "toSide": "left",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "included_to_qual",
+      "fromNode": "included_count",
+      "toNode": "qualitative_header",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "toEnd": "arrow"
+    },
+    {
+      "id": "qual_to_quant",
+      "fromNode": "qualitative_count",
+      "toNode": "quantitative_header",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "toEnd": "arrow"
+    }
+  ]
+}
