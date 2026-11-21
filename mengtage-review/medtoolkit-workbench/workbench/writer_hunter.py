@@ -60,4 +60,7 @@ def capture(service,project,review,record_id,screening_event_hash,mapping_event_
 def verify(store,project,obj):
     binding=obj['native_hunter'];view=material(store,project,binding['review_id'])
     row=next((r for r in view['records'] if r['record_id']==binding['record_id']),None)
-    if row is None or row['binding']!=binding:raise ValueError('全文裁决或研究映射已变化，请重新捕获证据并审核新稿')
+    keys=('review_id','record_id','report_id','study_ids','study_scope','decision_event_hash','source_artifact','source_sha256','record_sha256','protocol_sha256','parent_review_id','parent_event_hash','retrieval_event_hash')
+    if row is None or any(row['binding'].get(k)!=binding.get(k) for k in keys):
+        raise ValueError('全文裁决或研究映射已变化，请重新捕获证据并审核新稿')
+    return {'batch_head_advanced':row['binding']['screening_event_hash']!=binding.get('screening_event_hash') or row['binding']['mapping_event_hash']!=binding.get('mapping_event_hash')}

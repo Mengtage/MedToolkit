@@ -136,7 +136,8 @@ class Store:
             return result
         except Exception as e:
             # No provider exception body, prompt, URL or dataset in diagnostic logs.
-            with self.db() as db:db.execute('UPDATE jobs SET state=?,updated=?,error=? WHERE id=?',('failed',now(),type(e).__name__,jid))
+            msg=str(e) if isinstance(e,ValueError) and any('\u4e00'<=c<='\u9fff' for c in str(e)) and len(str(e))<=200 else type(e).__name__
+            with self.db() as db:db.execute('UPDATE jobs SET state=?,updated=?,error=? WHERE id=?',('failed',now(),msg,jid))
             raise
 
     def retry(self,jid,confirmed=False):

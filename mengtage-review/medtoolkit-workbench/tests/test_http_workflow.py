@@ -243,8 +243,15 @@ class WorkflowTest(unittest.TestCase):
 
     def test_failed_job_explicit_retry(self):
         pid = self.project()
-        jid = self.enqueue(pid, constant=True)
-        self.assertEqual(self.finish(pid, jid)['state'], 'failed')
+        self.request('/api/jobs', {'project': pid, 'kind': 'statistics', 'payload': {
+            'classification': 'synthetic', 'method': 'pearson', 'x': 'x', 'y': 'y',
+            'rows': [{'x': n, 'y': 1} for n in range(1, 6)]}}, 400)
+        jid = self.request('/api/jobs', {'project': pid, 'kind': 'statistics', 'payload': {
+            'classification': 'synthetic', 'method': 'logistic_regression', 'outcome': 'y', 'predictors': ['x'],
+            'rows': [{'x': x, 'y': 0 if x < 3 else 1} for x in range(1, 7)]}}, 201)['id']
+        job = self.finish(pid, jid)
+        self.assertEqual(job['state'], 'failed')
+        self.assertIn('分离', job['error'])
         self.request('/api/retry', {'id': jid}, 400)
         retry = self.request('/api/retry', {'id': jid, 'confirmed': True}, 201)['id']
         self.assertNotEqual(retry, jid)

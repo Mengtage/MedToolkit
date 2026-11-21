@@ -248,13 +248,13 @@ class TableOne:
             contingency = pd.crosstab(self.df[self.strata], self.df[var])
             if contingency.size > 0:
                 try:
-                    min_expected = np.min(stats.chi2_contingency(contingency)[3])
+                    min_expected = np.min(stats.chi2_contingency(contingency, correction=False)[3])
                     
                     if min_expected < 5 and contingency.shape == (2, 2):
                         stat, p = stats.fisher_exact(contingency)
                         method = "Fisher's Exact"
                     else:
-                        stat, p, _, _ = stats.chi2_contingency(contingency)
+                        stat, p, _, _ = stats.chi2_contingency(contingency, correction=False)
                         method = 'Chi-square'
                     
                     p_results.append({

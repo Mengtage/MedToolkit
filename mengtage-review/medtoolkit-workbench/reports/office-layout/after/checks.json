@@ -12,7 +12,7 @@
   ],
   "engine": "LibreOffice 26.2.6.3; not Microsoft Word",
   "sha256": {
-    "layout-stress.pdf": "d7332125b44313a978ed1db32b013570164b8b304c5e9424cfc95556e441a21e",
-    "layout-stress.docx": "828451b404ec78fcdd86a34a8a64f54590bcb87987b36d18bd52ee08a6dea0c1"
+    "layout-stress.pdf": "83147d99302a2bb3d4b96eb82ad72a13a22f26daa75d97c3797292c632bb26e6",
+    "layout-stress.docx": "cd534ff42587cad671dbfa2b5757650afc1f4ad50888609a05e76c60e81d713d"
   }
 }

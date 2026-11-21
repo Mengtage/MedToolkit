@@ -4,7 +4,7 @@ import hashlib
 import json
 import re
 from .core import canonical, now
-from .deduplication import deduplicate
+from .deduplication import deduplicate, merged_representative
 
 def digest(value):return hashlib.sha256(canonical(value).encode()).hexdigest()
 
@@ -46,7 +46,7 @@ def resolve(source,payload):
     out.setdefault('review_events',[]).append({'candidate_index':index,'left':left,'right':right,'decision':payload['decision'],'reason':payload['reason'].strip(),'actor':'local_owner','identity_assurance':'single_owner_access_token','timestamp':now()})
     for c in candidates:
         if not c.get('resolution') and any(c['left'] in g['source_indices'] and c['right'] in g['source_indices'] for g in groups):c['resolution']='same_group_after_review'
-    out['records']=[out['raw_records'][g['selected_source_index']-1] for g in groups]
+    out['records']=[merged_representative(out['raw_records'],g['source_indices'])[0] for g in groups]
     out['unique_count']=len(groups);out['duplicates_removed']=out['input_count']-len(groups)
     out['pending_review_count']=sum(not c.get('resolution') for c in candidates)
     return out

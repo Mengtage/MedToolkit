@@ -189,9 +189,31 @@ class WriterService:
     def list(self,project):
         self.store.project(project)
         with self.store.db() as db:
-            rows=db.execute('SELECT id,kind,created FROM writer_objects WHERE project=? ORDER BY created',(project,)).fetchall()
+            rows=db.execute('SELECT id,kind,created,artifact FROM writer_objects WHERE project=? ORDER BY created',(project,)).fetchall()
             heads=dict(db.execute('SELECT id,version FROM writer_heads WHERE project=?',(project,)))
-        return {'objects':[{'id':r[0],'kind':r[1],'created':r[2]} for r in rows],'heads':heads}
+            reviews={}
+            for v,ev in db.execute('SELECT version,event FROM writer_reviews WHERE project=? ORDER BY sequence',(project,)):
+                try:reviews[v]=json.loads(ev).get('decision')
+                except Exception:pass
+        objects=[]
+        for oid,kind,created,artifact in rows:
+            item={'id':oid,'kind':kind,'created':created}
+            try:
+                data=json.loads(self.store.artifact(project,artifact).read_text())
+                if kind=='document':
+                    fname=data.get('snapshot',{}).get('filename','')
+                    src=data.get('source','')
+                    item['label']=f"{fname+' · ' if fname else ''}{src} · {oid[:8]}"
+                elif kind=='evidence':
+                    item['label']=f"{data.get('label','')}（{len(data.get('items',[]))}项） · {oid[:8]}"
+                elif kind=='manuscript':
+                    status={'approved':'已批准','changes_requested':'需修改'}.get(reviews.get(oid),'待审核')
+                    head='当前' if heads.get(data.get('manuscript_id'))==oid else '历史'
+                    item['label']=f"{data.get('title','')} · {status} · {head} · {oid[:8]}"
+            except Exception:
+                pass
+            objects.append(item)
+        return {'objects':objects,'heads':heads}
 
     def dispatch(self,operation,body):
         fields={'capture_statistics':{'project','job_id','confirmed'},'document':{'project','filename','content_base64','source','classification','confirmed'},'evidence':{'project','label','items','parent_id'},'save':{'project','title','sections','evidence_id','manuscript_id','expected_version'},'inspect':{'project','version'},'review':{'project','version','decision','author','note','confirmed'},'export':{'project','version'},'export_word':{'project','version'},'load':{'project','id'}}

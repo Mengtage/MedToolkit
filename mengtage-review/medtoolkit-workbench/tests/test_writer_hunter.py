@@ -30,7 +30,9 @@ class WriterHunterTest(unittest.TestCase):
   self.r=self.parent
   with self.assertRaises(ValueError):self.call('writer_candidates',project=self.pid)
  def test_mapping_revision_blocks_old_evidence(self):
-  w,doc,e,m=self.manuscript();old=self.call('writer_candidates',project=self.pid);self.save(self.mapping([['new_trial'],['trial_x']]))
+  w,doc,e,m=self.manuscript();old=self.call('writer_candidates',project=self.pid);self.save(self.mapping([['trial_x'],['other_trial_updated']]))
+  self.assertEqual(w.export(self.pid,m['id'])['manuscript']['id'],m['id'])
+  self.save(self.mapping([['new_trial'],['other_trial_updated']]))
   with self.assertRaises(ValueError):self.capture(mapping_event_hash=old['mapping_event_hash'])
   with self.assertRaises(ValueError):w.export(self.pid,m['id'])
   fresh=self.capture();self.assertEqual(fresh['native_hunter']['study_ids'],['new_trial'])

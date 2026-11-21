@@ -84,6 +84,9 @@ def serve(store,port=8765):
                 if self.path=='/api/reviewers/revoke':
                     if set(body)!={'actor'}:raise ValueError('身份字段无效')
                     return self.reply(200,screening.access.revoke(body['actor']))
+                if self.path=='/api/reviewers/rotate':
+                    if set(body)!={'actor'}:raise ValueError('身份字段无效')
+                    return self.reply(200,screening.access.rotate(body['actor']))
                 if self.path=='/api/screening-prepare':
                     if set(body)!={'project','source_artifact','protocol'}:raise ValueError('方案字段无效')
                     return self.reply(201,screening.prepare(**body))

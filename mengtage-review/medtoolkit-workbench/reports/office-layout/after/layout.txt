@@ -1,8 +1,8 @@
 MedToolkit 排版验收 / Office layout
 — 合成材料
 已获作者批准
-稿件版本：51e1c04fe9ad47ce912e837346b5e483
-导出时间：2026-11-21T06:56:13.430458+00:00
+稿件版本：54857e360b2e46afb70e2ca7691b3161
+导出时间：2026-11-21T12:03:38.124513+00:00
 
 
 一、中文与英文混排
@@ -39,7 +39,7 @@ MedToolkit 排版验收 / Office layout
 
 
 
-                已获作者批准 · 51e1c04fe9ad47ce912e837346b5e483 · 1 / 4
+                已获作者批准 · 54857e360b2e46afb70e2ca7691b3161 · 1 / 4
 指标 / Measure               合成值     说明 / Notes
 项目 12                       1.20   合成表格行，检查跨页表头与行完整性。 [E:e1]
 项目 13                       1.30   合成表格行，检查跨页表头与行完整性。 [E:e1]
@@ -80,7 +80,7 @@ MedToolkit 排版验收 / Office layout
 
 
 
-               已获作者批准 · 51e1c04fe9ad47ce912e837346b5e483 · 2 / 4
+               已获作者批准 · 54857e360b2e46afb70e2ca7691b3161 · 2 / 4
 指标 / Measure                    合成值     说明 / Notes
 项目 48                            4.80   合成表格行，检查跨页表头与行完整性。 [E:e1]
 项目 49                            4.90   合成表格行，检查跨页表头与行完整性。 [E:e1]
@@ -116,22 +116,22 @@ Special <tags> & quotes "example" remain literal. [E:e1]
 核验人声明：Synthetic Author
 原件 SHA256：462a3761e2d77f7fec95d32e29f7288d7e258197ba2f24abed6086a9a95f9c29
 
-Hunter 报告：f25d5b86a7004463977350a87417ffc7:r000001
+Hunter 报告：b0c889030a9f46d4b329bc13b7b1e3e4:r000001
 研究 ID（限所选全文批次）：trial_x
-全文裁决版本：f26d608c436aae5511ca936f7c689ee39bc180d55a47d97af14a360b9b6f3df9
+全文裁决版本：58a5e9b4a2d968a30a2a9c3147715c1318b1502eb102fc18875bac92c677d8ce
 
-研究映射版本：bb8b3700d519ae1c6f435d8d9321ac68f764a9dedf72bb51b1b61b878cd0dc39
-
-
+研究映射版本：8e9c9ed79e446a1b0fe505fa16c0267f17085bbb6b4a914b45283ecd6e032593
 
 
-                    已获作者批准 · 51e1c04fe9ad47ce912e837346b5e483 · 3 / 4
+
+
+                    已获作者批准 · 54857e360b2e46afb70e2ca7691b3161 · 3 / 4
 作者审核记录
-2026-11-21T06:56:13.328452+00:00 · Synthetic Author · 批准
+2026-11-21T12:03:38.023668+00:00 · Synthetic Author · 批准
 Checked original page and trial mapping
 
 
 
 
-                   已获作者批准 · 51e1c04fe9ad47ce912e837346b5e483 · 4 / 4
+                   已获作者批准 · 54857e360b2e46afb70e2ca7691b3161 · 4 / 4
 

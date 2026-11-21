@@ -66,12 +66,20 @@ def validate_snapshot(value):
     if not re.fullmatch(r'fulltext-[a-f0-9]{64}\.(pdf|txt)',value.get('blob','')):raise ValueError('原件标识无效')
     if value['blob'][9:73]!=value.get('file_sha256'):raise ValueError('原件标识与哈希不一致')
 
+def _norm_quote(value):
+    return re.sub(r'\s+',' ',value.replace('\xad','')).strip()
+
 def validate_evidence(record,locator,quote):
     full=record['fulltext'];validate_snapshot(full)
     if not isinstance(locator,str) or not re.fullmatch(r'p:[1-9][0-9]*',locator):raise ValueError('全文定位须使用p:页号，例如p:1')
     page=int(locator[2:])
     if page>len(full['pages']):raise ValueError('引用页码超出快照')
-    if not isinstance(quote,str) or not quote.strip() or len(quote)>5000 or quote not in full['pages'][page-1]['text']:raise ValueError('须提供该页快照中可逐字核对的摘录（最多5000字符）')
+    if not isinstance(quote,str) or not quote.strip() or len(quote)>5000:raise ValueError('须提供该页快照中可逐字核对的摘录（最多5000字符）')
+    page_text=full['pages'][page-1]['text']
+    if quote not in page_text:
+        nq=_norm_quote(quote)
+        if not nq or nq not in _norm_quote(page_text):
+            raise ValueError('须提供该页快照中可逐字核对的摘录（最多5000字符）')
 
 class FulltextService:
     def __init__(self,service):

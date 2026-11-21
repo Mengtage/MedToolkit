@@ -174,21 +174,38 @@ def _parse_article_xml(article_el: ET.Element) -> dict[str, Any]:
     }
 
     # PMID
-    pmid_el = article_el.find(".//PMID")
-    if pmid_el is not None and pmid_el.text:
-        article["pmid"] = pmid_el.text.strip()
+    pmid_el = article_el.find("./MedlineCitation/PMID")
+    if pmid_el is None:
+        pmid_el = article_el.find("./BookDocument/PMID")
+    if pmid_el is None:
+        pmid_el = article_el.find(".//PMID")
+    if pmid_el is not None:
+        pmid_text = "".join(pmid_el.itertext()).strip()
+        if pmid_text:
+            article["pmid"] = pmid_text
 
     # Title
-    title_el = article_el.find(".//ArticleTitle")
-    if title_el is not None and title_el.text:
-        article["title"] = title_el.text.strip()
+    title_el = article_el.find("./MedlineCitation/Article/ArticleTitle")
+    if title_el is None:
+        title_el = article_el.find("./BookDocument/ArticleTitle")
+    if title_el is None:
+        title_el = article_el.find("./BookDocument/Book/BookTitle")
+    if title_el is None:
+        title_el = article_el.find(".//ArticleTitle")
+    if title_el is not None:
+        article["title"] = "".join(title_el.itertext()).strip()
 
     # Authors
-    author_list = article_el.findall(".//Author")
+    author_list = article_el.findall("./MedlineCitation/Article/AuthorList/Author")
+    if not author_list:
+        author_list = article_el.findall("./BookDocument/AuthorList/Author")
+    if not author_list:
+        author_list = article_el.findall("./BookDocument/Book/AuthorList/Author")
     authors: list[str] = []
     for author_el in author_list:
         last_name = author_el.findtext("LastName", "").strip()
         fore_name = author_el.findtext("ForeName", "").strip()
+        collective = author_el.findtext("CollectiveName", "").strip()
         if last_name:
             if fore_name:
                 authors.append(f"{last_name} {fore_name}")
@@ -196,15 +213,25 @@ def _parse_article_xml(article_el: ET.Element) -> dict[str, Any]:
                 authors.append(last_name)
         elif fore_name:
             authors.append(fore_name)
+        elif collective:
+            authors.append(collective)
     article["authors"] = authors
 
     # Journal
-    journal_el = article_el.find(".//Journal/Title")
-    if journal_el is not None and journal_el.text:
-        article["journal"] = journal_el.text.strip()
+    journal_el = article_el.find("./MedlineCitation/Article/Journal/Title")
+    if journal_el is None:
+        journal_el = article_el.find("./BookDocument/Book/BookTitle")
+    if journal_el is None:
+        journal_el = article_el.find(".//Journal/Title")
+    if journal_el is not None:
+        article["journal"] = "".join(journal_el.itertext()).strip()
 
     # Publication date
-    pub_date_el = article_el.find(".//PubDate")
+    pub_date_el = article_el.find("./MedlineCitation/Article/Journal/JournalIssue/PubDate")
+    if pub_date_el is None:
+        pub_date_el = article_el.find("./BookDocument/Book/PubDate")
+    if pub_date_el is None:
+        pub_date_el = article_el.find(".//PubDate")
     if pub_date_el is not None:
         year = pub_date_el.findtext("Year", "").strip()
         month = pub_date_el.findtext("Month", "").strip()
@@ -214,11 +241,15 @@ def _parse_article_xml(article_el: ET.Element) -> dict[str, Any]:
 
     # Abstract
     abstract_parts: list[str] = []
-    abstract_el = article_el.find(".//Abstract")
+    abstract_el = article_el.find("./MedlineCitation/Article/Abstract")
+    if abstract_el is None:
+        abstract_el = article_el.find("./BookDocument/Abstract")
+    if abstract_el is None:
+        abstract_el = article_el.find(".//Abstract")
     if abstract_el is not None:
         for abs_text in abstract_el.findall(".//AbstractText"):
             label = abs_text.get("Label", "").strip()
-            text = (abs_text.text or "").strip()
+            text = "".join(abs_text.itertext()).strip()
             if label:
                 abstract_parts.append(f"{label}: {text}")
             elif text:
@@ -226,10 +257,22 @@ def _parse_article_xml(article_el: ET.Element) -> dict[str, Any]:
     article["abstract"] = "\n".join(abstract_parts)
 
     # DOI
-    for eid in article_el.findall(".//ArticleId"):
-        if eid.get("IdType") == "doi" and eid.text:
-            article["doi"] = eid.text.strip()
+    for path in (
+        "./PubmedData/ArticleIdList/ArticleId",
+        "./PubmedBookData/ArticleIdList/ArticleId",
+        "./BookDocument/ArticleIdList/ArticleId",
+    ):
+        for eid in article_el.findall(path):
+            if eid.get("IdType") == "doi" and eid.text and eid.text.strip():
+                article["doi"] = eid.text.strip()
+                break
+        if article["doi"]:
             break
+    if not article["doi"]:
+        for eloc in article_el.findall("./MedlineCitation/Article/ELocationID"):
+            if eloc.get("EIdType") == "doi" and eloc.text and eloc.text.strip():
+                article["doi"] = eloc.text.strip()
+                break
 
     return article
 
@@ -330,7 +373,9 @@ async def _efetch_batch(
     root = ET.fromstring(resp.text)
     articles: list[dict[str, Any]] = []
 
-    for article_el in root.findall(".//PubmedArticle"):
+    for article_el in root:
+        if article_el.tag not in ("PubmedArticle", "PubmedBookArticle"):
+            continue
         try:
             parsed = _parse_article_xml(article_el)
             articles.append(parsed)

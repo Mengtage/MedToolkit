@@ -26,6 +26,14 @@ class ReviewAccess:
         with self.store.db() as db:
             if db.execute('UPDATE review_principals SET active=0 WHERE actor=? AND active=1',(actor,)).rowcount!=1:raise ValueError('身份不存在或已撤销')
         return {'revoked':actor}
+    def rotate(self,actor):
+        if not isinstance(actor,str) or not re.fullmatch(r'[A-Za-z0-9_-]{1,64}',actor):raise ValueError('评审ID使用1至64位字母、数字、下划线或连字符')
+        token=secrets.token_urlsafe(32)
+        with self.store.db() as db:
+            row=db.execute('SELECT role FROM review_principals WHERE actor=?',(actor,)).fetchone()
+            if not row:raise ValueError('评审身份不存在')
+            db.execute('UPDATE review_principals SET token_hash=?,active=1 WHERE actor=?',(hashlib.sha256(token.encode()).hexdigest(),actor))
+        return {'actor':actor,'role':row[0],'token':token,'rotated':True}
     def validate_protocol(self,protocol):
         active={p['actor']:p['role'] for p in self.list() if p['active']}
         for key,role in [('human_reviewer','human'),('llm_reviewer','model'),('adjudicator','human')]:

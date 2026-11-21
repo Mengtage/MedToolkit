@@ -77,3 +77,13 @@ class TableOneAdapterTest(unittest.TestCase):
         row=next(x for x in r['table'] if x['variable']=='v')
         self.assertAlmostEqual(row['sd'], math.sqrt(sum((i-3.5)**2 for i in range(1,7))/5))
         self.assertEqual(r['p_values'],[])
+
+    def test_2x2_chisquare_unadjusted_pearson_matches_categorical(self):
+        rows = ([{'g': 'A', 'c': 'yes'}] * 10 + [{'g': 'A', 'c': 'no'}] * 20 +
+                [{'g': 'B', 'c': 'yes'}] * 20 + [{'g': 'B', 'c': 'no'}] * 10)
+        p = {'classification': 'synthetic', 'method': 'tableone', 'strata': 'g',
+             'variable_types': {'g': 'categorical', 'c': 'categorical'}, 'rows': rows}
+        r = self.run_table(p)
+        test = r['p_values'][0]
+        self.assertEqual(test['test'], 'Chi-square')
+        self.assertAlmostEqual(test['statistic'], 20/3)

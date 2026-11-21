@@ -29,8 +29,9 @@ def source_counts(store,project,draft):
                     if source['records']!=[r['record'] for r in draft['records']]:raise ValueError('去重产物与筛选快照不一致')
                     indices=[i for group in groups for i in group['source_indices']]
                     if sorted(indices)!=list(range(1,len(raw)+1)):raise ValueError('去重来源分组不守恒')
+                    from .deduplication import merged_representative
                     if len(groups)!=len(source['records']) or any(g['selected_source_index'] not in g['source_indices'] for g in groups):raise ValueError('去重代表记录无效')
-                    if source['records']!=[raw[g['selected_source_index']-1] for g in groups]:raise ValueError('去重代表记录不匹配')
+                    if source['records'] not in ([raw[g['selected_source_index']-1] for g in groups],[merged_representative(raw,g['source_indices'])[0] for g in groups]):raise ValueError('去重代表记录不匹配')
                     if source['input_count']!=len(raw) or source['unique_count']!=len(groups) or source['duplicates_removed']!=len(raw)-len(groups):raise ValueError('去重计数不守恒')
                     if any(not c.get('resolution') for c in source['review_candidates']):raise ValueError('去重冲突未处理')
                 elif source['raw_records']!=raw:raise ValueError('复核分支原始记录不一致')

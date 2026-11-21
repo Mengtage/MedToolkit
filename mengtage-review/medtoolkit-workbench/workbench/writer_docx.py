@@ -16,8 +16,25 @@ def cells(line):
     return [v.strip().replace(r'\|','|') for v in re.split(r'(?<!\\)\|',value[1:-1])]
 
 
+def add_inline(para,text):
+    pattern=re.compile(r'(\*\*[^*\n]+\*\*|\*[^*\n]+\*)')
+    pos=0
+    for m in pattern.finditer(text):
+        if m.start()>pos:para.add_run(text[pos:m.start()])
+        token=m.group(0)
+        if token.startswith('**'):
+            r=para.add_run(token[2:-2]);r.bold=True
+        else:
+            r=para.add_run(token[1:-1]);r.italic=True
+        pos=m.end()
+    if pos<len(text):para.add_run(text[pos:])
+
+
 def add_body(doc,body):
-    lines=body.splitlines();i=0
+    lines=body.splitlines();i=0;buf=[]
+    def flush():
+        if buf:
+            p=doc.add_paragraph();add_inline(p,' '.join(buf));buf.clear()
     while i<len(lines):
         header=cells(lines[i]);divider=cells(lines[i+1]) if i+1<len(lines) else None
         if header and divider and len(header)==len(divider) and all(re.fullmatch(r':?-{3,}:?',v) for v in divider):
@@ -27,6 +44,7 @@ def add_body(doc,body):
                 if row is None or len(row)!=len(header):break
                 rows.append(row);j+=1
             if rows:
+                flush()
                 table=doc.add_table(rows=1,cols=len(header));table.style='Table Grid'
                 table.alignment=WD_TABLE_ALIGNMENT.CENTER;table.autofit=False
                 weights=[max(8,min(40,max(len(v[k]) for v in [header]+rows))) for k in range(len(header))]
@@ -50,9 +68,18 @@ def add_body(doc,body):
                             para.alignment=WD_ALIGN_PARAGRAPH.CENTER if divider[k].startswith(':') and divider[k].endswith(':') else WD_ALIGN_PARAGRAPH.RIGHT if divider[k].endswith(':') else WD_ALIGN_PARAGRAPH.LEFT
                             for run in para.runs:run.font.size=Pt(10)
                 i=j;continue
-        # Other Markdown remains literal text, preserving unsupported syntax.
-        if lines[i].strip():doc.add_paragraph(lines[i])
+        raw=lines[i].strip()
+        if not raw:
+            flush();i+=1;continue
+        if raw.startswith('### '):
+            flush();p=doc.add_heading(level=2);add_inline(p,raw[4:].strip());i+=1;continue
+        if re.match(r'^[-*]\s+\S',raw) or re.match(r'^\d+\.\s+\S',raw):
+            flush();p=doc.add_paragraph();add_inline(p,raw);i+=1;continue
+        if raw.startswith('|'):
+            flush();p=doc.add_paragraph();add_inline(p,lines[i]);i+=1;continue
+        buf.append(raw)
         i+=1
+    flush()
 
 
 def render(bundle):

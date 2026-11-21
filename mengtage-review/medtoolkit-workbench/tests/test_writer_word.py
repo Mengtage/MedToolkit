@@ -29,3 +29,11 @@ class WriterWordTest(unittest.TestCase):
   m=self.save('Malformed | table\n| a | b |\n| not divider | x |\n[E:e1]');out=self.s.export_word(self.pid,m['id']);doc=Document(io.BytesIO(base64.b64decode(out['content_base64'])));self.assertEqual(len(doc.tables),0);self.assertIn('| not divider | x |','\n'.join(p.text for p in doc.paragraphs))
   bad=self.save('Bad\x00text [E:e1]')
   with self.assertRaisesRegex(ValueError,'控制字符'):self.s.export_word(self.pid,bad['id'])
+ def test_subheading_list_inline_and_soft_newlines(self):
+  body='### 二级子标题\n\n第一行软换行\n第二行同一段落 **粗体** 与 *斜体* [E:e1]\n\n- 列表项一 [E:e1]\n- 列表项二 [E:e1]'
+  m=self.save(body);out=self.s.export_word(self.pid,m['id']);doc=Document(io.BytesIO(base64.b64decode(out['content_base64'])))
+  headings=[p.text for p in doc.paragraphs if p.style.name=='Heading 2']
+  self.assertIn('二级子标题',headings)
+  joined='\n'.join(p.text for p in doc.paragraphs)
+  self.assertIn('第一行软换行 第二行同一段落 粗体 与 斜体 [E:e1]',joined)
+  self.assertNotIn('**粗体**',joined)

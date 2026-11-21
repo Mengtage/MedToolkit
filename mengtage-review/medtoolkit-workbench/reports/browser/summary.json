@@ -1,6 +1,6 @@
 {
   "status": "PASS",
-  "tested_at": "2026-11-21T09:34:55.159Z",
+  "tested_at": "2026-11-21T12:03:33.308Z",
   "browser": "159.0.8154.6",
   "viewport": "1440x1000",
   "pubmed": "synthetic transport fixture; real parser, store and HTTP",
@@ -161,7 +161,7 @@
   ],
   "source_sha256": {
     "web/index.html": "7a52951cab476ef022be581a65bf0a21f2e1c3174b9e267fa6a92c46c30e129c",
-    "web/app.js": "c2cf54ae712bc86e6497b949537f73ebfb0acde8de89614190b93032eca90e8a",
+    "web/app.js": "82cf916bae26e6f56ed3442b3282046352419311eb6031da8b4fd2823ed86f2d",
     "web/style.css": "34a0d16872f05f5869a19e1382267e52bd3c6a2726f639386af99978dd44b27b",
     "web/screening.html": "a00db56c316f956397701c5c97f55ae7b784f12b71f69bbb4ed02ebdde0e97e6",
     "web/screening.js": "492beae3a16603e3e1493ce97f4d3c39a99eeafbadc083463e99f6338fbbb9f3",

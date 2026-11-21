@@ -98,3 +98,9 @@ class FulltextTests(unittest.TestCase):
         self.register();doc=self.s.fulltext.events(self.parent)[0]['document']
         self.store.artifact(self.pid,doc['blob']).write_bytes(b'changed')
         with self.assertRaises(ValueError):self.call('fulltext_prepare',protocol=self.protocol)
+    def test_whitespace_normalized_quote_matching(self):
+        from workbench.fulltext import validate_evidence
+        doc=snapshot(self.store,self.pid,'multiline.txt',base64.b64encode('The 30-day   mortality was 15.2% in the\nintervention-\xadgroup.'.encode()).decode())
+        validate_evidence({'fulltext':doc},'p:1','The 30-day mortality was 15.2% in the intervention-group.')
+        with self.assertRaises(ValueError):
+            validate_evidence({'fulltext':doc},'p:1','The 30-day mortality was 19.9% in the intervention-group.')

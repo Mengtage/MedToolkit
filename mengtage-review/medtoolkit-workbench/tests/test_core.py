@@ -76,4 +76,44 @@ class CoreTest(unittest.TestCase):
             r=search(self.store,self.pid,{'query':'test','limit':5},'t')
         self.assertFalse(r['complete']);self.assertEqual(r['total_hits'],12)
 
+    def test_pubmed_xml_inline_tags_doi_and_book_article(self):
+        xml = (
+            b'<PubmedArticleSet>'
+            b'<PubmedArticle><MedlineCitation><PMID>1001</PMID>'
+            b'<Article><ArticleTitle><i>In vitro</i> efficacy of <i>Staphylococcus aureus</i> CO<sub>2</sub></ArticleTitle>'
+            b'<Abstract><AbstractText Label="METHODS">Tested <i>in vivo</i> &amp; <sup>14</sup>C.</AbstractText></Abstract>'
+            b'<AuthorList><Author><LastName>Smith</LastName><ForeName>John</ForeName></Author></AuthorList>'
+            b'<ELocationID EIdType="doi">10.1000/main-eloc</ELocationID>'
+            b'</Article></MedlineCitation>'
+            b'<PubmedData><ReferenceList><Reference><ArticleIdList><ArticleId IdType="doi">10.9999/ref-doi</ArticleId></ArticleIdList></Reference></ReferenceList></PubmedData>'
+            b'</PubmedArticle>'
+            b'<PubmedBookArticle><BookDocument><PMID>1002</PMID>'
+            b'<ArticleTitle><i>StatPearls</i> Airway Management</ArticleTitle>'
+            b'<Abstract><AbstractText>Book chapter <b>summary</b>.</AbstractText></Abstract>'
+            b'</BookDocument></PubmedBookArticle>'
+            b'</PubmedArticleSet>'
+        )
+        responses = [json.dumps({'esearchresult': {'count': '2', 'idlist': ['1001', '1002']}}).encode(), xml]
+        with patch('workbench.adapters.get', side_effect=responses), patch('time.sleep'):
+            r = search(self.store, self.pid, {'query': 'staph', 'limit': 10}, 'j1')
+        self.assertTrue(r['complete'])
+        self.assertEqual(r['retrieved'], 2)
+        saved = json.loads(self.store.artifact(self.pid, r['artifact']).read_text())
+        rec1, rec2 = saved['records']
+        self.assertEqual(rec1['title'], 'In vitro efficacy of Staphylococcus aureus CO2')
+        self.assertEqual(rec1['abstract'], 'METHODS: Tested in vivo & 14C.')
+        self.assertEqual(rec1['doi'], '10.1000/main-eloc')
+        self.assertEqual(rec2['pmid'], '1002')
+        self.assertEqual(rec2['title'], 'StatPearls Airway Management')
+
+    def test_correlation_preflight_rejects_insufficient_pairs_and_constants(self):
+        bad_cases = [
+            [{'x': 1, 'y': None}, {'x': 2, 'y': 4}, {'x': 3, 'y': 6}, {'x': None, 'y': 8}],
+            [{'x': 1, 'y': 2}, {'x': 1, 'y': 4}, {'x': 1, 'y': 6}],
+            [{'x': 1e101, 'y': 2}, {'x': 2, 'y': 4}, {'x': 3, 'y': 6}],
+        ]
+        for rows in bad_cases:
+            with self.assertRaises(ValueError):
+                self.store.enqueue(self.pid, 'statistics', {'classification': 'synthetic', 'method': 'pearson', 'x': 'x', 'y': 'y', 'rows': rows})
+
 if __name__=='__main__':unittest.main()

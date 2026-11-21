@@ -19,6 +19,9 @@ class ScreeningAccessTests(unittest.TestCase):
         with self.store.db() as db:self.assertNotIn(self.h['token'],str(db.execute('SELECT * FROM review_principals').fetchall()))
         self.s.access.revoke('author');self.assertIsNone(self.s.access.authenticate(self.h['token']))
         with self.assertRaises(ValueError):self.s.access.issue('author','human')
+        rotated=self.s.access.rotate('author')
+        self.assertEqual(rotated['actor'],'author');self.assertTrue(rotated['rotated'])
+        self.assertEqual(self.s.access.authenticate(rotated['token'])['actor'],'author')
     def test_actor_injection_and_cross_batch(self):
         with self.assertRaises(ValueError):self.call('approve',self.m,confirmed=True,actor='author')
         with self.assertRaises(PermissionError):self.call('state',self.other)

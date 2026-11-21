@@ -1,28 +1,28 @@
 {
-  "snapshot_id": "ad32df5c9a7e4a39b425a07cee97bb82",
+  "snapshot_id": "6bfee4c7c3f547f29583a3cc2b139f43",
   "actor": "browser-human",
-  "created": "2026-11-21T09:34:54.046253+00:00",
+  "created": "2026-11-21T12:03:32.189673+00:00",
   "report": {
     "schema": "medhunter-prisma-v1",
-    "review_id": "312e50f421014559ac2bca17d164e0ba",
+    "review_id": "66f71263451d40f59717e96a85d33d24",
     "scope": "selected_frozen_source_collection_and_screening_lineage; not_whole_review_attestation",
     "source_breakdown": [
       {
-        "source_id": "870be4f7b5bf46d5792da37c5a124cbeecebb96f2c6aacd3126a595bf9d954bf",
-        "source_sha256": "3f2e850501fe23b5a52693e5360ae5dcb95a99a12aaec4a01bdca97ce95809eb",
+        "source_id": "e5664513ce91fe99807dda7451ef2613ad2fef095e9b9bb4c9a8cf237b06e791",
+        "source_sha256": "a2cf5c7b0ed8e42499ae5261eafde90cfa7615625e0ba7f4ec2fdd010cebab20",
         "complete": false,
-        "coverage_note": "原生检索任务 2cdbc47404ee417387a8fe60a079518e；时间为任务创建时间，非数据库更新时间",
+        "coverage_note": "原生检索任务 fbb4fdbf2b044f0b8b3e1c144deac243；时间为任务创建时间，非数据库更新时间",
         "database": "PubMed",
         "kind": "database",
         "query": "synthetic browser fixture",
-        "searched_at": "2026-11-21T09:34:39.295603+00:00",
+        "searched_at": "2026-11-21T12:03:17.572443+00:00",
         "total_hits": 2,
         "retrieved": 1,
         "coverage_assurance": "native_response_count"
       },
       {
         "source_id": "ee88899fba7ccb2dda6f9e6c29932a7deb5e52ad8dc6f9a9b5641d614a3b7e4a",
-        "source_sha256": "db19a31d563d59222204e1b771e703a45c50909e68c8306e679275dc41878caa",
+        "source_sha256": "2799a8f2e3d4d3ae0fdc0a63255e1cbd6ff1ffc971b3c9ccdc8d48021ef28a30",
         "complete": true,
         "coverage_note": "Synthetic records, human-declared completeness",
         "database": "Synthetic registry B",
@@ -37,9 +37,9 @@
     "collection": {
       "label": "Synthetic incremental collection",
       "parent_collection": {
-        "artifact": "collection-d316a42f2c96c7ac38da505294b9d99ea8b2ce4d8ac987f840e56e6e277d9e8c.json",
-        "id": "d316a42f2c96c7ac38da505294b9d99ea8b2ce4d8ac987f840e56e6e277d9e8c",
-        "sha256": "e883205ad3458807ed12a1af95ba4d265af93e11d86016176677f22be2268506"
+        "artifact": "collection-88021a16a19d314566204e741fe6821965c35fe34580500b787fd3b496971230.json",
+        "id": "88021a16a19d314566204e741fe6821965c35fe34580500b787fd3b496971230",
+        "sha256": "a8bfa8941115a7c41bb78bf351a50baf55c6f74da4b809fc3ca664c655d0f65f"
       },
       "reason": "Add registry; retain full original source selection"
     },
@@ -68,19 +68,19 @@
     "mapping": null,
     "retrieval_history": [],
     "provenance": {
-      "project_id": "98815db2796941cbbffc97f9aeaf4b1e",
-      "parent_review_id": "312e50f421014559ac2bca17d164e0ba",
-      "parent_event_hash": "f93d1d511a9eef3d0870cf55809e786e8d85d0d01267413ff73fe770760b0e6c",
-      "selected_event_hash": "f93d1d511a9eef3d0870cf55809e786e8d85d0d01267413ff73fe770760b0e6c",
+      "project_id": "e624108502614662af3c5b211e75c4d2",
+      "parent_review_id": "66f71263451d40f59717e96a85d33d24",
+      "parent_event_hash": "2928bff06aa4bc05db1b8aecfcf25d2f7b5140c9f7ecb519ebc4031fafcfe976",
+      "selected_event_hash": "2928bff06aa4bc05db1b8aecfcf25d2f7b5140c9f7ecb519ebc4031fafcfe976",
       "source_artifacts": [
         {
-          "artifact": "18df968737544169acb7df14f980ee0e-dedup.json",
-          "sha256": "f18cb59b9c04c7ee54f2d10e5066a3703194d69b615584de46e48f1831dbec06",
+          "artifact": "124d9384fbe54d1299633192e2fc6ba9-dedup.json",
+          "sha256": "254ed0144f75690d1818ee88c95e241a1d2dfcebf479643304f7f0930b5717b2",
           "kind": "deduplication"
         },
         {
-          "artifact": "collection-c1f19896aa726771c1b2db19fb989c54cdbd3cac9501280ca2362a93f2b835da.json",
-          "sha256": "a36786dfdcd752c3897c843d1a9ee35d587eb1e2e80c1826b16c9863534b1645",
+          "artifact": "collection-1531cf693f5c0390512f3f4e1b369dcee49bcc9c515d1b94c80f53df3ca94f8e.json",
+          "sha256": "f3baace5d89dd4b52e479916d9001ee69cc2be2c3f02d722e52a1d0f449e306d",
           "kind": "source_collection"
         }
       ],
@@ -90,14 +90,14 @@
           "canonical_record_id": "d000001",
           "members": [
             {
-              "source_id": "870be4f7b5bf46d5792da37c5a124cbeecebb96f2c6aacd3126a595bf9d954bf",
+              "source_id": "e5664513ce91fe99807dda7451ef2613ad2fef095e9b9bb4c9a8cf237b06e791",
               "source_record_index": 1,
-              "source_sha256": "3f2e850501fe23b5a52693e5360ae5dcb95a99a12aaec4a01bdca97ce95809eb"
+              "source_sha256": "a2cf5c7b0ed8e42499ae5261eafde90cfa7615625e0ba7f4ec2fdd010cebab20"
             },
             {
               "source_id": "ee88899fba7ccb2dda6f9e6c29932a7deb5e52ad8dc6f9a9b5641d614a3b7e4a",
               "source_record_index": 1,
-              "source_sha256": "db19a31d563d59222204e1b771e703a45c50909e68c8306e679275dc41878caa"
+              "source_sha256": "2799a8f2e3d4d3ae0fdc0a63255e1cbd6ff1ffc971b3c9ccdc8d48021ef28a30"
             }
           ]
         },
@@ -108,7 +108,7 @@
             {
               "source_id": "ee88899fba7ccb2dda6f9e6c29932a7deb5e52ad8dc6f9a9b5641d614a3b7e4a",
               "source_record_index": 2,
-              "source_sha256": "db19a31d563d59222204e1b771e703a45c50909e68c8306e679275dc41878caa"
+              "source_sha256": "2799a8f2e3d4d3ae0fdc0a63255e1cbd6ff1ffc971b3c9ccdc8d48021ef28a30"
             }
           ]
         }
@@ -129,6 +129,6 @@
       "fulltext_final_decisions": []
     }
   },
-  "report_sha256": "9c665ac6d26096423eea13d4edd4753590cdde60ca5a7104c3f539700c206359",
-  "snapshot_sha256": "9dcc58d6466a36c7f32b25e3502cac9a3f5ea803c0c6bfb04e81f877e3ece2e9"
+  "report_sha256": "43da761aaabeb8ab7784b812e04a22192d5d69ee76b6cbbbc861dbaa3ba0d66b",
+  "snapshot_sha256": "df69b7fec89a9b7fd1716aa88a96acb4714f91ba9bab96ca0aeb68d18004d496"
 }

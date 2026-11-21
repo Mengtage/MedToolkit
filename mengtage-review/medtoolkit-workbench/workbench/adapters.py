@@ -64,8 +64,11 @@ def validate_payload(kind,payload):
         if not isinstance(x,str) or not isinstance(y,str) or not x or not y or x==y:raise ValueError('两个变量必须不同')
         for row in rows:
             if not isinstance(row,dict) or set(row)!={x,y}:raise ValueError('仅允许两个分析变量，不附带其他字段')
-            if any(v is not None and (type(v) not in (int,float) or not math.isfinite(v)) for v in row.values()):
+            if any(v is not None and (type(v) not in (int,float) or not math.isfinite(v) or abs(v)>1e100) for v in row.values()):
                 raise ValueError('统计输入必须是有限数值或缺失值')
+        complete=[row for row in rows if row[x] is not None and row[y] is not None]
+        if len(complete)<3 or len({row[x] for row in complete})<2 or len({row[y] for row in complete})<2:
+            raise ValueError('有效样本不足或变量为常量')
     elif kind=='search':
         query=payload.get('query');limit=payload.get('limit',50)
         if not isinstance(query,str) or not query.strip() or len(query)>8000 or type(limit) is not int or not 1<=limit<=500:
@@ -103,8 +106,9 @@ def search(store,pid,payload,jid):
         time.sleep(.4)
         xml=get(base+'efetch.fcgi?'+urllib.parse.urlencode({'db':'pubmed','id':','.join(ids[offset:offset+100]),'retmode':'xml'}))
         store.save(pid,f'{jid}-source-{offset}.json',{'xml':xml.decode(),'sha256':hashlib.sha256(xml).hexdigest()})
-        for article in ET.fromstring(xml).findall('PubmedArticle'):
-            articles.append(parser._parse_article_xml(article))
+        for article in ET.fromstring(xml):
+            if article.tag in ('PubmedArticle','PubmedBookArticle'):
+                articles.append(parser._parse_article_xml(article))
     result={'query':query,'total_hits':total,'retrieved':len(articles),'complete':total==len(articles),
             'records':articles,'deduplication':'not_applied','llm_calls':0,'search_response':data}
     name=store.save(pid,f'{jid}-search.json',result)
