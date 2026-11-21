@@ -22,8 +22,9 @@ def citation_check(sections, evidence):
         if '[E:' in re.sub(r'\[E:[A-Za-z0-9_-]{1,40}\]','',body):blockers.append(section['title']+'：引用格式错误')
         if '[待补证据]' in body:blockers.append(section['title']+'：存在待补证据')
         for paragraph in body.split('\n\n'):
-            if paragraph.strip() and not re.search(r'\[E:[A-Za-z0-9_-]{1,40}\]',paragraph):
-                warnings.append(section['title']+'：无引用段落，请人工核对'+('（含数字）' if re.search(r'\d',paragraph) else ''))
+            p_strip=paragraph.strip()
+            if p_strip and not p_strip.startswith('### ') and not re.search(r'\[E:[A-Za-z0-9_-]{1,40}\]',p_strip):
+                warnings.append(section['title']+'：无引用段落，请人工核对'+('（含数字）' if re.search(r'\d',p_strip) else ''))
     return {'blockers':blockers,'warnings':warnings,'semantic_support':'requires_human_review','rule_version':'writer-citations-v1'}
 
 

@@ -16,7 +16,7 @@ def load(store,project,job_id):
     raw=store.artifact(project,result['artifact']).read_bytes()
     if sha(raw)!=result['artifact_sha256']:raise ValueError('统计产物与完成时哈希不一致')
     data=json.loads(raw)
-    if data.get('method')!=payload['method']:raise ValueError('分析方法与任务输入不一致')
+    if (data.get('requested_method') or data.get('method'))!=payload['method']:raise ValueError('分析方法与任务输入不一致')
     binding={'job_id':job_id,'artifact':result['artifact'],'artifact_sha256':result['artifact_sha256'],'payload_sha256':result['payload_sha256'],'method':payload['method'],'classification':'synthetic','analysis_input_sha256':data.get('input_sha256'),'environment':data.get('environment',{})}
     return data,binding
 

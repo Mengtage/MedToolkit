@@ -29,3 +29,7 @@ class WriterStatisticsTest(unittest.TestCase):
   jid=self.store.enqueue(self.pid,'statistics',{'classification':'synthetic','method':'pearson','x':'x','y':'y','rows':[{'x':1,'y':2},{'x':2,'y':4},{'x':3,'y':5}]})
   with self.assertRaises(ValueError):self.s.capture_statistics(self.pid,jid,True)
   self.assertNotIn('native_statistics',self.package['items'][0])
+ def test_capture_categorical_auto_uses_requested_method(self):
+  jid=self.store.enqueue(self.pid,'statistics',{'classification':'synthetic','method':'categorical_auto','table':[[10,20],[20,10]],'row_labels':['g0','g1'],'column_labels':['o0','o1']});self.store.run(jid)
+  doc=self.s.capture_statistics(self.pid,jid,True)
+  self.assertEqual(doc['native_statistics']['method'],'categorical_auto')

@@ -35,6 +35,7 @@ class WriterTest(unittest.TestCase):
    m=self.save(body)
    with self.subTest(body=body),self.assertRaises(ValueError):self.approve(m)
   m=self.save('42 without citation\n\nSupported [E:e1]');self.assertTrue(m['checks']['warnings']);self.assertFalse(m['checks']['blockers'])
+  m_sub=self.save('### 1.1 Subheading with number\n\nSupported [E:e1]');self.assertFalse(m_sub['checks']['warnings']);self.assertFalse(m_sub['checks']['blockers'])
  def test_confirmation_validation(self):
   m=self.save()
   with self.assertRaises(ValueError):self.s.review(self.pid,m['id'],'approved','Author','Checked',False)
