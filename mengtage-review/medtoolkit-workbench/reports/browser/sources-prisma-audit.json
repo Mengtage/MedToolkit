@@ -1,0 +1,134 @@
+{
+  "snapshot_id": "ad32df5c9a7e4a39b425a07cee97bb82",
+  "actor": "browser-human",
+  "created": "2026-11-21T09:34:54.046253+00:00",
+  "report": {
+    "schema": "medhunter-prisma-v1",
+    "review_id": "312e50f421014559ac2bca17d164e0ba",
+    "scope": "selected_frozen_source_collection_and_screening_lineage; not_whole_review_attestation",
+    "source_breakdown": [
+      {
+        "source_id": "870be4f7b5bf46d5792da37c5a124cbeecebb96f2c6aacd3126a595bf9d954bf",
+        "source_sha256": "3f2e850501fe23b5a52693e5360ae5dcb95a99a12aaec4a01bdca97ce95809eb",
+        "complete": false,
+        "coverage_note": "原生检索任务 2cdbc47404ee417387a8fe60a079518e；时间为任务创建时间，非数据库更新时间",
+        "database": "PubMed",
+        "kind": "database",
+        "query": "synthetic browser fixture",
+        "searched_at": "2026-11-21T09:34:39.295603+00:00",
+        "total_hits": 2,
+        "retrieved": 1,
+        "coverage_assurance": "native_response_count"
+      },
+      {
+        "source_id": "ee88899fba7ccb2dda6f9e6c29932a7deb5e52ad8dc6f9a9b5641d614a3b7e4a",
+        "source_sha256": "db19a31d563d59222204e1b771e703a45c50909e68c8306e679275dc41878caa",
+        "complete": true,
+        "coverage_note": "Synthetic records, human-declared completeness",
+        "database": "Synthetic registry B",
+        "kind": "register",
+        "query": "synthetic registry query",
+        "searched_at": "2026-11-21",
+        "total_hits": 2,
+        "retrieved": 2,
+        "coverage_assurance": "human_declared"
+      }
+    ],
+    "collection": {
+      "label": "Synthetic incremental collection",
+      "parent_collection": {
+        "artifact": "collection-d316a42f2c96c7ac38da505294b9d99ea8b2ce4d8ac987f840e56e6e277d9e8c.json",
+        "id": "d316a42f2c96c7ac38da505294b9d99ea8b2ce4d8ac987f840e56e6e277d9e8c",
+        "sha256": "e883205ad3458807ed12a1af95ba4d265af93e11d86016176677f22be2268506"
+      },
+      "reason": "Add registry; retain full original source selection"
+    },
+    "status": "partial_or_historical",
+    "counts": {
+      "records_identified": 3,
+      "duplicates_removed": 1,
+      "search_total_hits": 4,
+      "records_not_downloaded": 1,
+      "records_screened": 2,
+      "records_excluded": 2,
+      "reports_sought": 0,
+      "reports_not_retrieved": 0,
+      "reports_assessed": 0,
+      "reports_excluded": 0,
+      "reports_pending": 0,
+      "reports_included": 0,
+      "studies_included": 0
+    },
+    "issues": [
+      "部分来源未取全或命中数未知；此集合不代表完整检索。"
+    ],
+    "reference": "https://www.prisma-statement.org/prisma-2020-flow-diagram",
+    "exclusion_reasons": [],
+    "reports_not_retrieved": [],
+    "mapping": null,
+    "retrieval_history": [],
+    "provenance": {
+      "project_id": "98815db2796941cbbffc97f9aeaf4b1e",
+      "parent_review_id": "312e50f421014559ac2bca17d164e0ba",
+      "parent_event_hash": "f93d1d511a9eef3d0870cf55809e786e8d85d0d01267413ff73fe770760b0e6c",
+      "selected_event_hash": "f93d1d511a9eef3d0870cf55809e786e8d85d0d01267413ff73fe770760b0e6c",
+      "source_artifacts": [
+        {
+          "artifact": "18df968737544169acb7df14f980ee0e-dedup.json",
+          "sha256": "f18cb59b9c04c7ee54f2d10e5066a3703194d69b615584de46e48f1831dbec06",
+          "kind": "deduplication"
+        },
+        {
+          "artifact": "collection-c1f19896aa726771c1b2db19fb989c54cdbd3cac9501280ca2362a93f2b835da.json",
+          "sha256": "a36786dfdcd752c3897c843d1a9ee35d587eb1e2e80c1826b16c9863534b1645",
+          "kind": "source_collection"
+        }
+      ],
+      "record_source_lineage": [
+        {
+          "screening_record_id": "r000001",
+          "canonical_record_id": "d000001",
+          "members": [
+            {
+              "source_id": "870be4f7b5bf46d5792da37c5a124cbeecebb96f2c6aacd3126a595bf9d954bf",
+              "source_record_index": 1,
+              "source_sha256": "3f2e850501fe23b5a52693e5360ae5dcb95a99a12aaec4a01bdca97ce95809eb"
+            },
+            {
+              "source_id": "ee88899fba7ccb2dda6f9e6c29932a7deb5e52ad8dc6f9a9b5641d614a3b7e4a",
+              "source_record_index": 1,
+              "source_sha256": "db19a31d563d59222204e1b771e703a45c50909e68c8306e679275dc41878caa"
+            }
+          ]
+        },
+        {
+          "screening_record_id": "r000002",
+          "canonical_record_id": "d000002",
+          "members": [
+            {
+              "source_id": "ee88899fba7ccb2dda6f9e6c29932a7deb5e52ad8dc6f9a9b5641d614a3b7e4a",
+              "source_record_index": 2,
+              "source_sha256": "db19a31d563d59222204e1b771e703a45c50909e68c8306e679275dc41878caa"
+            }
+          ]
+        }
+      ],
+      "parent_changed": false,
+      "parent_final_decisions": [
+        {
+          "record_id": "r000001",
+          "decision": "exclude",
+          "reason_code": "population"
+        },
+        {
+          "record_id": "r000002",
+          "decision": "exclude",
+          "reason_code": "population"
+        }
+      ],
+      "fulltext_final_decisions": []
+    }
+  },
+  "report_sha256": "9c665ac6d26096423eea13d4edd4753590cdde60ca5a7104c3f539700c206359",
+  "snapshot_sha256": "9dcc58d6466a36c7f32b25e3502cac9a3f5ea803c0c6bfb04e81f877e3ece2e9"
+}

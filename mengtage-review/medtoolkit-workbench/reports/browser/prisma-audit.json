@@ -1,0 +1,222 @@
+{
+  "snapshot_id": "3655f0d556e34b51a50aed342b05d0a5",
+  "actor": "browser-human",
+  "created": "2026-11-21T09:34:45.746649+00:00",
+  "report": {
+    "schema": "medhunter-prisma-v1",
+    "review_id": "9b1ab0fe9b294c6e9293e59a351b69a9",
+    "scope": "single_selected_search_and_screening_lineage; not_whole_review_attestation",
+    "source_breakdown": [],
+    "collection": null,
+    "status": "selected_lineage_complete",
+    "counts": {
+      "records_identified": 3,
+      "duplicates_removed": 2,
+      "search_total_hits": 3,
+      "records_not_downloaded": 0,
+      "records_screened": 1,
+      "records_excluded": 0,
+      "reports_sought": 1,
+      "reports_not_retrieved": 0,
+      "reports_assessed": 1,
+      "reports_excluded": 0,
+      "reports_pending": 0,
+      "reports_included": 1,
+      "studies_included": 1
+    },
+    "issues": [],
+    "reference": "https://www.prisma-statement.org/prisma-2020-flow-diagram",
+    "exclusion_reasons": [],
+    "reports_not_retrieved": [],
+    "mapping": {
+      "review": "9b1ab0fe9b294c6e9293e59a351b69a9",
+      "pending_final": 0,
+      "screening_event_hash": "ace5c6f2f7aee4e67eb2d0090fe29a33aca2c480de149169d8c4f354fd3a549b",
+      "mapping_event_hash": "60c1d2f7bd9bd179bc657aafc97a5f5e31ee6e00e7041496f4e65766c0f65e7d",
+      "mapping_valid": true,
+      "records": [
+        {
+          "record_id": "r000001",
+          "report_id": "821ceaf8bb9648e5aa7ae79e57022287:r000001",
+          "title": "Synthetic conflict paper",
+          "record": {
+            "abstract": "",
+            "authors": [],
+            "doi": null,
+            "fulltext": {
+              "blob": "fulltext-4d31aea3a390f1b62e0607dc3bbd58f9804689c2e29b73168c147f04f1b8240d.txt",
+              "created": "2026-11-21T09:34:44.010878+00:00",
+              "extraction": {
+                "engine": "utf8-text-v1",
+                "page_numbering": "form_feed_segments_not_original_pdf_pages",
+                "version": "1"
+              },
+              "file_sha256": "4d31aea3a390f1b62e0607dc3bbd58f9804689c2e29b73168c147f04f1b8240d",
+              "filename": "synthetic-fulltext.txt",
+              "pages": [
+                {
+                  "page": 1,
+                  "sha256": "39eb613658c3d29887cd39e645750e869c2d3dd8a40f56447d68a083d9ccac30",
+                  "text": "Synthetic adult randomized trial."
+                },
+                {
+                  "page": 2,
+                  "sha256": "d1aba74447c19d495f195af6ee9aa8e5b8a980667016f3c37c61ce1a22f26388",
+                  "text": "Synthetic outcome measured at 30 days."
+                }
+              ],
+              "text_sha256": "f804d359d5ea7d91802050d7c1e8892603209dd0668d88cc8c13dc16e4daf4d9"
+            },
+            "journal": "",
+            "parent_decision_hash": "9c6becc0a80cb1bf5d38f80b1b7c2034e4dc8185f11e80f27db2680be819f59b",
+            "parent_record_id": "r000001",
+            "parent_record_sha256": "c7accb34ac00060d08c64edb71c74a658571407d99f8220ce77670001ebf8c2a",
+            "parent_review_id": "821ceaf8bb9648e5aa7ae79e57022287",
+            "pmid": "111",
+            "pub_date": "",
+            "report_id": "821ceaf8bb9648e5aa7ae79e57022287:r000001",
+            "retrieval_event_hash": "a8ff64ce650ba86b7d4b504e9d40cb263534e062c39af246efc66936c2f80882",
+            "title": "Synthetic conflict paper"
+          }
+        }
+      ],
+      "mappings": [
+        {
+          "locator": "p:1",
+          "quote": "Synthetic adult randomized trial.",
+          "reason": "Synthetic identifier correction, preserving previous mapping",
+          "record_id": "r000001",
+          "study_ids": [
+            "synthetic-trial-revised"
+          ]
+        }
+      ],
+      "history": [
+        {
+          "actor": "browser-human",
+          "event_hash": "0bf836d662845e7d339b53c345bd76fb90b1977f9f3e03f01b0102620ca6baf8",
+          "event_id": "0a2085149dda4f50a8676ea9f975d64b",
+          "mappings": [
+            {
+              "locator": "p:1",
+              "quote": "Synthetic adult randomized trial.",
+              "reason": "Synthetic report assigned by human",
+              "record_id": "r000001",
+              "study_ids": [
+                "synthetic-trial-a"
+              ]
+            }
+          ],
+          "previous_hash": "",
+          "review_id": "9b1ab0fe9b294c6e9293e59a351b69a9",
+          "scope": "study_ids_local_to_selected_review",
+          "screening_event_hash": "ace5c6f2f7aee4e67eb2d0090fe29a33aca2c480de149169d8c4f354fd3a549b",
+          "timestamp": "2026-11-21T09:34:45.428756+00:00"
+        },
+        {
+          "actor": "browser-human",
+          "event_hash": "60c1d2f7bd9bd179bc657aafc97a5f5e31ee6e00e7041496f4e65766c0f65e7d",
+          "event_id": "4c8dad131e8e4fc283d56bf00ccf0a8f",
+          "mappings": [
+            {
+              "locator": "p:1",
+              "quote": "Synthetic adult randomized trial.",
+              "reason": "Synthetic identifier correction, preserving previous mapping",
+              "record_id": "r000001",
+              "study_ids": [
+                "synthetic-trial-revised"
+              ]
+            }
+          ],
+          "previous_hash": "0bf836d662845e7d339b53c345bd76fb90b1977f9f3e03f01b0102620ca6baf8",
+          "review_id": "9b1ab0fe9b294c6e9293e59a351b69a9",
+          "scope": "study_ids_local_to_selected_review",
+          "screening_event_hash": "ace5c6f2f7aee4e67eb2d0090fe29a33aca2c480de149169d8c4f354fd3a549b",
+          "timestamp": "2026-11-21T09:34:45.528593+00:00"
+        }
+      ]
+    },
+    "retrieval_history": [
+      {
+        "actor": "browser-human",
+        "document": {
+          "blob": "fulltext-4d31aea3a390f1b62e0607dc3bbd58f9804689c2e29b73168c147f04f1b8240d.txt",
+          "created": "2026-11-21T09:34:44.010878+00:00",
+          "extraction": {
+            "engine": "utf8-text-v1",
+            "page_numbering": "form_feed_segments_not_original_pdf_pages",
+            "version": "1"
+          },
+          "file_sha256": "4d31aea3a390f1b62e0607dc3bbd58f9804689c2e29b73168c147f04f1b8240d",
+          "filename": "synthetic-fulltext.txt",
+          "pages": [
+            {
+              "page": 1,
+              "sha256": "39eb613658c3d29887cd39e645750e869c2d3dd8a40f56447d68a083d9ccac30",
+              "text": "Synthetic adult randomized trial."
+            },
+            {
+              "page": 2,
+              "sha256": "d1aba74447c19d495f195af6ee9aa8e5b8a980667016f3c37c61ce1a22f26388",
+              "text": "Synthetic outcome measured at 30 days."
+            }
+          ],
+          "text_sha256": "f804d359d5ea7d91802050d7c1e8892603209dd0668d88cc8c13dc16e4daf4d9"
+        },
+        "event_hash": "a8ff64ce650ba86b7d4b504e9d40cb263534e062c39af246efc66936c2f80882",
+        "event_id": "5ee821704ea44bbe855964a86793d1ac",
+        "parent_decision_hash": "9c6becc0a80cb1bf5d38f80b1b7c2034e4dc8185f11e80f27db2680be819f59b",
+        "parent_record_sha256": "c7accb34ac00060d08c64edb71c74a658571407d99f8220ce77670001ebf8c2a",
+        "parent_review_id": "821ceaf8bb9648e5aa7ae79e57022287",
+        "previous_hash": "",
+        "reason": "Author supplied synthetic document",
+        "record_id": "r000001",
+        "status": "retrieved",
+        "timestamp": "2026-11-21T09:34:44.011435+00:00"
+      }
+    ],
+    "provenance": {
+      "project_id": "98815db2796941cbbffc97f9aeaf4b1e",
+      "parent_review_id": "821ceaf8bb9648e5aa7ae79e57022287",
+      "parent_event_hash": "9c6becc0a80cb1bf5d38f80b1b7c2034e4dc8185f11e80f27db2680be819f59b",
+      "selected_event_hash": "ace5c6f2f7aee4e67eb2d0090fe29a33aca2c480de149169d8c4f354fd3a549b",
+      "source_artifacts": [
+        {
+          "artifact": "1c9f9e72b2d54d0ebd7f446e2aa310c9-dedup.json",
+          "sha256": "be139fd55eea36507b8e90d28836cb1ff8ee944b8178d762b41b6bf6d6906ba8",
+          "kind": "deduplication"
+        },
+        {
+          "artifact": "44d7730c33584fe2839cf1442969b8fe-dedup.json",
+          "sha256": "fcab2e4a01c2e47688ef9b2b90bca0959368d87c3a9560d41122dbb84bdcfe68",
+          "kind": "deduplication"
+        },
+        {
+          "artifact": "b0ad14aac04342efab919afa0d78f62d-search.json",
+          "sha256": "dcbd639d4072aab072e096f4eb337ff42ccf35d0d3b19d91b509113c9b95ca6e",
+          "kind": "search"
+        }
+      ],
+      "record_source_lineage": [],
+      "parent_changed": false,
+      "parent_final_decisions": [
+        {
+          "record_id": "r000001",
+          "decision": "include",
+          "reason_code": ""
+        }
+      ],
+      "fulltext_final_decisions": [
+        {
+          "decision": "include",
+          "locator": "p:1",
+          "quote": "Synthetic adult randomized trial.",
+          "reason": "Confirmed from frozen synthetic fulltext",
+          "record_id": "r000001"
+        }
+      ]
+    }
+  },
+  "report_sha256": "34f917c50cc0d40ae3d64fe325c154d6a58cc840ecccbed8ccbea33f8367d852",
+  "snapshot_sha256": "2724fafd1a18840039bb7dbc1f651895d4bab7feeebd772389e12f0bb6153f51"
+}

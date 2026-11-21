@@ -1,0 +1,22 @@
+{
+  "classification": "synthetic",
+  "method": "fisher",
+  "table": [
+    [
+      1,
+      9
+    ],
+    [
+      11,
+      3
+    ]
+  ],
+  "row_labels": [
+    "A组",
+    "B组"
+  ],
+  "column_labels": [
+    "事件",
+    "无事件"
+  ]
+}

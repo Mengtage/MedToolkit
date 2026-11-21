@@ -1,0 +1,46 @@
+{
+  "classification": "synthetic",
+  "method": "mice_imputation",
+  "strategy": "bayesian_ridge",
+  "n_imputations": 3,
+  "max_iter": 5,
+  "pool_means": true,
+  "variable_types": {
+    "x": "numeric_continuous",
+    "y": "numeric_continuous"
+  },
+  "rows": [
+    {
+      "x": 1,
+      "y": 2
+    },
+    {
+      "x": 2,
+      "y": 5
+    },
+    {
+      "x": 3,
+      "y": null
+    },
+    {
+      "x": 4,
+      "y": 7
+    },
+    {
+      "x": 5,
+      "y": 11
+    },
+    {
+      "x": 6,
+      "y": null
+    },
+    {
+      "x": 7,
+      "y": 13
+    },
+    {
+      "x": 8,
+      "y": 17
+    }
+  ]
+}
