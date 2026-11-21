@@ -1,10 +1,10 @@
 {
-  "snapshot_id": "29e851e54684483ea8b6970af7ab36aa",
+  "snapshot_id": "23bf6c929e9740b3a2b11bde75e3ed04",
   "actor": "browser-human",
-  "created": "2026-11-21T12:03:23.872858+00:00",
+  "created": "2026-11-21T15:08:52.694407+00:00",
   "report": {
     "schema": "medhunter-prisma-v1",
-    "review_id": "446df279f6e8481ca46d8c928e84974a",
+    "review_id": "1db8f03b06c244b4893727591a65ef3c",
     "scope": "single_selected_search_and_screening_lineage; not_whole_review_attestation",
     "source_breakdown": [],
     "collection": null,
@@ -29,23 +29,20 @@
     "exclusion_reasons": [],
     "reports_not_retrieved": [],
     "mapping": {
-      "review": "446df279f6e8481ca46d8c928e84974a",
+      "review": "1db8f03b06c244b4893727591a65ef3c",
       "pending_final": 0,
-      "screening_event_hash": "c2941aea1d9465401c4b51123fd20ed854efaa2645f6c5bef2d2b2991d7d8de0",
-      "mapping_event_hash": "7b834e6c6f506b5a85bf5955a5e09ec7f90d89e3d0b50f50156c3f572f3eeb23",
+      "screening_event_hash": "b24b5afbef14c7f4c6755189221895d832d21cbe9ff2e15c5e1cc87d5962a188",
+      "mapping_event_hash": "b19021f1f023bedda25c8019c4b542f9e8706c54f15bd9d72f27c729ca965284",
       "mapping_valid": true,
       "records": [
         {
           "record_id": "r000001",
-          "report_id": "a6d30df6a6b74ce09bb19e0909311c54:r000001",
+          "report_id": "bfd62e0581ee48a6bd74884dd307bf56:r000001",
           "title": "Synthetic conflict paper",
           "record": {
-            "abstract": "",
-            "authors": [],
-            "doi": null,
             "fulltext": {
               "blob": "fulltext-4d31aea3a390f1b62e0607dc3bbd58f9804689c2e29b73168c147f04f1b8240d.txt",
-              "created": "2026-11-21T12:03:22.137461+00:00",
+              "created": "2026-11-21T15:08:50.925635+00:00",
               "extraction": {
                 "engine": "utf8-text-v1",
                 "page_numbering": "form_feed_segments_not_original_pdf_pages",
@@ -67,15 +64,13 @@
               ],
               "text_sha256": "f804d359d5ea7d91802050d7c1e8892603209dd0668d88cc8c13dc16e4daf4d9"
             },
-            "journal": "",
-            "parent_decision_hash": "f73ba218a8c402065fc4fd4fb098920ecd0dcd72ce7063755432410b67d165b9",
+            "parent_decision_hash": "6cce2b05c11a8193b64191312859d249f46dd2e788e60b3eb4e8d69b2b745c6f",
             "parent_record_id": "r000001",
-            "parent_record_sha256": "c7accb34ac00060d08c64edb71c74a658571407d99f8220ce77670001ebf8c2a",
-            "parent_review_id": "a6d30df6a6b74ce09bb19e0909311c54",
+            "parent_record_sha256": "a17fb71f61cc8e35ef8f711ff98521e7ceeb20712362f08d3e0b335a8812cb7d",
+            "parent_review_id": "bfd62e0581ee48a6bd74884dd307bf56",
             "pmid": "111",
-            "pub_date": "",
-            "report_id": "a6d30df6a6b74ce09bb19e0909311c54:r000001",
-            "retrieval_event_hash": "3afa4139645ed08858ba3f93ed270489711f062bae5910411ddd7b52a601e317",
+            "report_id": "bfd62e0581ee48a6bd74884dd307bf56:r000001",
+            "retrieval_event_hash": "ac2fc95172122f9d81e1d39d82dbd2284ea89f917adfb6047c05f068d8a7d22b",
             "title": "Synthetic conflict paper"
           }
         }
@@ -94,8 +89,8 @@
       "history": [
         {
           "actor": "browser-human",
-          "event_hash": "65bfe7dcc14669b7b8bf78dd5f20c6492ec592bae59d622401bd35d064404df5",
-          "event_id": "177359d8ee094d2d951b9ea3a9f640be",
+          "event_hash": "f542582e22008b85b9dd845a2e137264cc248e6f199d100162e66cc6f8006470",
+          "event_id": "0fa0b9bc43b64c2b8d5bcaf62550dbf7",
           "mappings": [
             {
               "locator": "p:1",
@@ -108,15 +103,15 @@
             }
           ],
           "previous_hash": "",
-          "review_id": "446df279f6e8481ca46d8c928e84974a",
+          "review_id": "1db8f03b06c244b4893727591a65ef3c",
           "scope": "study_ids_local_to_selected_review",
-          "screening_event_hash": "c2941aea1d9465401c4b51123fd20ed854efaa2645f6c5bef2d2b2991d7d8de0",
-          "timestamp": "2026-11-21T12:03:23.555561+00:00"
+          "screening_event_hash": "b24b5afbef14c7f4c6755189221895d832d21cbe9ff2e15c5e1cc87d5962a188",
+          "timestamp": "2026-11-21T15:08:52.376777+00:00"
         },
         {
           "actor": "browser-human",
-          "event_hash": "7b834e6c6f506b5a85bf5955a5e09ec7f90d89e3d0b50f50156c3f572f3eeb23",
-          "event_id": "10844bcd328c4924a363a37304296125",
+          "event_hash": "b19021f1f023bedda25c8019c4b542f9e8706c54f15bd9d72f27c729ca965284",
+          "event_id": "c9dff2e486754b72af2b435c7136fc68",
           "mappings": [
             {
               "locator": "p:1",
@@ -128,11 +123,11 @@
               ]
             }
           ],
-          "previous_hash": "65bfe7dcc14669b7b8bf78dd5f20c6492ec592bae59d622401bd35d064404df5",
-          "review_id": "446df279f6e8481ca46d8c928e84974a",
+          "previous_hash": "f542582e22008b85b9dd845a2e137264cc248e6f199d100162e66cc6f8006470",
+          "review_id": "1db8f03b06c244b4893727591a65ef3c",
           "scope": "study_ids_local_to_selected_review",
-          "screening_event_hash": "c2941aea1d9465401c4b51123fd20ed854efaa2645f6c5bef2d2b2991d7d8de0",
-          "timestamp": "2026-11-21T12:03:23.655465+00:00"
+          "screening_event_hash": "b24b5afbef14c7f4c6755189221895d832d21cbe9ff2e15c5e1cc87d5962a188",
+          "timestamp": "2026-11-21T15:08:52.476238+00:00"
         }
       ]
     },
@@ -141,7 +136,7 @@
         "actor": "browser-human",
         "document": {
           "blob": "fulltext-4d31aea3a390f1b62e0607dc3bbd58f9804689c2e29b73168c147f04f1b8240d.txt",
-          "created": "2026-11-21T12:03:22.137461+00:00",
+          "created": "2026-11-21T15:08:50.925635+00:00",
           "extraction": {
             "engine": "utf8-text-v1",
             "page_numbering": "form_feed_segments_not_original_pdf_pages",
@@ -163,37 +158,37 @@
           ],
           "text_sha256": "f804d359d5ea7d91802050d7c1e8892603209dd0668d88cc8c13dc16e4daf4d9"
         },
-        "event_hash": "3afa4139645ed08858ba3f93ed270489711f062bae5910411ddd7b52a601e317",
-        "event_id": "b02e5c48890c4d53965e97e952b99799",
-        "parent_decision_hash": "f73ba218a8c402065fc4fd4fb098920ecd0dcd72ce7063755432410b67d165b9",
-        "parent_record_sha256": "c7accb34ac00060d08c64edb71c74a658571407d99f8220ce77670001ebf8c2a",
-        "parent_review_id": "a6d30df6a6b74ce09bb19e0909311c54",
+        "event_hash": "ac2fc95172122f9d81e1d39d82dbd2284ea89f917adfb6047c05f068d8a7d22b",
+        "event_id": "f5223bf29eb44cbeb9688b890a3c552e",
+        "parent_decision_hash": "6cce2b05c11a8193b64191312859d249f46dd2e788e60b3eb4e8d69b2b745c6f",
+        "parent_record_sha256": "a17fb71f61cc8e35ef8f711ff98521e7ceeb20712362f08d3e0b335a8812cb7d",
+        "parent_review_id": "bfd62e0581ee48a6bd74884dd307bf56",
         "previous_hash": "",
         "reason": "Author supplied synthetic document",
         "record_id": "r000001",
         "status": "retrieved",
-        "timestamp": "2026-11-21T12:03:22.137942+00:00"
+        "timestamp": "2026-11-21T15:08:50.926185+00:00"
       }
     ],
     "provenance": {
-      "project_id": "e624108502614662af3c5b211e75c4d2",
-      "parent_review_id": "a6d30df6a6b74ce09bb19e0909311c54",
-      "parent_event_hash": "f73ba218a8c402065fc4fd4fb098920ecd0dcd72ce7063755432410b67d165b9",
-      "selected_event_hash": "c2941aea1d9465401c4b51123fd20ed854efaa2645f6c5bef2d2b2991d7d8de0",
+      "project_id": "58f11dd300954bd890a349fd77a889c2",
+      "parent_review_id": "bfd62e0581ee48a6bd74884dd307bf56",
+      "parent_event_hash": "6cce2b05c11a8193b64191312859d249f46dd2e788e60b3eb4e8d69b2b745c6f",
+      "selected_event_hash": "b24b5afbef14c7f4c6755189221895d832d21cbe9ff2e15c5e1cc87d5962a188",
       "source_artifacts": [
         {
-          "artifact": "b3b18d2ffb264cdca549a874bc1e1391-dedup.json",
-          "sha256": "b03fda21d060c1142b07a7623fcb275537fadc552a344455cfc1f3b8c35fd0b2",
+          "artifact": "3daa43d37f2744ae82207ad6c426c60c-dedup.json",
+          "sha256": "7e2761b9007d1c15a1c6b7cec5a2adf14895fe07698050b7d2d9ef59d6dc49cf",
           "kind": "deduplication"
         },
         {
-          "artifact": "1257dd124dfc4fbe911e846ac80aff78-dedup.json",
-          "sha256": "b2c60689b9d87648e019ea07918c7e31587bb421109e7b1828da503523eb06f6",
+          "artifact": "7cb16477b7174828b054aa0c7f2770be-dedup.json",
+          "sha256": "45728a831f32ee009e58d42b496891de9f3e67e4a0b6c000147c8f57d60265ac",
           "kind": "deduplication"
         },
         {
-          "artifact": "d7ff85859c0445b8907b0b88258e64e8-search.json",
-          "sha256": "dcbd639d4072aab072e096f4eb337ff42ccf35d0d3b19d91b509113c9b95ca6e",
+          "artifact": "592e6545fb04421c81cff100e478ebe2-search.json",
+          "sha256": "71bf01ca4709e6898aa3f1018974ecf7c8586016da0621fadc305a183d871019",
           "kind": "search"
         }
       ],
@@ -217,6 +212,6 @@
       ]
     }
   },
-  "report_sha256": "3a3c72d011609fb70d2a6c399bb85402209e65eea65f117ad6780b5b844a0683",
-  "snapshot_sha256": "4a7d0479efb53fa1d2b232ce781a3c04aa215bb3aab2ab36c82bfbd1064eb371"
+  "report_sha256": "18efec481611d52aa6bd28aa329f3314c64cd6e5f6f0765cd7aaa86be73326aa",
+  "snapshot_sha256": "0009de7c910f1b6d0871bbda8cef8b8a6cc3de6332b10001fd01d986e6f96ffb"
 }

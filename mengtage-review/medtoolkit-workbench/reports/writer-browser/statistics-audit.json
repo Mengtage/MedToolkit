@@ -3,21 +3,21 @@
     "actor": "local_owner",
     "checks": {
       "blockers": [],
-      "rule_version": "writer-citations-v1",
+      "rule_version": "writer-citations-sci-v2",
       "semantic_support": "requires_human_review",
       "warnings": []
     },
-    "created": "2026-11-21T12:03:36.538413+00:00",
-    "evidence_id": "fd95fc14eb234a4d8f78619587341258",
-    "evidence_sha256": "6c67cbe4fddca9a7ff35cc255cc5580b39431dc52e48527c023525de426e28a8",
-    "id": "b76937246b684df18d1103aaffbfcb77",
+    "created": "2026-11-21T15:09:05.477000+00:00",
+    "evidence_id": "51954ab2d96e4208ba8f7851926cf1f4",
+    "evidence_sha256": "a86084e5aeaaa1208da518d20188fb0177c3d75f2af87d2feac70d850e2ef459",
+    "id": "d5a932e42b6046eeb893438e3bf2d97a",
     "identity_assurance": "single_owner_access_token",
     "kind": "manuscript",
     "llm_calls": 0,
-    "manuscript_id": "007e78e18f3f42858cb0c3ac03c4bd49",
+    "manuscript_id": "1a6a846973464b6db98f37a329ac0fb9",
     "origin": "manual_draft",
     "parent_version": null,
-    "project": "98272b71ee8c4ccbb2ae620a7cc73994",
+    "project": "0ef91ad4583144e5a86898d2f83f00bd",
     "sections": [
       {
         "body": "Synthetic Pearson analysis [E:stat1]",
@@ -28,14 +28,14 @@
   },
   "evidence": {
     "actor": "local_owner",
-    "created": "2026-11-21T12:03:36.438023+00:00",
-    "id": "fd95fc14eb234a4d8f78619587341258",
+    "created": "2026-11-21T15:09:05.359737+00:00",
+    "id": "51954ab2d96e4208ba8f7851926cf1f4",
     "identity_assurance": "single_owner_access_token",
     "items": [
       {
         "classification": "synthetic",
-        "document_id": "7ce4c938592648ba8af7dc2fa73a2c0e",
-        "document_sha256": "e99d75b6a8f2345525dd6627911b3dd57d8626396e1bb96bf26db394475207d9",
+        "document_id": "c8eceda71f824de2be1337c399f73db9",
+        "document_sha256": "f15502d7584da06a90c3d01c2efcc5b4413d8bf3a953ce688c400d0e0bda37f8",
         "excerpt": "\"method\": \"pearson\"",
         "file_sha256": "55f47c337a9d6d49cdff556897fc43f0e5bcf7a6498283c3715376ac0d7b75b2",
         "id": "stat1",
@@ -43,19 +43,20 @@
         "locator": "p:1",
         "native_statistics": {
           "analysis_input_sha256": "004dfb78dfcfaeba287e3b6d6c49b09f4f4b29b8c414c27e7dbd5319c3494478",
-          "artifact": "50754d86de564cebbfc0aca6e189e7fb-statistics.json",
+          "artifact": "ba6ec1c125e840b9a087e3a793d6bf49-statistics.json",
           "artifact_sha256": "de08a6263064ce95e78efc739defb76198414806cb96a9df498e2e4c986a565b",
           "classification": "synthetic",
           "environment": {
             "pandas": "3.1.1",
             "scipy": "1.18.1"
           },
-          "job_id": "50754d86de564cebbfc0aca6e189e7fb",
+          "job_id": "ba6ec1c125e840b9a087e3a793d6bf49",
           "method": "pearson",
           "payload_sha256": "c1d1209e23fc03f84ec9bca3af1cc089f0c65175189bc6b9295dae5643630e5d"
         },
+        "origin": "native_statistics",
         "report_id": "",
-        "source": "MedStat pearson · synthetic · 50754d86de564cebbfc0aca6e189e7fb",
+        "source": "MedStat pearson · synthetic · ba6ec1c125e840b9a087e3a793d6bf49",
         "study_ids": [],
         "support_assurance": "human_declared",
         "support_note": "Synthetic method provenance only",
@@ -66,18 +67,19 @@
     "kind": "evidence",
     "label": "章节证据",
     "parent_id": null,
-    "project": "98272b71ee8c4ccbb2ae620a7cc73994"
+    "project": "0ef91ad4583144e5a86898d2f83f00bd"
   },
   "reviews": [],
   "status": "needs_human_review",
   "is_current": true,
-  "exported_at": "2026-11-21T12:03:36.606375+00:00",
-  "markdown": "# Native stats draft\n\n未批准草稿 · 版本 b76937246b684df18d1103aaffbfcb77\n\n## Methods\n\nSynthetic Pearson analysis [E:stat1]\n\n## 引用证据\n\n- [E:stat1] MedStat pearson · synthetic · 50754d86de564cebbfc0aca6e189e7fb；p:1；原件 SHA256 55f47c337a9d6d49cdff556897fc43f0e5bcf7a6498283c3715376ac0d7b75b2\n  摘录：\"method\": \"pearson\"\n\n统计证据 [E:stat1]：任务 50754d86de564cebbfc0aca6e189e7fb；输入 SHA256 c1d1209e23fc03f84ec9bca3af1cc089f0c65175189bc6b9295dae5643630e5d；结果 SHA256 de08a6263064ce95e78efc739defb76198414806cb96a9df498e2e4c986a565b；仅合成数据。\n",
+  "exported_at": "2026-11-21T15:09:05.543662+00:00",
+  "markdown": "# Native stats draft\n\n## Methods\n\nSynthetic Pearson analysis \n\n---\n\n## 附录：工作台证据溯源与作者审核记录\n\n未批准草稿 · 版本 d5a932e42b6046eeb893438e3bf2d97a\n\n- [E:stat1] MedStat pearson · synthetic · ba6ec1c125e840b9a087e3a793d6bf49；p:1；原件 SHA256 55f47c337a9d6d49cdff556897fc43f0e5bcf7a6498283c3715376ac0d7b75b2\n  摘录：\"method\": \"pearson\"\n\n统计证据 [E:stat1]：任务 ba6ec1c125e840b9a087e3a793d6bf49；输入 SHA256 c1d1209e23fc03f84ec9bca3af1cc089f0c65175189bc6b9295dae5643630e5d；结果 SHA256 de08a6263064ce95e78efc739defb76198414806cb96a9df498e2e4c986a565b；仅合成数据。\n",
+  "academic_markdown": "# Native stats draft\n\n## Methods\n\nSynthetic Pearson analysis\n",
   "references": [
     {
       "classification": "synthetic",
-      "document_id": "7ce4c938592648ba8af7dc2fa73a2c0e",
-      "document_sha256": "e99d75b6a8f2345525dd6627911b3dd57d8626396e1bb96bf26db394475207d9",
+      "document_id": "c8eceda71f824de2be1337c399f73db9",
+      "document_sha256": "f15502d7584da06a90c3d01c2efcc5b4413d8bf3a953ce688c400d0e0bda37f8",
       "excerpt": "\"method\": \"pearson\"",
       "file_sha256": "55f47c337a9d6d49cdff556897fc43f0e5bcf7a6498283c3715376ac0d7b75b2",
       "id": "stat1",
@@ -85,19 +87,20 @@
       "locator": "p:1",
       "native_statistics": {
         "analysis_input_sha256": "004dfb78dfcfaeba287e3b6d6c49b09f4f4b29b8c414c27e7dbd5319c3494478",
-        "artifact": "50754d86de564cebbfc0aca6e189e7fb-statistics.json",
+        "artifact": "ba6ec1c125e840b9a087e3a793d6bf49-statistics.json",
         "artifact_sha256": "de08a6263064ce95e78efc739defb76198414806cb96a9df498e2e4c986a565b",
         "classification": "synthetic",
         "environment": {
           "pandas": "3.1.1",
           "scipy": "1.18.1"
         },
-        "job_id": "50754d86de564cebbfc0aca6e189e7fb",
+        "job_id": "ba6ec1c125e840b9a087e3a793d6bf49",
         "method": "pearson",
         "payload_sha256": "c1d1209e23fc03f84ec9bca3af1cc089f0c65175189bc6b9295dae5643630e5d"
       },
+      "origin": "native_statistics",
       "report_id": "",
-      "source": "MedStat pearson · synthetic · 50754d86de564cebbfc0aca6e189e7fb",
+      "source": "MedStat pearson · synthetic · ba6ec1c125e840b9a087e3a793d6bf49",
       "study_ids": [],
       "support_assurance": "human_declared",
       "support_note": "Synthetic method provenance only",
@@ -105,12 +108,13 @@
       "verified_by": "Synthetic Author"
     }
   ],
+  "vancouver_references": [],
   "llm_calls": 0,
   "format": "local_markdown_and_audit_json_no_translation",
-  "id": "85d9bd12160d43cda2d24dc036f7f5f5",
+  "id": "6d4930ab40be4d11ba42ff52c192dee2",
   "kind": "export",
-  "project": "98272b71ee8c4ccbb2ae620a7cc73994",
-  "created": "2026-11-21T12:03:36.606400+00:00",
+  "project": "0ef91ad4583144e5a86898d2f83f00bd",
+  "created": "2026-11-21T15:09:05.543686+00:00",
   "actor": "local_owner",
   "identity_assurance": "single_owner_access_token"
 }

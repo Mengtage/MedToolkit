@@ -1,6 +1,13 @@
 """Project-scoped artifacts and durable, explicit job execution."""
 import hashlib
-import fcntl
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+try:
+    import msvcrt
+except ImportError:
+    msvcrt = None
 from contextlib import contextmanager
 import json
 import os
@@ -102,10 +109,20 @@ class Store:
     @contextmanager
     def worker_lock(self):
         with (self.root/'.worker.lock').open('a') as lock:
-            try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-            except BlockingIOError:raise ValueError('已有工作进程运行')
-            try:yield
-            finally:fcntl.flock(lock,fcntl.LOCK_UN)
+            if fcntl is not None:
+                try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+                except BlockingIOError:raise ValueError('已有工作进程运行')
+                try:yield
+                finally:fcntl.flock(lock,fcntl.LOCK_UN)
+            elif msvcrt is not None:
+                try:msvcrt.locking(lock.fileno(),msvcrt.LK_NBLCK,1)
+                except OSError:raise ValueError('已有工作进程运行')
+                try:yield
+                finally:
+                    try:msvcrt.locking(lock.fileno(),msvcrt.LK_UNLCK,1)
+                    except OSError:pass
+            else:
+                yield
 
     def runnable(self,jid):
         with self.db() as db:

@@ -65,17 +65,24 @@ def serve(store,port=8765):
             if self.headers.get('Content-Type','').split(';')[0]!='application/json':return self.reply(415,{'error':'仅支持JSON'})
             try:
                 size=int(self.headers.get('Content-Length','0'))
-                if not 0<size<=(8_000_000 if self.path in ('/api/review/fulltext_register','/api/sources/import_records','/api/writer/document') else 1_000_000):return self.reply(413,{'error':'请求大小超限'})
+                if not 0<size<=(8_000_000 if self.path in ('/api/review/fulltext_register','/api/review/fulltext_batch_register','/api/sources/import_records','/api/sources/import_file','/api/writer/document','/api/pipeline/run') else 1_000_000):return self.reply(413,{'error':'请求大小超限'})
                 body=json.loads(self.rfile.read(size))
                 if not isinstance(body,dict):raise ValueError('请求必须是JSON对象')
                 if reviewer_route:
                     operation=self.path.removeprefix('/api/review/')
                     return self.reply(200,screening.dispatch(operation,body,principal))
+                if self.path=='/api/pipeline/run':
+                    from .pipeline import run_pipeline
+                    return self.reply(200,run_pipeline(store,body))
+                if self.path=='/api/statistics/parse_csv':
+                    from .importers import parse_statistics_csv
+                    if not isinstance(body.get('content'),str):raise ValueError('需提供CSV文本内容')
+                    return self.reply(200,parse_statistics_csv(body['content'],body.get('selected_columns')))
                 if self.path.startswith('/api/writer/'):
                     return self.reply(200,writer.dispatch(self.path.removeprefix('/api/writer/'),body))
                 if self.path.startswith('/api/sources/'):
                     operation=self.path.removeprefix('/api/sources/')
-                    fields={'import_records':{'project','metadata','records','confirmed'},'capture':{'project','source_artifact','confirmed'},'create':{'project','label','source_ids','parent_id','reason','confirmed'}}
+                    fields={'import_records':{'project','metadata','records','confirmed'},'import_file':{'project','metadata','filename','content','confirmed'},'capture':{'project','source_artifact','confirmed'},'create':{'project','label','source_ids','parent_id','reason','confirmed'}}
                     if operation not in fields or set(body)!=fields[operation]:raise ValueError('来源请求字段无效')
                     return self.reply(201,getattr(sources,operation)(**body))
                 if self.path=='/api/reviewers':
@@ -118,7 +125,7 @@ def serve(store,port=8765):
                 self.reply(404,{'error':'路径不存在'})
             except PermissionError:self.reply(403,{'error':'无此批次权限'})
             except (KeyError,TypeError,ValueError,FileNotFoundError) as exc:
-                self.reply(400,{'error':str(exc) if isinstance(exc,ValueError) and (reviewer_route or self.path.startswith('/api/screening') or self.path.startswith('/api/reviewers') or self.path.startswith('/api/sources') or self.path.startswith('/api/writer/')) else '输入格式不正确'})
+                self.reply(400,{'error':str(exc) if isinstance(exc,ValueError) and (reviewer_route or self.path.startswith('/api/screening') or self.path.startswith('/api/reviewers') or self.path.startswith('/api/sources') or self.path.startswith('/api/writer/') or self.path.startswith('/api/pipeline') or self.path.startswith('/api/statistics')) else '输入格式不正确'})
     server=ThreadingHTTPServer(('127.0.0.1',port),Handler)
     print(f'Local preview: http://127.0.0.1:{port}',flush=True)
     server.serve_forever()

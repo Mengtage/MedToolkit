@@ -81,7 +81,7 @@ def analyze(store,pid,payload,jid):
         'parameter_order':names,'coefficient_ci_scale':'log_odds' if logistic else 'coefficient',
         'input_rows':len(payload['rows']),'complete_rows':len(complete),'excluded_missing_rows':len(payload['rows'])-len(complete),
         'included_row_indices':indices,'row_index_base':0,'missing_policy':'complete_case_selected_variables',
-        'classification':'synthetic','llm_calls':0,'source':path,'warnings':warning_names,
+        'classification':payload.get('classification','synthetic'),'llm_calls':0,'source':path,'warnings':warning_names,
         'prediction_scope':'in_sample_fitted_values_not_external_validation',
         'environment':{'pandas':pd.__version__,'scipy':scipy.__version__,'statsmodels':statsmodels.__version__},
         'input_sha256':hashlib.sha256(canonical({k:payload[k] for k in ('rows','outcome','predictors')}).encode()).hexdigest()})

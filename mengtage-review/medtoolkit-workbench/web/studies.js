@@ -7,6 +7,7 @@ async function loadStudies(review){
  text(host,'p',state.mapping_valid?'当前映射已确认；修改会追加新版本。':state.history.length?'全文裁决已有修订，旧映射已失效，请重新核对。':'尚未确认映射。');
  if(state.pending_final){text(host,'p','仍有 '+state.pending_final+' 篇报告未最终裁决，请先完成。');return;}
  const rows=[];
+ button(host,'智能识别试验注册号并预填全部研究映射与逐字证据',async()=>{const out=await request('study_auto_suggest',{review});for(const s of out.suggestions){const r=rows.find(x=>x.item.record_id===s.record_id);if(!r)continue;r.ids.value=s.study_ids.join(', ');r.reason.value=s.reason;r.locator.value=s.locator;r.quote.value=s.quote;}},'auto-suggest-studies');
  for(const item of state.records){const card=document.createElement('article');host.append(card);card.dataset.studyRecord=item.record_id;text(card,'h3',item.title);text(card,'p','报告ID：'+item.report_id);fulltextMaterial(card,item,review);
  const ids=field(card,'研究ID（多项用逗号分隔）','input');ids.dataset.field='study-ids';const reason=field(card,'关联依据或修订理由');reason.dataset.field='mapping-reason';const locator=field(card,'依据位置（p:页号）');locator.dataset.field='mapping-locator';const quote=field(card,'用于判断研究归属的逐字摘录');quote.dataset.field='mapping-quote';
  const old=state.mappings.find(r=>r.record_id===item.record_id);if(old){ids.value=old.study_ids.join(', ');reason.value=old.reason;locator.value=old.locator;quote.value=old.quote;}rows.push({item,ids,reason,locator,quote});}

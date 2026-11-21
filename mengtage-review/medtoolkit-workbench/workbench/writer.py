@@ -377,6 +377,38 @@ class WriterService:
         from .writer_statistics import capture
         return capture(self,project,job_id,confirmed)
 
+    def auto_draft(self,project,evidence_id,guideline='PRISMA-ScR',title='',review=None,save_manuscript=False):
+        package=self.verify_package(project,evidence_id)
+        prisma_report=None
+        if review:
+            try:
+                from .screening_http import ScreeningService
+                s=ScreeningService(self.store)
+                with self.store.db() as db:ev=s.ledger._events(db,review)
+                adj=ev[0]['data']['protocol']['adjudicator']
+                prisma_report=s.prisma.preview(review,adj)
+            except Exception:
+                prisma_report=None
+        else:
+            for item in package['items']:
+                nh=item.get('native_hunter')
+                if nh and nh.get('review_id'):
+                    try:
+                        from .screening_http import ScreeningService
+                        s=ScreeningService(self.store)
+                        with self.store.db() as db:ev=s.ledger._events(db,nh['review_id'])
+                        adj=ev[0]['data']['protocol']['adjudicator']
+                        prisma_report=s.prisma.preview(nh['review_id'],adj)
+                        break
+                    except Exception:
+                        pass
+        from .writer_autopilot import build_sci_manuscript_sections
+        draft=build_sci_manuscript_sections(self.store,project,package,prisma_report=prisma_report,guideline=guideline or 'PRISMA-ScR',custom_title=title)
+        if save_manuscript is True:
+            saved=self.save(project,draft['title'],draft['sections'],evidence_id)
+            return {'draft':draft,'manuscript':saved}
+        return {'draft':draft}
+
     def list(self,project):
         self.store.project(project)
         with self.store.db() as db:
@@ -407,6 +439,7 @@ class WriterService:
         return {'objects':objects,'heads':heads}
 
     def dispatch(self,operation,body):
-        fields={'capture_statistics':{'project','job_id','confirmed'},'document':{'project','filename','content_base64','source','classification','confirmed'},'evidence':{'project','label','items','parent_id'},'save':{'project','title','sections','evidence_id','manuscript_id','expected_version'},'inspect':{'project','version'},'review':{'project','version','decision','author','note','confirmed'},'export':{'project','version'},'export_word':{'project','version'},'load':{'project','id'}}
-        if operation not in fields or set(body)!=fields[operation]:raise ValueError('写作请求字段不完整或包含未知字段')
+        fields={'capture_statistics':{'project','job_id','confirmed'},'document':{'project','filename','content_base64','source','classification','confirmed'},'evidence':{'project','label','items','parent_id'},'save':{'project','title','sections','evidence_id','manuscript_id','expected_version'},'inspect':{'project','version'},'review':{'project','version','decision','author','note','confirmed'},'export':{'project','version'},'export_word':{'project','version'},'load':{'project','id'},'auto_draft':{'project','evidence_id'}}
+        optional={'guideline','title','review','save_manuscript'} if operation=='auto_draft' else set()
+        if operation not in fields or (set(body)-optional)!=fields[operation]:raise ValueError('写作请求字段不完整或包含未知字段')
         return getattr(self,operation)(**body)

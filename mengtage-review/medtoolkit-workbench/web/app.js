@@ -4,16 +4,18 @@ async function refresh(){const pid=$('projects').value;if(!pid)return;const jobs
 async function projects(){const p=await api('/api/projects');$('projects').replaceChildren();for(const x of p){const opt=document.createElement('option');opt.value=x.id;opt.textContent=x.question;$('projects').append(opt);}await refresh();}
 async function action(fn){try{await fn();$('notice').textContent='已保存';}catch(e){$('notice').textContent=e.message;}}
 $('connect').onclick=()=>action(projects);$('refresh').onclick=()=>action(refresh);$('projects').onchange=()=>action(async()=>{$('baseline-table').replaceChildren();$('artifact').textContent='';await refresh();});
+const statClass=()=>$('stat-classification')?$('stat-classification').value:'synthetic';
 $('create').onclick=()=>action(async()=>{await api('/api/projects',{question:$('question').value});await projects();});
-$('search').onclick=()=>action(async()=>{await api('/api/jobs',{project:$('projects').value,kind:'search',payload:{query:$('query').value,limit:50}});await refresh();});
+$('search').onclick=()=>action(async()=>{const db=$('search-database')?$('search-database').value:'pubmed';await api('/api/jobs',{project:$('projects').value,kind:'search',payload:{query:$('query').value,limit:50,...(db!=='pubmed'?{database:db}:{})}});await refresh();});
+if($('stat-csv-load'))$('stat-csv-load').onclick=()=>action(async()=>{const f=$('stat-csv-file').files[0];if(!f)throw Error('请先选择CSV文件');const text=await f.text();const parsed=await api('/api/statistics/parse_csv',{content:text});$('tableone-input').value=JSON.stringify({variable_types:parsed.variable_types,rows:parsed.rows},null,2);});
 
-$('statistics').onclick=()=>action(async()=>{await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{classification:'synthetic',method:$('method').value,x:'x',y:'y',rows:JSON.parse($('rows').value)}});await refresh();});
+$('statistics').onclick=()=>action(async()=>{await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{classification:statClass(),method:$('method').value,x:'x',y:'y',rows:JSON.parse($('rows').value)}});await refresh();});
 
-$('categorical').onclick=()=>action(async()=>{const input=JSON.parse($('contingency').value);await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{...input,classification:'synthetic',method:$('categorical-method').value}});await refresh();});
+$('categorical').onclick=()=>action(async()=>{const input=JSON.parse($('contingency').value);await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{...input,classification:statClass(),method:$('categorical-method').value}});await refresh();});
 
-$('group-statistics').onclick=()=>action(async()=>{const input=JSON.parse($('group-input').value);await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{...input,classification:'synthetic',method:'group_numeric'}});await refresh();});
+$('group-statistics').onclick=()=>action(async()=>{const input=JSON.parse($('group-input').value);await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{...input,classification:statClass(),method:'group_numeric'}});await refresh();});
 
-$('tableone').onclick=()=>action(async()=>{const input=JSON.parse($('tableone-input').value);await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{...input,classification:'synthetic',method:'tableone'}});await refresh();});
+$('tableone').onclick=()=>action(async()=>{const input=JSON.parse($('tableone-input').value);await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{...input,classification:statClass(),method:'tableone'}});await refresh();});
 function showArtifact(result,context){
   $('artifact').textContent=JSON.stringify(result,null,2);
   const host=$('baseline-table');host.replaceChildren();
@@ -39,11 +41,11 @@ function showArtifact(result,context){
   }host.append(table);
 }
 
-$('regression').onclick=()=>action(async()=>{const input=JSON.parse($('regression-input').value);await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{...input,classification:'synthetic',method:$('regression-method').value}});await refresh();});
+$('regression').onclick=()=>action(async()=>{const input=JSON.parse($('regression-input').value);await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{...input,classification:statClass(),method:$('regression-method').value}});await refresh();});
 
-$('evaluation').onclick=()=>action(async()=>{const input=JSON.parse($('evaluation-input').value);await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{...input,classification:'synthetic',method:'prediction_evaluation'}});await refresh();});
+$('evaluation').onclick=()=>action(async()=>{const input=JSON.parse($('evaluation-input').value);await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{...input,classification:statClass(),method:'prediction_evaluation'}});await refresh();});
 
-$('imputation').onclick=()=>action(async()=>{const input=JSON.parse($('imputation-input').value);await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{...input,classification:'synthetic',method:'mice_imputation'}});await refresh();});
+$('imputation').onclick=()=>action(async()=>{const input=JSON.parse($('imputation-input').value);await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{...input,classification:statClass(),method:'mice_imputation'}});await refresh();});
 
 function renderDedup(host,result,context){
   const title=document.createElement('h3');title.textContent='去重与人工复核';host.append(title);

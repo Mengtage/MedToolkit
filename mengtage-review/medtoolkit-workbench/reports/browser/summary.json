@@ -1,6 +1,6 @@
 {
   "status": "PASS",
-  "tested_at": "2026-11-21T12:03:33.308Z",
+  "tested_at": "2026-11-21T15:09:02.139Z",
   "browser": "159.0.8154.6",
   "viewport": "1440x1000",
   "pubmed": "synthetic transport fixture; real parser, store and HTTP",
@@ -160,16 +160,16 @@
     }
   ],
   "source_sha256": {
-    "web/index.html": "7a52951cab476ef022be581a65bf0a21f2e1c3174b9e267fa6a92c46c30e129c",
-    "web/app.js": "82cf916bae26e6f56ed3442b3282046352419311eb6031da8b4fd2823ed86f2d",
+    "web/index.html": "49bf4cde0cffb1a65e4cb9346a7801a80c855c32ca9b033679bc17977e66362a",
+    "web/app.js": "17175191d7c1a9a9afccf6390f9c92033eb1e1e73949527ad8fed8dff0e4a68c",
     "web/style.css": "34a0d16872f05f5869a19e1382267e52bd3c6a2726f639386af99978dd44b27b",
     "web/screening.html": "a00db56c316f956397701c5c97f55ae7b784f12b71f69bbb4ed02ebdde0e97e6",
-    "web/screening.js": "492beae3a16603e3e1493ce97f4d3c39a99eeafbadc083463e99f6338fbbb9f3",
-    "web/fulltext.js": "261f79259a67669d2d5a8f7e260bd76de97c29dddedf23a1a6bf5498b1ef8c21",
-    "web/studies.js": "3aaba393c3e480ef97b674b5828080590c60e56a2c6a12b2d42c30ee3940d649",
-    "web/sources.html": "1a9b5178ddaf0f2d77ef90698ecbd775cf4cab6094a43435e132e788ba291aa4",
-    "web/sources.js": "8a491cfe2c5d1dbabe0408caf6f1d2372970605bd3e9ee630e508fcdccf3804e",
-    "web/evaluation.js": "72afc30199b3330f636576ca0e1b3ec3feba469eb86dc042e334e296dfc24518",
+    "web/screening.js": "703fa5be1c458502542b343a8b11444d4918850a8f7a4edbdfe119830bf1dab1",
+    "web/fulltext.js": "e094d93b5020935533e8b7c5994f07a4fb2eec78fecc95ecb2938c05cf8340b7",
+    "web/studies.js": "5c75ff2f139000d62687471067f59340f13535461b3c27a168b1978cd5159171",
+    "web/sources.html": "909fdee044e63c8ca0c33ccaedec04bf586c75d4fe589da4233904533f423349",
+    "web/sources.js": "74a3110a8e0968f9dbbacef8c87402dd2580ce863546f22e37cb0224dca1224c",
+    "web/evaluation.js": "0351a9754add22e809b2f4d928e42c2c977eecfb82dd73c1068497eb25ab58e5",
     "modules/MedStat/templates/index.html": "8a195fb332c3989b6035f0966f49a514302fe655c61b054cf4a72d6efcdf5ef7",
     "scripts/browser/acceptance.cjs": "3d9c9db0b2f6f83b355bbfa6f18cc049d7d42c78635620c923d87cd0b7d1acaf",
     "scripts/browser/server.py": "5bbb71a9de3ca9dac78f86dc76ac0128ca9c09a2087f49de84e883464fa8278e"

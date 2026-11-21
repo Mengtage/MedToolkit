@@ -51,7 +51,7 @@ def analyze(store, pid, payload, jid):
         'row_labels': payload['row_labels'], 'column_labels': payload['column_labels'],
         'n': sum(map(sum, payload['table'])),
         'input_sha256': hashlib.sha256(canonical({k: payload[k] for k in ('table', 'row_labels', 'column_labels')}).encode()).hexdigest(),
-        'source': path, 'classification': 'synthetic', 'llm_calls': 0,
+        'source': path, 'classification': payload.get('classification', 'synthetic'), 'llm_calls': 0,
         'environment': {'scipy': scipy.__version__},
         'orientation': '行列顺序与输入一致；2×2 OR=(左上×右下)/(右上×左下)',
     })

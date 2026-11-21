@@ -99,7 +99,7 @@ def analyze(store, pid, payload, jid):
                     test['statistic_name'] = 'odds_ratio'
                     test['odds_ratio_boundary'] = test['statistic'] is None or test['statistic'] == 0
     result.update({
-        'method': 'tableone', 'classification': 'synthetic', 'llm_calls': 0,
+        'method': 'tableone', 'classification': payload.get('classification', 'synthetic'), 'llm_calls': 0,
         'input_rows': len(payload['rows']), 'variable_types': payload['variable_types'],
         'group_order': list(groups),
         'missingness': {g: {name: {'n_valid': sum(r[name] is not None for r in rows), 'n_missing': sum(r[name] is None for r in rows)} for name in variables} for g, rows in groups.items()},

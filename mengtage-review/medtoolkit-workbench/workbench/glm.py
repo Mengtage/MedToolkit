@@ -60,7 +60,7 @@ def analyze(store,pid,payload,jid):
     result.update({'method':payload['method'],'outcome':payload['outcome'],'predictors':payload['predictors'],
         'input_rows':len(payload['rows']),'complete_rows':len(complete),'excluded_missing_rows':len(payload['rows'])-len(complete),
         'included_row_indices':indices,'row_index_base':0,'missing_policy':'complete_case_selected_variables',
-        'classification':'synthetic','llm_calls':0,'source':source,'warnings':warning_names,
+        'classification':payload.get('classification','synthetic'),'llm_calls':0,'source':source,'warnings':warning_names,
         'prediction_scope':'in_sample_fitted_means_not_external_validation','offset':'none','exposure':'none',
         'environment':{'pandas':pd.__version__,'scipy':scipy.__version__,'statsmodels':statsmodels.__version__},
         'input_sha256':hashlib.sha256(canonical({k:payload[k] for k in ('rows','outcome','predictors')}).encode()).hexdigest()})

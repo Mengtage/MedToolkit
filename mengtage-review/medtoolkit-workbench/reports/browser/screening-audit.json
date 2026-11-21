@@ -1,5 +1,5 @@
 {
-  "review_id": "a6d30df6a6b74ce09bb19e0909311c54",
+  "review_id": "bfd62e0581ee48a6bd74884dd307bf56",
   "events": [
     {
       "actor": "administrator",
@@ -29,43 +29,37 @@
         "records": [
           {
             "record": {
-              "abstract": "",
-              "authors": [],
-              "doi": null,
-              "journal": "",
               "pmid": "111",
-              "pub_date": "",
-              "source": "pubmed",
               "title": "Synthetic conflict paper"
             },
             "record_id": "r000001",
-            "record_sha256": "c7accb34ac00060d08c64edb71c74a658571407d99f8220ce77670001ebf8c2a"
+            "record_sha256": "a17fb71f61cc8e35ef8f711ff98521e7ceeb20712362f08d3e0b335a8812cb7d"
           }
         ],
-        "source_artifact": "b3b18d2ffb264cdca549a874bc1e1391-dedup.json",
-        "source_sha256": "b03fda21d060c1142b07a7623fcb275537fadc552a344455cfc1f3b8c35fd0b2"
+        "source_artifact": "3daa43d37f2744ae82207ad6c426c60c-dedup.json",
+        "source_sha256": "7e2761b9007d1c15a1c6b7cec5a2adf14895fe07698050b7d2d9ef59d6dc49cf"
       },
-      "event_hash": "b534657d402b96b04aa2463695a01b561160b8d8e518072e72ab59e7d08c8fa7",
-      "event_id": "c3860f81390c4cbdb1d2516af587ef41",
+      "event_hash": "5d1c0ca1bc485813f32619bf9378ff1b9ab0acd7614493158d471d07b15c0ad1",
+      "event_id": "aff3c9e495ca40c5beda9626e390a99d",
       "kind": "prepared",
       "previous_hash": "",
-      "project_id": "e624108502614662af3c5b211e75c4d2",
-      "review_id": "a6d30df6a6b74ce09bb19e0909311c54",
-      "timestamp": "2026-11-21T12:03:20.589158+00:00"
+      "project_id": "58f11dd300954bd890a349fd77a889c2",
+      "review_id": "bfd62e0581ee48a6bd74884dd307bf56",
+      "timestamp": "2026-11-21T15:08:49.360446+00:00"
     },
     {
       "actor": "browser-human",
       "data": {
         "protocol_sha256": "e2c66c518320402a8d0311ba579648f51ecc3a7d55ea5331535975a76665b13c",
-        "source_sha256": "b03fda21d060c1142b07a7623fcb275537fadc552a344455cfc1f3b8c35fd0b2"
+        "source_sha256": "7e2761b9007d1c15a1c6b7cec5a2adf14895fe07698050b7d2d9ef59d6dc49cf"
       },
-      "event_hash": "ada1a08f1fcac028ff763213f1cfc9fed9c6738bdbabc9736c1928fb9cfc287f",
-      "event_id": "fbd0174eb4554f128927f6f3bacb6654",
+      "event_hash": "e0cd1a18af8340dfe0e59b54f40d3f7059088c4f4044de360de52f438b0104e6",
+      "event_id": "2fd133d6867c4b929bb253b49c6c9be4",
       "kind": "approved",
-      "previous_hash": "b534657d402b96b04aa2463695a01b561160b8d8e518072e72ab59e7d08c8fa7",
-      "project_id": "e624108502614662af3c5b211e75c4d2",
-      "review_id": "a6d30df6a6b74ce09bb19e0909311c54",
-      "timestamp": "2026-11-21T12:03:20.989042+00:00"
+      "previous_hash": "5d1c0ca1bc485813f32619bf9378ff1b9ab0acd7614493158d471d07b15c0ad1",
+      "project_id": "58f11dd300954bd890a349fd77a889c2",
+      "review_id": "bfd62e0581ee48a6bd74884dd307bf56",
+      "timestamp": "2026-11-21T15:08:49.776204+00:00"
     },
     {
       "actor": "browser-human",
@@ -84,13 +78,13 @@
           "type": "human_manual"
         }
       },
-      "event_hash": "8a2969b43d392ba0a345722d9e62621582e54e857350d5a9b9246bd6d60050cc",
-      "event_id": "1526127674ec4d28ac609806bb6942a5",
+      "event_hash": "252d030725e3816ceb2fec321b59ed28af3f3dda9c0b37da414dabe62a358bbf",
+      "event_id": "394f181299a7408a83e9e3d266497944",
       "kind": "submitted",
-      "previous_hash": "ada1a08f1fcac028ff763213f1cfc9fed9c6738bdbabc9736c1928fb9cfc287f",
-      "project_id": "e624108502614662af3c5b211e75c4d2",
-      "review_id": "a6d30df6a6b74ce09bb19e0909311c54",
-      "timestamp": "2026-11-21T12:03:21.104991+00:00"
+      "previous_hash": "e0cd1a18af8340dfe0e59b54f40d3f7059088c4f4044de360de52f438b0104e6",
+      "project_id": "58f11dd300954bd890a349fd77a889c2",
+      "review_id": "bfd62e0581ee48a6bd74884dd307bf56",
+      "timestamp": "2026-11-21T15:08:49.892855+00:00"
     },
     {
       "actor": "browser-model",
@@ -113,24 +107,24 @@
           "run_id": "browser-fixture"
         }
       },
-      "event_hash": "c9b740dd4c978b61adfb5d95bee77d3299b351045cace41537bfad5d1d17a46e",
-      "event_id": "127882717d2442ce82d42e0a1a2aee8c",
+      "event_hash": "c245707084612eac0ae9322e737c4f7b081b9eddae7c93e78e6362c9bdb40fb8",
+      "event_id": "43406caf1f9c43b0a3e5502f7383cc3f",
       "kind": "submitted",
-      "previous_hash": "8a2969b43d392ba0a345722d9e62621582e54e857350d5a9b9246bd6d60050cc",
-      "project_id": "e624108502614662af3c5b211e75c4d2",
-      "review_id": "a6d30df6a6b74ce09bb19e0909311c54",
-      "timestamp": "2026-11-21T12:03:21.271615+00:00"
+      "previous_hash": "252d030725e3816ceb2fec321b59ed28af3f3dda9c0b37da414dabe62a358bbf",
+      "project_id": "58f11dd300954bd890a349fd77a889c2",
+      "review_id": "bfd62e0581ee48a6bd74884dd307bf56",
+      "timestamp": "2026-11-21T15:08:50.059635+00:00"
     },
     {
       "actor": "browser-human",
       "data": {},
-      "event_hash": "b389326361f03d82c41b988100764390fda7e408353c11378afe904456708142",
-      "event_id": "58be9ecd8072466bb63a7b8a9882eb6c",
+      "event_hash": "2e67ec8837f8d8b01063aefb8cf34361f1edb9d68aa7c698f36f24c58f2d2f82",
+      "event_id": "27bf067c0fed42bd913bb18a06f27e1f",
       "kind": "revealed",
-      "previous_hash": "c9b740dd4c978b61adfb5d95bee77d3299b351045cace41537bfad5d1d17a46e",
-      "project_id": "e624108502614662af3c5b211e75c4d2",
-      "review_id": "a6d30df6a6b74ce09bb19e0909311c54",
-      "timestamp": "2026-11-21T12:03:21.388572+00:00"
+      "previous_hash": "c245707084612eac0ae9322e737c4f7b081b9eddae7c93e78e6362c9bdb40fb8",
+      "project_id": "58f11dd300954bd890a349fd77a889c2",
+      "review_id": "bfd62e0581ee48a6bd74884dd307bf56",
+      "timestamp": "2026-11-21T15:08:50.176484+00:00"
     },
     {
       "actor": "browser-human",
@@ -139,13 +133,13 @@
         "reason": "Human adjudication after comparing both independent decisions",
         "record_id": "r000001"
       },
-      "event_hash": "8f15407be2e29ec628045afff443c21ce08baf1b45969dbb77d4d7676aaa8f1f",
-      "event_id": "0ab4a82a3c01442ea6ba5c1d0722c8cb",
+      "event_hash": "d15ed3e55aa9685c0896174e4acd1bdd0fca5bf33e03008f3b911360b3bb8a05",
+      "event_id": "36c06c84e8e34dee9f170c45ba229843",
       "kind": "adjudicated",
-      "previous_hash": "b389326361f03d82c41b988100764390fda7e408353c11378afe904456708142",
-      "project_id": "e624108502614662af3c5b211e75c4d2",
-      "review_id": "a6d30df6a6b74ce09bb19e0909311c54",
-      "timestamp": "2026-11-21T12:03:21.454909+00:00"
+      "previous_hash": "2e67ec8837f8d8b01063aefb8cf34361f1edb9d68aa7c698f36f24c58f2d2f82",
+      "project_id": "58f11dd300954bd890a349fd77a889c2",
+      "review_id": "bfd62e0581ee48a6bd74884dd307bf56",
+      "timestamp": "2026-11-21T15:08:50.242946+00:00"
     },
     {
       "actor": "browser-human",
@@ -155,13 +149,13 @@
         "reason_code": "population",
         "record_id": "r000001"
       },
-      "event_hash": "31be77f97da31aaa6e4e9ba7537292b0ab9ec82251b5753cc6a5796457ad3780",
-      "event_id": "1a3a627fd36144288ff71eee3cb4f317",
+      "event_hash": "b3982caf1c0b5a762d3b2d537c985e8c312996bd1d3e64c4719fb3edec4b5762",
+      "event_id": "e7027d925dde4b25ade6a078d1b57162",
       "kind": "adjudicated",
-      "previous_hash": "8f15407be2e29ec628045afff443c21ce08baf1b45969dbb77d4d7676aaa8f1f",
-      "project_id": "e624108502614662af3c5b211e75c4d2",
-      "review_id": "a6d30df6a6b74ce09bb19e0909311c54",
-      "timestamp": "2026-11-21T12:03:21.721417+00:00"
+      "previous_hash": "d15ed3e55aa9685c0896174e4acd1bdd0fca5bf33e03008f3b911360b3bb8a05",
+      "project_id": "58f11dd300954bd890a349fd77a889c2",
+      "review_id": "bfd62e0581ee48a6bd74884dd307bf56",
+      "timestamp": "2026-11-21T15:08:50.509302+00:00"
     }
   ],
   "final_decisions": [

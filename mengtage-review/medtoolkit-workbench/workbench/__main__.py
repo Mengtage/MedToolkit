@@ -14,6 +14,7 @@ def main():
     commands.add_parser('recover')
     c=commands.add_parser('retry');c.add_argument('id');c.add_argument('--confirmed',action='store_true')
     c=commands.add_parser('export-ris');c.add_argument('project');c.add_argument('artifact');c.add_argument('output')
+    c=commands.add_parser('pipeline');c.add_argument('config',help='Pipeline配置JSON路径');c.add_argument('--output-dir',default=None,help='导出论文(.md/.docx)与PRISMA图表目录')
     c=commands.add_parser('serve');c.add_argument('--port',type=int,default=8765)
     args=parser.parse_args();store=Store(args.data)
     if args.command=='create':result={'project':store.create(args.question)}
@@ -29,6 +30,10 @@ def main():
         out=Path(args.output)
         with out.open('x',encoding='utf-8') as f:f.write(ris(data['records']))
         result={'file':str(out.resolve()),'records':len(data['records'])}
+    elif args.command=='pipeline':
+        from .pipeline import run_pipeline
+        cfg=json.loads(Path(args.config).read_text(encoding='utf-8'))
+        result=run_pipeline(store,cfg,output_dir=args.output_dir)
     else:
         from .server import serve
         return serve(store,args.port)

@@ -67,7 +67,7 @@ def analyze(store, pid, payload, jid):
         'method': 'group_numeric', 'group': payload['group'], 'value': payload['value'],
         'group_order': labels, 'input_rows': len(rows),
         'complete_rows': sum(map(len, groups.values())), 'missing_by_group': missing,
-        'excluded_missing_rows': sum(missing.values()), 'classification': 'synthetic', 'llm_calls': 0,
+        'excluded_missing_rows': sum(missing.values()), 'classification': payload.get('classification', 'synthetic'), 'llm_calls': 0,
         'input_sha256': hashlib.sha256(canonical({k: payload[k] for k in ('rows', 'group', 'value')}).encode()).hexdigest(),
         'source': 'MedStat/src/analysis/group_analysis.py',
         'environment': {'pandas': pd.__version__, 'scipy': scipy.__version__},

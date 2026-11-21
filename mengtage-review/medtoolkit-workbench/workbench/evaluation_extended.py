@@ -19,7 +19,7 @@ def validate(payload):
     base={k:v for k,v in payload.items() if k not in ('dca_thresholds','nri_thresholds','paired_confirmed')}
     base['rows']=[{k:r[k] for k in ('observed','probability')} for r in rows]
     validate_basic(base)
-    if payload.get('classification')!='synthetic':raise ValueError('仅允许合成数据验收')
+    if payload.get('classification') not in ('synthetic','public','deidentified'):raise ValueError('仅允许合成数据、公开文献数据或已脱敏研究数据')
     thresholds=payload.get('dca_thresholds')
     _thresholds(thresholds,'DCA',True,201)
     if paired:
@@ -49,7 +49,7 @@ def analyze(store,pid,payload,jid):
     if hl['status']!='approximate':warnings.append('HL不可完成近似检验：'+hl['status'])
     if hl['small_expected_cells']:warnings.append('HL存在期望频数小于5的单元格；卡方近似可能不可靠。')
     if 1 in payload['dca_thresholds']:warnings.append('DCA阈值1的权重无定义；模型及全部治疗净获益返回null。')
-    result={'method':METHOD,'classification':'synthetic','llm_calls':0,'n':len(y),'events':sum(y),'non_events':len(y)-sum(y),
+    result={'method':METHOD,'classification':payload.get('classification','synthetic'),'llm_calls':0,'n':len(y),'events':sum(y),'non_events':len(y)-sum(y),
         'evaluation_scope':payload['evaluation_scope'],'scope_verification':'user_declared_not_independently_verified',
         'input_sha256':json_hash({k:v for k,v in payload.items() if k!='_retry_of'}),'threshold':payload['threshold'],
         'threshold_rule':'probability >= threshold','n_bins':payload['n_bins'],'binning':'legacy_equal_width',

@@ -17,12 +17,12 @@ def validate_payload(kind,payload):
         from .dedup_jobs import validate
         validate(kind,payload)
         return
-    allowed={'search':{'query','limit','_retry_of'},'statistics':{'classification','method','x','y','rows','dca_thresholds','nri_thresholds','paired_confirmed','strategy','n_imputations','max_iter','pool_means','threshold','n_bins','evaluation_scope','outcome','predictors','group','value','variable_types','strata','table','row_labels','column_labels','_retry_of'},'write':{'section','external_processing_approved','evidence','_model','_retry_of'}}
+    allowed={'search':{'query','limit','database','_retry_of'},'statistics':{'classification','method','x','y','rows','dca_thresholds','nri_thresholds','paired_confirmed','strategy','n_imputations','max_iter','pool_means','threshold','n_bins','evaluation_scope','outcome','predictors','group','value','variable_types','strata','table','row_labels','column_labels','_retry_of'},'write':{'section','external_processing_approved','evidence','_model','_retry_of'}}
     if kind not in allowed or set(payload)-allowed[kind]:raise ValueError('任务包含未允许的字段')
     if '_retry_of' in payload and (not isinstance(payload['_retry_of'],str) or not re.fullmatch('[a-f0-9]{32}',payload['_retry_of'])):
         raise ValueError('重试来源ID无效')
     if kind=='statistics':
-        if payload.get('classification')!='synthetic':raise ValueError('仅允许合成数据验收')
+        if payload.get('classification') not in ('synthetic','public','deidentified'):raise ValueError('仅允许合成数据、公开文献数据或已脱敏研究数据')
         if payload.get('method')=='mice_imputation':
             from .imputation import validate
             validate(payload)
@@ -70,7 +70,8 @@ def validate_payload(kind,payload):
         if len(complete)<3 or len({row[x] for row in complete})<2 or len({row[y] for row in complete})<2:
             raise ValueError('有效样本不足或变量为常量')
     elif kind=='search':
-        query=payload.get('query');limit=payload.get('limit',50)
+        query=payload.get('query');limit=payload.get('limit',50);db=payload.get('database','pubmed')
+        if db not in ('pubmed','europe_pmc'):raise ValueError('检索数据库仅支持pubmed或europe_pmc')
         if not isinstance(query,str) or not query.strip() or len(query)>8000 or type(limit) is not int or not 1<=limit<=500:
             raise ValueError('检索输入无效')
     elif kind=='write':
@@ -91,11 +92,62 @@ def get(url):
     with urllib.request.urlopen(url,timeout=30) as response:return response.read()
 
 
+def _clean_search_record(rec):
+    allowed={'title','abstract','pmid','doi','authors','journal','pub_date','volume','issue','pages'}
+    out={}
+    for k in allowed:
+        v=rec.get(k)
+        if v is None:continue
+        if k=='authors' and isinstance(v,list):
+            authors=[str(a).strip() for a in v if str(a).strip()]
+            if authors:out[k]=authors
+        elif isinstance(v,(str,int)):
+            s=str(v).strip()
+            if s:out[k]=s
+    if 'title' not in out:
+        out['title']=str(rec.get('title') or '').strip()
+    return out
+
+
 def search(store,pid,payload,jid):
     query=payload.get('query','').strip()
     limit=payload.get('limit',50)
+    db=payload.get('database','pubmed')
+    if db not in ('pubmed','europe_pmc'):raise ValueError('检索数据库仅支持pubmed或europe_pmc')
     if not query or len(query)>8000 or type(limit) is not int or not 1<=limit<=500:
         raise ValueError('检索式必填；每次获取1至500条')
+    if db=='europe_pmc':
+        url='https://www.ebi.ac.uk/europepmc/webservices/rest/search?'+urllib.parse.urlencode({'query':query,'format':'json','pageSize':limit,'resultType':'core'})
+        raw=get(url)
+        store.save(pid,f'{jid}-source-0.json',{'json':raw.decode('utf-8',errors='replace'),'sha256':hashlib.sha256(raw).hexdigest()})
+        epmc=json.loads(raw)
+        total=int(epmc.get('hitCount',0))
+        items=epmc.get('resultList',{}).get('result',[])
+        articles=[]
+        for item in items[:limit]:
+            title=(item.get('title') or '').strip()
+            if not title:continue
+            author_str=(item.get('authorString') or '').strip().rstrip('.')
+            authors=[a.strip() for a in author_str.split(',') if a.strip()] if author_str else []
+            jinfo=item.get('journalInfo') or {}
+            journal=((jinfo.get('journal') or {}).get('title') or item.get('journalTitle') or '').strip()
+            rec=_clean_search_record({
+                'title':title,
+                'abstract':re.sub(r'<[^>]+>',' ',item.get('abstractText') or '').strip(),
+                'pmid':item.get('pmid'),
+                'doi':item.get('doi'),
+                'authors':authors,
+                'journal':journal,
+                'pub_date':item.get('firstPublicationDate') or item.get('pubYear') or '',
+                'volume':jinfo.get('volume') or item.get('journalVolume') or '',
+                'issue':jinfo.get('issue') or item.get('issue') or '',
+                'pages':item.get('pageInfo') or '',
+            })
+            if rec.get('title'):articles.append(rec)
+        result={'database':'Europe PMC','query':query,'total_hits':total,'retrieved':len(articles),'complete':total==len(articles),
+                'records':articles,'deduplication':'not_applied','llm_calls':0,'search_response':{'hitCount':total}}
+        name=store.save(pid,f'{jid}-search.json',result)
+        return {'artifact':name,'database':'Europe PMC','total_hits':total,'retrieved':len(articles),'complete':result['complete']}
     # Query is a literature query, never patient data. No LLM and no implicit filtering.
     base='https://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
     raw=get(base+'esearch.fcgi?'+urllib.parse.urlencode({'db':'pubmed','term':query,'retmode':'json','retmax':limit}))
@@ -108,8 +160,9 @@ def search(store,pid,payload,jid):
         store.save(pid,f'{jid}-source-{offset}.json',{'xml':xml.decode(),'sha256':hashlib.sha256(xml).hexdigest()})
         for article in ET.fromstring(xml):
             if article.tag in ('PubmedArticle','PubmedBookArticle'):
-                articles.append(parser._parse_article_xml(article))
-    result={'query':query,'total_hits':total,'retrieved':len(articles),'complete':total==len(articles),
+                parsed=_clean_search_record(parser._parse_article_xml(article))
+                if parsed.get('title'):articles.append(parsed)
+    result={'database':'PubMed','query':query,'total_hits':total,'retrieved':len(articles),'complete':total==len(articles),
             'records':articles,'deduplication':'not_applied','llm_calls':0,'search_response':data}
     name=store.save(pid,f'{jid}-search.json',result)
     return {'artifact':name,'total_hits':total,'retrieved':len(articles),'complete':result['complete']}
@@ -143,8 +196,8 @@ def statistics(store,pid,payload,jid):
     from .categorical import METHODS, analyze
     if payload['method'] in METHODS:return analyze(store,pid,payload,jid)
     import pandas as pd
-    if payload.get('classification')!='synthetic':
-        raise ValueError('首版统计验收仅接受合成数据，真实研究数据接入待安全验收')
+    if payload.get('classification') not in ('synthetic','public','deidentified'):
+        raise ValueError('统计分析仅接受合成数据、公开文献数据或已脱敏研究数据')
     if payload.get('method') not in ['pearson','spearman']:
         raise ValueError('当前接通Pearson/Spearman；其余旧版统计方法尚未验收')
     rows=payload.get('rows');x=payload.get('x');y=payload.get('y')
@@ -161,7 +214,7 @@ def statistics(store,pid,payload,jid):
     result=getattr(analyzer,payload['method'])(x,y)
     result.update({'method':payload['method'],'x':x,'y':y,'input_sha256':hashlib.sha256(canonical(rows).encode()).hexdigest(),
                    'input_rows':len(df),'complete_rows':len(values),'excluded_missing_rows':len(df)-len(values),
-                   'llm_calls':0,'classification':'synthetic','source':'MedStat/src/analysis/correlation.py'})
+                   'llm_calls':0,'classification':payload.get('classification','synthetic'),'source':'MedStat/src/analysis/correlation.py'})
     import scipy
     result['environment']={'pandas':pd.__version__,'scipy':scipy.__version__}
     name=store.save(pid,f'{jid}-statistics.json',result)

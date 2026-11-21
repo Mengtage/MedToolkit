@@ -61,16 +61,43 @@ class SourceService:
         records_valid(records);validate_metadata(metadata,len(records))
         return self.persist(project,{'method':'source_run','metadata':metadata,'records':records,'retrieved':len(records),
             'total_hits':metadata['total_hits'],'complete':metadata['complete'],'origin':'human_import','coverage_assurance':'human_declared'})
+    def import_file(self,project,metadata,filename,content,confirmed):
+        if confirmed is not True:raise ValueError('请确认导入的是公开书目文件及其来源信息')
+        from .importers import parse_bibliographic_file
+        records=parse_bibliographic_file(filename,content)
+        meta=dict(metadata) if isinstance(metadata,dict) else {}
+        if meta.get('complete') is True and meta.get('total_hits') is None:
+            meta['total_hits']=len(records)
+        records_valid(records);validate_metadata(meta,len(records))
+        return self.persist(project,{'method':'source_run','metadata':meta,'records':records,'retrieved':len(records),
+            'total_hits':meta['total_hits'],'complete':meta['complete'],'origin':'human_import','coverage_assurance':'human_declared'})
     def capture(self,project,source_artifact,confirmed):
         if confirmed is not True:raise ValueError('请确认登记这次检索')
         jobs=[j for j in self.store.jobs(project) if j['kind']=='search' and j['state']=='completed' and j['result'] and json.loads(j['result']).get('artifact')==source_artifact]
         if len(jobs)!=1:raise ValueError('请选择此项目已完成的原生检索产物')
         raw=json.loads(self.store.artifact(project,source_artifact).read_text());count=len(raw['records'])
         if raw['retrieved']!=count or type(raw['total_hits']) is not int or raw['total_hits']<count:raise ValueError('原检索数量不一致')
-        meta={'database':'PubMed','kind':'database','query':raw['query'],'searched_at':jobs[0]['created'],'total_hits':raw['total_hits'],
+        allowed={'title','abstract','pmid','doi','authors','journal','pub_date','volume','issue','pages'}
+        cleaned=[]
+        for r in raw['records']:
+            if not isinstance(r,dict):raise ValueError('检索记录格式无效')
+            rec={}
+            for k in allowed:
+                v=r.get(k)
+                if v is None:continue
+                if k=='authors' and isinstance(v,list):
+                    rec[k]=[str(a) for a in v if str(a).strip()]
+                elif str(v).strip():
+                    rec[k]=str(v).strip()
+            if 'title' not in rec and isinstance(r.get('title'),str):
+                rec['title']=r['title']
+            cleaned.append(rec)
+        records_valid(cleaned)
+        db_name=raw.get('database') or 'PubMed'
+        meta={'database':db_name,'kind':'database','query':raw['query'],'searched_at':jobs[0]['created'],'total_hits':raw['total_hits'],
             'complete':raw['complete'],'coverage_note':'原生检索任务 '+jobs[0]['id']+'；时间为任务创建时间，非数据库更新时间'}
         validate_metadata(meta,count)
-        return self.persist(project,{'method':'source_run','metadata':meta,'records':raw['records'],'retrieved':count,'total_hits':raw['total_hits'],'complete':raw['complete'],
+        return self.persist(project,{'method':'source_run','metadata':meta,'records':cleaned,'retrieved':count,'total_hits':raw['total_hits'],'complete':raw['complete'],
             'origin':'native_pubmed','coverage_assurance':'native_response_count','original_artifact':source_artifact,'original_sha256':json_hash(raw)})
     def create(self,project,label,source_ids,parent_id,reason,confirmed):
         if confirmed is not True:raise ValueError('请确认本轮完整来源清单')

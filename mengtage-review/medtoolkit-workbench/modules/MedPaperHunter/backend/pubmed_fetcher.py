@@ -169,6 +169,9 @@ def _parse_article_xml(article_el: ET.Element) -> dict[str, Any]:
         "authors": [],
         "journal": "",
         "pub_date": "",
+        "volume": "",
+        "issue": "",
+        "pages": "",
         "abstract": "",
         "doi": None,
     }
@@ -236,8 +239,20 @@ def _parse_article_xml(article_el: ET.Element) -> dict[str, Any]:
         year = pub_date_el.findtext("Year", "").strip()
         month = pub_date_el.findtext("Month", "").strip()
         day = pub_date_el.findtext("Day", "").strip()
+        medline_date = pub_date_el.findtext("MedlineDate", "").strip()
         parts = [p for p in [year, month, day] if p]
-        article["pub_date"] = " ".join(parts)
+        article["pub_date"] = " ".join(parts) if parts else medline_date
+
+    # Volume, Issue, Pagination
+    vol_el = article_el.find("./MedlineCitation/Article/Journal/JournalIssue/Volume")
+    if vol_el is not None and vol_el.text:
+        article["volume"] = vol_el.text.strip()
+    issue_el = article_el.find("./MedlineCitation/Article/Journal/JournalIssue/Issue")
+    if issue_el is not None and issue_el.text:
+        article["issue"] = issue_el.text.strip()
+    pages_el = article_el.find("./MedlineCitation/Article/Pagination/MedlinePgn")
+    if pages_el is not None and pages_el.text:
+        article["pages"] = pages_el.text.strip()
 
     # Abstract
     abstract_parts: list[str] = []

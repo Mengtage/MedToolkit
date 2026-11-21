@@ -16,12 +16,12 @@
   ],
   "page_errors": [],
   "source_sha256": {
-    "workbench/writer.py": "ae2b39036a6eb55893d1ace6348bd45af0a6fd779f1c2e419c925f0a6deb946a",
+    "workbench/writer.py": "d83530d7ae244f4fc7c12343f8c8247975ada99929a32253d0cc5343c65a0715",
     "workbench/writer_hunter.py": "f8ea867243660c08d24952943d326ee0201854612943238aec97c414333b83cb",
     "workbench/writer_docx.py": "9265e39b47ee82cfad74976f9bbe6cf07e1ff1dcf786c38022165f640c7a7d65",
-    "workbench/screening_http.py": "ec5e75a8e6cd666214a4ab5ea980f0b65ca1c7ac15573483353add59b9e24881",
-    "web/writer.html": "df4104da471cafa68991854c9f536fc21d1941be0798aabe5c5531a19c3e8fdb",
-    "web/writer.js": "d0c44f4c860bcd49836d132f6df9a5363ad355b68ec6a27e8cfdeb99438c2f1b",
+    "workbench/screening_http.py": "07eef4a17d1c6ef2ddb67edebc3bfd932d2f9916071ba17f967c948632fb4c7d",
+    "web/writer.html": "3ab983acb1acb590b96ae71ec9ebe64fcc2271c5afaed158930b99d25024725f",
+    "web/writer.js": "f853bcf1f64404c58ef1fb4853c43eade36ce3fa8778a4e1e23c62a299e7ad29",
     "scripts/browser/writer_hunter.cjs": "9e1b941db9258bbb304e66ec069918f096a91eb97eb350c95c23ba18652189bc",
     "scripts/browser/writer_hunter_server.py": "78c4a1687a2a24102ce822a1286cce5869c0fc25a02a076762399023ee5a335d"
   },

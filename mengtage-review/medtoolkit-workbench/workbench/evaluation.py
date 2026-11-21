@@ -40,7 +40,7 @@ def analyze(store,pid,payload,jid):
     for name,denominator in [('ppv',cm['TP']+cm['FP']),('npv',cm['TN']+cm['FN']),('mcc',(cm['TP']+cm['FP'])*(cm['TP']+cm['FN'])*(cm['TN']+cm['FP'])*(cm['TN']+cm['FN']))]:
         if denominator==0:metrics[name]=None;undefined.append(name)
     calibration=evaluator.calculate_calibration_metrics(payload['n_bins'])
-    result={'method':'prediction_evaluation','classification':'synthetic','llm_calls':0,
+    result={'method':'prediction_evaluation','classification':payload.get('classification','synthetic'),'llm_calls':0,
         'n':len(y),'event_value':1,'threshold':payload['threshold'],'threshold_rule':'probability >= threshold',
         'evaluation_scope':payload['evaluation_scope'],'scope_verification':'user_declared_not_independently_verified',
         'confusion_matrix':cm,'metrics':metrics,'undefined_metrics':undefined,'roc':evaluator.calculate_roc_curve(),

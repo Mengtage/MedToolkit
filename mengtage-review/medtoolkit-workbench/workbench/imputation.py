@@ -45,7 +45,7 @@ def analyze(store,pid,payload,jid):
         pooled=engine.pooled_means() if payload['pool_means'] else []
     missing={name:[i for i,row in enumerate(payload['rows']) if row[name] is None] for name in payload['variable_types']}
     had_missing=any(missing.values())
-    result={'method':'mice_imputation','classification':'synthetic','llm_calls':0,
+    result={'method':'mice_imputation','classification':payload.get('classification','synthetic'),'llm_calls':0,
         'strategy':payload['strategy'],'requested_imputations':payload['n_imputations'],'actual_imputations':len(datasets),
         'max_iter':payload['max_iter'],'random_seeds':[42+i for i in range(len(datasets))] if had_missing else [],
         'missing_row_indices':missing,'row_index_base':0,'input_rows':len(df),'variable_types':payload['variable_types'],

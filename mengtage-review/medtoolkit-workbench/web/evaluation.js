@@ -2,7 +2,7 @@
 const evfmt=v=>typeof v==='number'&&Number.isFinite(v)?String(Number(v.toPrecision(6))):'不可计算';
 function evtext(host,tag,value){const n=document.createElement(tag);n.textContent=value;host.append(n);return n;}
 function evtable(host,headers,rows,id){const table=document.createElement('table');if(id)table.id=id;const head=document.createElement('tr');for(const label of headers)evtext(head,'th',label);table.append(head);for(const values of rows){const tr=document.createElement('tr');for(const value of values)evtext(tr,'td',typeof value==='number'?evfmt(value):value??'不可计算');table.append(tr);}host.append(table);return table;}
-$('extended-evaluation').onclick=()=>action(async()=>{const input=JSON.parse($('extended-evaluation-input').value);await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{...input,classification:'synthetic',method:'prediction_evaluation_extended'}});await refresh();});
+$('extended-evaluation').onclick=()=>action(async()=>{const input=JSON.parse($('extended-evaluation-input').value);const cls=$('stat-classification')?$('stat-classification').value:'synthetic';await api('/api/jobs',{project:$('projects').value,kind:'statistics',payload:{...input,classification:cls,method:'prediction_evaluation_extended'}});await refresh();});
 function renderExtendedEvaluation(host,r){
  evtext(host,'h3','扩展预测评估');evtext(host,'p',`n=${r.n}；事件=${r.events}；非事件=${r.non_events}；评估来源=${r.evaluation_scope}（用户声明）`);
  for(const warning of r.warnings)evtext(host,'p',warning);

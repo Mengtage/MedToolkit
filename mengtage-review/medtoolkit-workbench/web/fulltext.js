@@ -10,6 +10,7 @@ function fulltextMaterial(host,item,review){
 async function loadFulltext(review){
  const started=epoch,status=await request('fulltext_status',{review});if(started!==epoch||el('review-list').value!==review)return;
  const protocol=current.protocol,host=el('review-work');host.replaceChildren();text(host,'h2','登记全文取得情况');text(host,'p','仅处理父批次最终纳入记录。未取得全文单独留痕；登记修订追加历史。原裁决改变后须重新登记。');
+ button(host,'一键为全部待登记记录生成结构化全文快照',async()=>{await request('fulltext_batch_register',{review});await loadFulltext(review);},'batch-register-fulltext');
  button(host,'下载全文取得登记 JSON',async()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(status,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='fulltext-retrieval-'+review+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);},'export-retrieval');
  for(const row of status.records){const card=document.createElement('article');card.dataset.retrieval=row.record_id;host.append(card);text(card,'h3',row.record_id+' · '+row.title);text(card,'p','当前状态：'+({pending:'待登记',retrieved:'已取得',not_retrieved:'未取得'})[row.status]);
  if(row.event){text(card,'p',row.event.reason);if(row.event.document)text(card,'p',row.event.document.filename+'；'+row.event.document.pages.length+'页/段；SHA256 '+row.event.document.file_sha256);}
