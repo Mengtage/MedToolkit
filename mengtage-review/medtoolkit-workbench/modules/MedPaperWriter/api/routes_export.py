@@ -153,7 +153,7 @@ async def get_reference_styles():
         支持的格式列表
     """
     logger.debug(f"[routes_export] get_reference_styles called")
-    from services.reference_formatter import ReferenceFormatter
+    from core.reference_formatter import ReferenceFormatter
 
     return JSONResponse({
         "success": True,
@@ -190,7 +190,7 @@ async def preview_references(
             "message": "参考文献格式错误"
         }, status_code=400)
 
-    from services.reference_formatter import ReferenceFormatter
+    from core.reference_formatter import ReferenceFormatter
 
     formatter = ReferenceFormatter(style)
 

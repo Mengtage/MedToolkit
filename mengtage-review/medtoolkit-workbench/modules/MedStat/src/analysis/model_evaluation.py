@@ -229,19 +229,20 @@ class ModelEvaluator:
                 hl_expected.append(n_bin * mean_prob)
                 hl_observed.append(np.sum(bin_true))
         
-        # Hosmer-Lemeshow检验
-        hl_stat = 0
-        hl_pvalue = 1.0
-        if len(hl_expected) >= 2:
-            hl_expected = np.array(hl_expected)
-            hl_observed = np.array(hl_observed)
-            mask = hl_expected > 0
-            if np.any(mask):
-                hl_stat = np.sum((hl_observed[mask] - hl_expected[mask]) ** 2 / hl_expected[mask])
-                df = len(hl_expected[mask]) - 2
-                if df > 0:
-                    hl_pvalue = 1 - chi2.cdf(hl_stat, df)
-        
+        # Keep the legacy equal-width bins; include BOTH outcome cells.
+        # Quantile-based HL grouping is a separate policy decision.
+        expected = np.asarray(hl_expected, dtype=float)
+        observed = np.asarray(hl_observed, dtype=float)
+        sizes = np.asarray([row['n'] for row in calib_data], dtype=float)
+        df = len(expected) - 2
+        degenerate = bool(np.any((expected <= 0) | (expected >= sizes)))
+        hl_stat = None if degenerate else float(np.sum(
+            (observed - expected) ** 2 / expected +
+            (observed - expected) ** 2 / (sizes - expected)))
+        hl_pvalue = float(chi2.sf(hl_stat, df)) if hl_stat is not None and df > 0 else None
+        hl_status = ('zero_expected_cell' if degenerate else
+                     'insufficient_groups' if df <= 0 else 'approximate')
+
         # 校准斜率和截距（使用isotonic regression）
         ir = IsotonicRegression(out_of_bounds='clip')
         calib_probs = ir.fit_transform(probs, self.y_true)
@@ -250,14 +251,33 @@ class ModelEvaluator:
             'brier_score': float(brier_score),
             'calibration_curve': calib_data,
             'hosmer_lemeshow': {
-                'statistic': float(hl_stat),
-                'p_value': float(hl_pvalue),
-                'bins': n_bins
+                'statistic': hl_stat,
+                'p_value': hl_pvalue,
+                'bins': n_bins,
+                'occupied_bins': len(expected),
+                'df': df,
+                'status': hl_status,
+                'binning': 'legacy_equal_width',
+                'expected_events': expected.tolist(),
+                'observed_events': observed.tolist(),
+                'group_sizes': sizes.astype(int).tolist(),
+                'small_expected_cells': bool(np.any((expected < 5) | (sizes - expected < 5)))
             },
             'calibrated_probs': calib_probs.tolist(),
             'is_probability': self.is_probability
         }
     
+    def _paired_probabilities(self, old_probs):
+        old = np.asarray(old_probs, dtype=float)
+        new = np.asarray(self.y_probs, dtype=float)
+        if (old.ndim != 1 or old.shape != self.y_true.shape or
+                not np.all(np.isfinite(old)) or np.any((old < 0) | (old > 1)) or
+                not np.all(np.isfinite(new)) or np.any((new < 0) | (new > 1))):
+            raise ValueError('新旧概率必须等长、有限且处于[0,1]，按同一受试者顺序配对')
+        if len(np.unique(self.y_true)) != 2:
+            raise ValueError('NRI/IDI需要同时存在事件与非事件')
+        return old
+
     def calculate_nri(self, old_probs, new_thresholds=None):
         """
         计算净重分类改善（NRI）
@@ -281,8 +301,13 @@ class ModelEvaluator:
         if new_thresholds is None:
             new_thresholds = [0.1, 0.2, 0.5]
         
-        old_probs = np.array(old_probs)
+        old_probs = self._paired_probabilities(old_probs)
         
+        new_thresholds = np.asarray(new_thresholds, dtype=float)
+        if (new_thresholds.ndim != 1 or not len(new_thresholds) or
+                not np.all(np.isfinite(new_thresholds)) or
+                np.any((new_thresholds <= 0) | (new_thresholds >= 1))):
+            raise ValueError('NRI阈值必须为0至1之间的有限一维数组（不含端点）')
         nri_results = {}
         total_events = np.sum(self.y_true == 1)
         total_non_events = np.sum(self.y_true == 0)
@@ -310,7 +335,8 @@ class ModelEvaluator:
             nri_total = nri_event + nri_non_event
             
             nri_results[f'threshold_{threshold}'] = {
-                'threshold': threshold,
+                'threshold': float(threshold),
+                'method': 'binary_category_nri_at_each_threshold',
                 'event_up': int(event_up),
                 'event_down': int(event_down),
                 'non_event_up': int(non_event_up),
@@ -340,7 +366,7 @@ class ModelEvaluator:
         if self.y_probs is None:
             return {'error': 'IDI计算需要概率值输入'}
         
-        old_probs = np.array(old_probs)
+        old_probs = self._paired_probabilities(old_probs)
         
         # 事件组概率差异
         mean_prob_event_new = np.mean(self.y_probs[self.y_true == 1])
@@ -353,23 +379,23 @@ class ModelEvaluator:
         # IDI
         idi = (mean_prob_event_new - mean_prob_event_old) - (mean_prob_non_event_new - mean_prob_non_event_old)
         
-        # 方差估计（简化版）
-        n_events = np.sum(self.y_true == 1)
-        n_non_events = np.sum(self.y_true == 0)
-        
-        var_event_new = np.var(self.y_probs[self.y_true == 1]) if n_events > 0 else 0
-        var_event_old = np.var(old_probs[self.y_true == 1]) if n_events > 0 else 0
-        var_non_event_new = np.var(self.y_probs[self.y_true == 0]) if n_non_events > 0 else 0
-        var_non_event_old = np.var(old_probs[self.y_true == 0]) if n_non_events > 0 else 0
-        
-        variance = (var_event_new + var_event_old) / n_events + (var_non_event_new + var_non_event_old) / n_non_events
-        se = np.sqrt(variance) if variance > 0 else 0
-        z_score = idi / se if se > 0 else 0
-        
+        # Fixed paired predictions: sample variance of within-person differences.
+        # This does not account for model refitting uncertainty.
+        differences = self.y_probs - old_probs
+        event_diff = differences[self.y_true == 1]
+        non_event_diff = differences[self.y_true == 0]
+        enough = len(event_diff) >= 2 and len(non_event_diff) >= 2
+        variance = (np.var(event_diff, ddof=1) / len(event_diff) +
+                    np.var(non_event_diff, ddof=1) / len(non_event_diff)) if enough else None
+        se = float(np.sqrt(variance)) if variance is not None else None
+        z_score = float(idi / se) if se is not None and se > 0 else None
+
         return {
             'idi': float(idi),
-            'se': float(se),
-            'z_score': float(z_score),
+            'se': se,
+            'z_score': z_score,
+            'variance_method': 'paired_differences_sample_variance_fixed_predictions',
+            'inference_status': 'insufficient_group_size' if not enough else 'zero_variance' if se == 0 else 'approximate_fixed_predictions',
             'mean_prob_event_new': float(mean_prob_event_new),
             'mean_prob_event_old': float(mean_prob_event_old),
             'mean_prob_non_event_new': float(mean_prob_non_event_new),
@@ -396,6 +422,12 @@ class ModelEvaluator:
         if thresholds is None:
             thresholds = np.linspace(0, 1, 101)
         
+        thresholds = np.asarray(thresholds, dtype=float)
+        if (thresholds.ndim != 1 or not len(thresholds) or
+                not np.all(np.isfinite(thresholds)) or np.any((thresholds < 0) | (thresholds > 1))):
+            raise ValueError('DCA阈值必须为[0,1]有限一维数组')
+        if not np.all(np.isfinite(probs)) or np.any((probs < 0) | (probs > 1)):
+            raise ValueError('DCA需要[0,1]概率')
         # 计算净获益
         n = len(self.y_true)
         n_events = np.sum(self.y_true == 1)
@@ -406,6 +438,11 @@ class ModelEvaluator:
         net_benefit_none = []  # 全部不治疗
         
         for p in thresholds:
+            if p == 1:
+                net_benefit.append(None)
+                net_benefit_all.append(None)
+                net_benefit_none.append(0.0)
+                continue
             # 当前模型的净获益
             pred_high_risk = probs >= p
             tp = np.sum(pred_high_risk & (self.y_true == 1))
@@ -423,6 +460,8 @@ class ModelEvaluator:
         
         return {
             'thresholds': thresholds.tolist(),
+            'undefined_thresholds': [1.0] if np.any(thresholds == 1) else [],
+            'threshold_rule': 'probability >= threshold',
             'net_benefit': net_benefit,
             'net_benefit_all': net_benefit_all,
             'net_benefit_none': net_benefit_none,

@@ -1,0 +1,166 @@
+{
+  "manifest": {
+    "version": "3b020af551da4bf3894ef6ddd07f7b91",
+    "audit_export_id": "4ffd7c163877490bab71c6214c56ad27",
+    "audit_sha256": "1dae91345513f347cec014efdb681c994f7649d562859eb1d94e199af40c6b82",
+    "filename": "manuscript-3b020af551da4bf3894ef6ddd07f7b91-4ffd7c163877490bab71c6214c56ad27.docx",
+    "file_sha256": "989d9f6c7829d6aa7bf3e5f9f82727ff54b85d445e8739d61652910620486a71",
+    "status": "approved",
+    "llm_calls": 0,
+    "translation": "none_saved_text_only",
+    "id": "7929c69f8d364e238610e845ae661d48",
+    "kind": "word_export",
+    "project": "fcc42fbee76f41b2bd96ddf726f9b336",
+    "created": "2026-11-21T09:35:00.089377+00:00",
+    "actor": "local_owner",
+    "identity_assurance": "single_owner_access_token"
+  },
+  "audit": {
+    "manuscript": {
+      "actor": "local_owner",
+      "checks": {
+        "blockers": [],
+        "rule_version": "writer-citations-v1",
+        "semantic_support": "requires_human_review",
+        "warnings": []
+      },
+      "created": "2026-11-21T09:34:59.863459+00:00",
+      "evidence_id": "e7809e64117d40bca0b3f1dd1a4a245a",
+      "evidence_sha256": "9f6a715a9d48255897ef20e8614e2c54f99972b11ece0637104300e5d648988e",
+      "id": "3b020af551da4bf3894ef6ddd07f7b91",
+      "identity_assurance": "single_owner_access_token",
+      "kind": "manuscript",
+      "llm_calls": 0,
+      "manuscript_id": "34c0270ee0aa42b5a1595c9490319cd3",
+      "origin": "manual_draft",
+      "parent_version": null,
+      "project": "fcc42fbee76f41b2bd96ddf726f9b336",
+      "sections": [
+        {
+          "body": "Synthetic trial description [E:e1]",
+          "title": "Results"
+        }
+      ],
+      "title": "Hunter linked draft"
+    },
+    "evidence": {
+      "actor": "local_owner",
+      "created": "2026-11-21T09:34:59.746495+00:00",
+      "id": "e7809e64117d40bca0b3f1dd1a4a245a",
+      "identity_assurance": "single_owner_access_token",
+      "items": [
+        {
+          "captured_by": "human",
+          "classification": "synthetic",
+          "document_id": "3c2c4260fa70474da98b59f435946640",
+          "document_sha256": "d1e68ebfc961ef80790bb4718e46758e10f20aa2600b9eba369c1d083199274c",
+          "excerpt": "Trial X and Trial Y enrolled adults.",
+          "file_sha256": "462a3761e2d77f7fec95d32e29f7288d7e258197ba2f24abed6086a9a95f9c29",
+          "id": "e1",
+          "lineage_assurance": "native_hunter_selected_version",
+          "locator": "p:1",
+          "native_hunter": {
+            "decision_event_hash": "f58f463d83eb1126f69f92b8142ecf43ba5019af77e77b524214ae6406ec1097",
+            "mapping_event_hash": "bc9a88314d93457b671e91c9018425a9e5424a45971c0277c9480f5fd7beb625",
+            "parent_event_hash": "0330cedd4df81064e6eab564636234c9eb4743e6dec04f37f91d1e6296699be1",
+            "parent_review_id": "6cf9728b7bad42209c91a7268b1691e9",
+            "protocol_sha256": "e0b9d12af67d34a54f6ac616e9e72d984d379e442592b67fb59072e48390bb0a",
+            "record_id": "r000001",
+            "record_sha256": "b7dfa78ad065ab352b8bd5639f3fdb20e75bb48d7db7c5170f75967abed34367",
+            "report_id": "6cf9728b7bad42209c91a7268b1691e9:r000001",
+            "retrieval_event_hash": "29b97510d66e185944951d110ff08ea95cdf1f44fcde23585b1f95ef79689497",
+            "review_id": "e48b342e82bf4feba3a50e962a899739",
+            "screening_event_hash": "d48cb338126ffec97b8dd5525bfa07016619184d33c7d01b65164bc702760131",
+            "source_artifact": "322f3d09ade14b5f84234d7f7b31e67a-fulltext.json",
+            "source_sha256": "653c69af383c7e330876621865a28c88f83d2ac397ffbcd98ef2104d542d9697",
+            "study_ids": [
+              "trial_x"
+            ],
+            "study_scope": "selected_review_only"
+          },
+          "report_id": "6cf9728b7bad42209c91a7268b1691e9:r000001",
+          "source": "A · 1",
+          "study_ids": [
+            "trial_x"
+          ],
+          "support_assurance": "human_declared",
+          "support_note": "Synthetic report evidence only",
+          "text_sha256": "5ae219748b83811abf28b4d6268807c404afae14bf81528231b482e44730add9",
+          "verified_by": "Synthetic Author"
+        }
+      ],
+      "kind": "evidence",
+      "label": "章节证据",
+      "parent_id": null,
+      "project": "fcc42fbee76f41b2bd96ddf726f9b336"
+    },
+    "reviews": [
+      {
+        "actor": "local_owner",
+        "author": "Synthetic Author",
+        "author_assurance": "owner_declared_name",
+        "decision": "approved",
+        "hash": "c873fabfe43b26c73dad3781e5c931cb580e18974801d784816430f369a84172",
+        "manuscript_sha256": "ea0c3a52e51cfe961ee36b9cbc158a376f109ad7121862a90cf293d91950b7e0",
+        "note": "Checked original page and trial mapping",
+        "previous_hash": "",
+        "support_confirmed": true,
+        "timestamp": "2026-11-21T09:34:59.963334+00:00",
+        "version": "3b020af551da4bf3894ef6ddd07f7b91"
+      }
+    ],
+    "status": "approved",
+    "is_current": true,
+    "exported_at": "2026-11-21T09:35:00.064762+00:00",
+    "markdown": "# Hunter linked draft\n\n已获作者批准 · 版本 3b020af551da4bf3894ef6ddd07f7b91\n\n## Results\n\nSynthetic trial description [E:e1]\n\n## 引用证据\n\n- [E:e1] A · 1；p:1；原件 SHA256 462a3761e2d77f7fec95d32e29f7288d7e258197ba2f24abed6086a9a95f9c29\n  摘录：Trial X and Trial Y enrolled adults.\n\nHunter证据 [E:e1]：报告 6cf9728b7bad42209c91a7268b1691e9:r000001；研究 trial_x（限批次 e48b342e82bf4feba3a50e962a899739）；裁决版本 d48cb338126ffec97b8dd5525bfa07016619184d33c7d01b65164bc702760131；映射版本 bc9a88314d93457b671e91c9018425a9e5424a45971c0277c9480f5fd7beb625。\n",
+    "references": [
+      {
+        "captured_by": "human",
+        "classification": "synthetic",
+        "document_id": "3c2c4260fa70474da98b59f435946640",
+        "document_sha256": "d1e68ebfc961ef80790bb4718e46758e10f20aa2600b9eba369c1d083199274c",
+        "excerpt": "Trial X and Trial Y enrolled adults.",
+        "file_sha256": "462a3761e2d77f7fec95d32e29f7288d7e258197ba2f24abed6086a9a95f9c29",
+        "id": "e1",
+        "lineage_assurance": "native_hunter_selected_version",
+        "locator": "p:1",
+        "native_hunter": {
+          "decision_event_hash": "f58f463d83eb1126f69f92b8142ecf43ba5019af77e77b524214ae6406ec1097",
+          "mapping_event_hash": "bc9a88314d93457b671e91c9018425a9e5424a45971c0277c9480f5fd7beb625",
+          "parent_event_hash": "0330cedd4df81064e6eab564636234c9eb4743e6dec04f37f91d1e6296699be1",
+          "parent_review_id": "6cf9728b7bad42209c91a7268b1691e9",
+          "protocol_sha256": "e0b9d12af67d34a54f6ac616e9e72d984d379e442592b67fb59072e48390bb0a",
+          "record_id": "r000001",
+          "record_sha256": "b7dfa78ad065ab352b8bd5639f3fdb20e75bb48d7db7c5170f75967abed34367",
+          "report_id": "6cf9728b7bad42209c91a7268b1691e9:r000001",
+          "retrieval_event_hash": "29b97510d66e185944951d110ff08ea95cdf1f44fcde23585b1f95ef79689497",
+          "review_id": "e48b342e82bf4feba3a50e962a899739",
+          "screening_event_hash": "d48cb338126ffec97b8dd5525bfa07016619184d33c7d01b65164bc702760131",
+          "source_artifact": "322f3d09ade14b5f84234d7f7b31e67a-fulltext.json",
+          "source_sha256": "653c69af383c7e330876621865a28c88f83d2ac397ffbcd98ef2104d542d9697",
+          "study_ids": [
+            "trial_x"
+          ],
+          "study_scope": "selected_review_only"
+        },
+        "report_id": "6cf9728b7bad42209c91a7268b1691e9:r000001",
+        "source": "A · 1",
+        "study_ids": [
+          "trial_x"
+        ],
+        "support_assurance": "human_declared",
+        "support_note": "Synthetic report evidence only",
+        "text_sha256": "5ae219748b83811abf28b4d6268807c404afae14bf81528231b482e44730add9",
+        "verified_by": "Synthetic Author"
+      }
+    ],
+    "llm_calls": 0,
+    "format": "local_markdown_and_audit_json_no_translation",
+    "id": "4ffd7c163877490bab71c6214c56ad27",
+    "kind": "export",
+    "project": "fcc42fbee76f41b2bd96ddf726f9b336",
+    "created": "2026-11-21T09:35:00.064784+00:00",
+    "actor": "local_owner",
+    "identity_assurance": "single_owner_access_token"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "classification": "synthetic",
+  "method": "group_numeric",
+  "group": "group",
+  "value": "value",
+  "rows": [
+    {
+      "group": "A",
+      "value": 1
+    },
+    {
+      "group": "A",
+      "value": 2
+    },
+    {
+      "group": "A",
+      "value": 3
+    },
+    {
+      "group": "A",
+      "value": null
+    },
+    {
+      "group": "B",
+      "value": 4
+    },
+    {
+      "group": "B",
+      "value": 5
+    },
+    {
+      "group": "B",
+      "value": 6
+    }
+  ]
+}

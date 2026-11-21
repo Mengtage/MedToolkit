@@ -1,9 +1,7 @@
-# 开发进展
+# 当前进展 · 2026-11-21
 
-本版已修复统计验收发现的错漏。基础15项与统计58项检查通过；旧版失败证据保留在reports/baseline，当前证据见reports/validation-summary.json。
+Hunter的去重、独立筛选、全文、研究映射和来源集合；Stat的合成统计与扩展预测评估；Writer的证据、版本、作者审核、Word导出及Hunter/Stat关联均已在本机合成环境接通。
 
-可运行：项目和任务持久化、输入前置校验、显式重试、恢复互斥锁、PubMed有限检索、RIS导出、合成数据相关性计算。
+Word已完成LibreOffice实际渲染检查和A4/段距/跨页表格/页码修复；Microsoft Word/WPS尚未实测。真实模型、临床数据和手机未验收。Gemini保持空白，无GitHub推送。
 
-Gemini保持未配置；手机端流程暂缓。统一入口尚未迁移全部统计模块，真实患者数据处理、完整写作agent、自动全文证据提取及生产安全验收未完成。标题去重/LLM筛选的默认策略仍待决定。
-
-源码保存在独立开发分支；上游主分支未改动，尚未完成GitHub在线推送。
+本轮整理完整源码包及启动入口，历史增量包不再是新安装的前提。准确测试轮次见reports/ACCEPTANCE_SUMMARY.md；历史说明归档在docs/history/。

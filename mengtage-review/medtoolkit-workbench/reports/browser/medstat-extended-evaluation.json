@@ -1,0 +1,195 @@
+{
+  "binning": "legacy_equal_width",
+  "brier_score": 0.35,
+  "calibration_curve": [
+    {
+      "bin": 1,
+      "mean_observed": 0.5,
+      "mean_predicted": 0.1,
+      "n": 2
+    },
+    {
+      "bin": 2,
+      "mean_observed": 0.5,
+      "mean_predicted": 0.3,
+      "n": 2
+    },
+    {
+      "bin": 3,
+      "mean_observed": 0.5,
+      "mean_predicted": 0.7,
+      "n": 2
+    },
+    {
+      "bin": 4,
+      "mean_observed": 0.5,
+      "mean_predicted": 0.9,
+      "n": 2
+    }
+  ],
+  "classification": "synthetic",
+  "comparison": {
+    "idi": {
+      "idi": 0.10000000000000003,
+      "inference_status": "approximate_fixed_predictions",
+      "mean_prob_event_new": 0.5,
+      "mean_prob_event_old": 0.45,
+      "mean_prob_non_event_new": 0.5,
+      "mean_prob_non_event_old": 0.55,
+      "se": 0.07071067811865475,
+      "variance_method": "paired_differences_sample_variance_fixed_predictions",
+      "z_score": 1.4142135623730956
+    },
+    "nri": {
+      "threshold_0.2": {
+        "event_down": 1,
+        "event_up": 0,
+        "method": "binary_category_nri_at_each_threshold",
+        "non_event_down": 1,
+        "non_event_up": 0,
+        "nri_event": -0.25,
+        "nri_non_event": 0.25,
+        "nri_total": 0,
+        "threshold": 0.2
+      },
+      "threshold_0.5": {
+        "event_down": 0,
+        "event_up": 0,
+        "method": "binary_category_nri_at_each_threshold",
+        "non_event_down": 0,
+        "non_event_up": 0,
+        "nri_event": 0,
+        "nri_non_event": 0,
+        "nri_total": 0,
+        "threshold": 0.5
+      }
+    },
+    "nri_method": "binary_category_nri_at_each_threshold",
+    "old_model_dca": {
+      "is_probability": true,
+      "net_benefit": [
+        0.5,
+        0.125,
+        0,
+        -0.625,
+        null
+      ],
+      "net_benefit_all": [
+        0.5,
+        0.33333333333333337,
+        0,
+        -1,
+        null
+      ],
+      "net_benefit_none": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "threshold_rule": "probability >= threshold",
+      "thresholds": [
+        0,
+        0.25,
+        0.5,
+        0.75,
+        1
+      ],
+      "undefined_thresholds": [
+        1
+      ]
+    },
+    "paired_by": "same_input_row",
+    "pairing_assurance": "user_confirmed_not_independently_verified"
+  },
+  "dca": {
+    "is_probability": true,
+    "net_benefit": [
+      0.5,
+      0.25,
+      0,
+      -0.25,
+      null
+    ],
+    "net_benefit_all": [
+      0.5,
+      0.33333333333333337,
+      0,
+      -1,
+      null
+    ],
+    "net_benefit_none": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "threshold_rule": "probability >= threshold",
+    "thresholds": [
+      0,
+      0.25,
+      0.5,
+      0.75,
+      1
+    ],
+    "undefined_thresholds": [
+      1
+    ]
+  },
+  "environment": {
+    "scikit_learn": "1.9.1",
+    "scipy": "1.18.1"
+  },
+  "evaluation_scope": "held_out",
+  "events": 4,
+  "hosmer_lemeshow": {
+    "binning": "legacy_equal_width",
+    "bins": 4,
+    "df": 2,
+    "expected_events": [
+      0.2,
+      0.6,
+      1.4,
+      1.8
+    ],
+    "group_sizes": [
+      2,
+      2,
+      2,
+      2
+    ],
+    "observed_events": [
+      1,
+      1,
+      1,
+      1
+    ],
+    "occupied_bins": 4,
+    "p_value": 0.019516247864934208,
+    "small_expected_cells": true,
+    "statistic": 7.873015873015875,
+    "status": "approximate"
+  },
+  "input_sha256": "4fdda39bc6c68e4f4cac35f972dc0e1ba2bd0c331f0bb9a5e3df8d66a518fa5c",
+  "limitations": [
+    "HL沿用等宽分箱及非空组数减2自由度；p值为近似诊断，不代表已证明校准良好。",
+    "DCA仅为提供概率在指定阈值下的净获益计算，不选择或推荐临床阈值。",
+    "NRI是每个阈值分别定义的二分类结果，不是多类别或连续NRI。",
+    "IDI标准误与Z仅基于固定配对预测；不包括模型重新拟合不确定性，不提供显著性结论。"
+  ],
+  "llm_calls": 0,
+  "method": "prediction_evaluation_extended",
+  "n": 8,
+  "n_bins": 4,
+  "non_events": 4,
+  "scope_verification": "user_declared_not_independently_verified",
+  "source": "MedStat/src/analysis/model_evaluation.py",
+  "threshold": 0.5,
+  "threshold_rule": "probability >= threshold",
+  "warnings": [
+    "HL存在期望频数小于5的单元格；卡方近似可能不可靠。",
+    "DCA阈值1的权重无定义；模型及全部治疗净获益返回null。"
+  ]
+}

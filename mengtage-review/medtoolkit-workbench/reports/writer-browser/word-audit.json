@@ -1,0 +1,122 @@
+{
+  "manifest": {
+    "version": "09a9e2eeed064277adf9a2e8d4ba3427",
+    "audit_export_id": "1121b6d65ee74ba0b01ec9ce463f025b",
+    "audit_sha256": "d0ff5ad8e49c30ad87be4412b044bfea200608c8aaeeb9f66ebad3e5dbee7604",
+    "filename": "manuscript-09a9e2eeed064277adf9a2e8d4ba3427-1121b6d65ee74ba0b01ec9ce463f025b.docx",
+    "file_sha256": "b8a602617f7bd0b0df7468b7941b6a4645256ee89daec8c72e993fce453969e8",
+    "status": "approved",
+    "llm_calls": 0,
+    "translation": "none_saved_text_only",
+    "id": "c5a6c9a03c3e4e1fa12f951f70506010",
+    "kind": "word_export",
+    "project": "fca7698f9daf4ccaacc02f96d1a3ff41",
+    "created": "2026-11-21T09:34:57.059265+00:00",
+    "actor": "local_owner",
+    "identity_assurance": "single_owner_access_token"
+  },
+  "audit": {
+    "manuscript": {
+      "actor": "local_owner",
+      "checks": {
+        "blockers": [],
+        "rule_version": "writer-citations-v1",
+        "semantic_support": "requires_human_review",
+        "warnings": []
+      },
+      "created": "2026-11-21T09:34:56.445327+00:00",
+      "evidence_id": "4c40b28df76a4c598530caf2f9b71aa6",
+      "evidence_sha256": "7ceccabf4268da788e48e0cdf16da9327df71e8dce8d22fdfff76fc23303a35c",
+      "id": "09a9e2eeed064277adf9a2e8d4ba3427",
+      "identity_assurance": "single_owner_access_token",
+      "kind": "manuscript",
+      "llm_calls": 0,
+      "manuscript_id": "180798ce1d5d4e9ebe4f11c144c111e0",
+      "origin": "manual_draft",
+      "parent_version": "9662e5e9903242679bd80a0d75f4da8a",
+      "project": "fca7698f9daf4ccaacc02f96d1a3ff41",
+      "sections": [
+        {
+          "body": "Synthetic finding 42. [E:e1]",
+          "title": "结果"
+        }
+      ],
+      "title": "合成稿件 & Desktop"
+    },
+    "evidence": {
+      "actor": "local_owner",
+      "created": "2026-11-21T09:34:56.129223+00:00",
+      "id": "4c40b28df76a4c598530caf2f9b71aa6",
+      "identity_assurance": "single_owner_access_token",
+      "items": [
+        {
+          "classification": "synthetic",
+          "document_id": "66eff6485b9742e999662706891d8a03",
+          "document_sha256": "007d34c34b7cbe78e39e219fd6f0ced788ba0bd929226543927edc930cd9102d",
+          "excerpt": "Synthetic finding 42.",
+          "file_sha256": "4fca7f9469b2117f31104f526739dd6e63083f0ec066d68f3eda972290c3b65b",
+          "id": "e1",
+          "lineage_assurance": "manual_ids_not_linked_to_hunter",
+          "locator": "p:1",
+          "report_id": "",
+          "source": "Synthetic source — 中文 & <test>",
+          "study_ids": [],
+          "support_assurance": "human_declared",
+          "support_note": "Synthetic only, no clinical inference",
+          "text_sha256": "53df00108806ff2314952ec7d5689a0bffba84ce65f5f167fb5fd6fb987c6182",
+          "verified_by": "Synthetic Author"
+        }
+      ],
+      "kind": "evidence",
+      "label": "章节证据",
+      "parent_id": null,
+      "project": "fca7698f9daf4ccaacc02f96d1a3ff41"
+    },
+    "reviews": [
+      {
+        "actor": "local_owner",
+        "author": "Synthetic Author",
+        "author_assurance": "owner_declared_name",
+        "decision": "approved",
+        "hash": "6241c03db7acf6cd0e5f85922313f9ac3a6e6bb52d58a61bc638c1526cf2b7b3",
+        "manuscript_sha256": "3187099fd1b9cb6aff54509c10907ce1f6bd07a556dcafd25f178e2ac0ea7d54",
+        "note": "Checked",
+        "previous_hash": "",
+        "support_confirmed": true,
+        "timestamp": "2026-11-21T09:34:56.545361+00:00",
+        "version": "09a9e2eeed064277adf9a2e8d4ba3427"
+      }
+    ],
+    "status": "approved",
+    "is_current": true,
+    "exported_at": "2026-11-21T09:34:57.035030+00:00",
+    "markdown": "# 合成稿件 & Desktop\n\n已获作者批准 · 版本 09a9e2eeed064277adf9a2e8d4ba3427\n\n## 结果\n\nSynthetic finding 42. [E:e1]\n\n## 引用证据\n\n- [E:e1] Synthetic source — 中文 & <test>；p:1；原件 SHA256 4fca7f9469b2117f31104f526739dd6e63083f0ec066d68f3eda972290c3b65b\n  摘录：Synthetic finding 42.\n",
+    "references": [
+      {
+        "classification": "synthetic",
+        "document_id": "66eff6485b9742e999662706891d8a03",
+        "document_sha256": "007d34c34b7cbe78e39e219fd6f0ced788ba0bd929226543927edc930cd9102d",
+        "excerpt": "Synthetic finding 42.",
+        "file_sha256": "4fca7f9469b2117f31104f526739dd6e63083f0ec066d68f3eda972290c3b65b",
+        "id": "e1",
+        "lineage_assurance": "manual_ids_not_linked_to_hunter",
+        "locator": "p:1",
+        "report_id": "",
+        "source": "Synthetic source — 中文 & <test>",
+        "study_ids": [],
+        "support_assurance": "human_declared",
+        "support_note": "Synthetic only, no clinical inference",
+        "text_sha256": "53df00108806ff2314952ec7d5689a0bffba84ce65f5f167fb5fd6fb987c6182",
+        "verified_by": "Synthetic Author"
+      }
+    ],
+    "llm_calls": 0,
+    "format": "local_markdown_and_audit_json_no_translation",
+    "id": "1121b6d65ee74ba0b01ec9ce463f025b",
+    "kind": "export",
+    "project": "fca7698f9daf4ccaacc02f96d1a3ff41",
+    "created": "2026-11-21T09:34:57.035053+00:00",
+    "actor": "local_owner",
+    "identity_assurance": "single_owner_access_token"
+  }
+}

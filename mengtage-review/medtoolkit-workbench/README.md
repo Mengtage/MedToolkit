@@ -1,64 +1,61 @@
-# Mengtage 科研工作台
+# MedToolkit · 本地桌面整合版
 
-本地研发版：统一项目、可恢复任务队列、PubMed检索、MedStat相关性计算、Gemini证据约束章节草稿，以及适配竖屏的项目/检索页面。原始模块集中在modules，用户提供的Skill集中在skills，仅作为流程参考，未安装进全局Agent环境。
+本目录包含截至2026-11-21的累计源码，无需先应用历史增量ZIP。统一入口覆盖MedHunter、MedStat和PaperWriter；Gemini保持空白，统计限合成数据，手机暂缓。当前为本机单所有者研发版本。
 
-## 运行
+## 启动
 
-Linux/macOS、Python 3.11以上；在本目录建立独立虚拟环境并安装requirements.txt。
+已验收Linux/Python 3.14；Windows使用WSL。原生Windows不在支持范围（文件锁依赖fcntl）。Python依赖需要联网安装，本包不含虚拟环境。
 
 ```bash
+cd mengtage-review/medtoolkit-workbench  # 从仓库根目录进入；ZIP用户进入解压目录
 python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-.venv/bin/python -m unittest discover -s tests -v
-.venv/bin/python -m workbench create '研究问题'
-.venv/bin/python -m workbench projects
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python scripts/start_local.py
 ```
 
-任务输入为JSON文件，使用返回的项目/任务ID：
+打开 `http://127.0.0.1:8765/`，将终端显示的本次访问令牌输入页面。该令牌不写入文件或浏览器存储；退出服务后重新启动会产生新令牌，项目数据保留。也可预先设置至少32字符的 `WORKBENCH_ACCESS_TOKEN`，使用已有令牌。启动器固定清空Gemini密钥和型号，不调用模型。
+
+数据默认保存于本包的 `runtime/`。可使用 `--data /绝对路径/项目数据 --port 8765` 指定位置和端口。按Ctrl+C停止服务。只监听127.0.0.1，不直接用于公网部署；工作台令牌代表该数据目录的本机所有者。
+
+精确验收环境版本见 `requirements-tested.txt`，是Linux/Python 3.14环境快照；一般安装使用 `requirements.txt`。离线设备需另行准备适配自身系统的依赖轮子。
+
+## 入口与流程
+
+| 入口 | 已接入能力 |
+|---|---|
+| `/` 工作台 | 创建项目、有限PubMed检索、去重与冲突复核、统计任务、产物查看、RIS导出 |
+| `/sources` 来源集合 | 数据库/注册库来源登记、集合版本、跨来源去重；不是所有数据库的在线连接器 |
+| `/screening` 筛选 | 筛选前checkpoint、独立人类/模型提交、揭盲、人工裁决、全文、研究映射和所选来源链PRISMA |
+| `/writer` 写作 | 公开/合成原文、Hunter/Stat证据绑定、章节编辑与版本、作者审核、Markdown/Word/审计JSON |
+
+筛选入口需从工作台准备批次后使用带批次ID的链接。人类与模型侧使用独立评审令牌；模型判断当前由人工导入，不代表真实LLM运行。Writer捕获Hunter全文需该批次人类裁决者令牌；工作台令牌不能冒充它。
+
+MedStat包含相关性、列联表、组间检验、TableOne、OLS/Logistic、Poisson/Gamma、插补和预测评估（含HL/DCA/NRI/IDI）。输入示例见 `examples/`；保留原统计默认口径。真实病例数据尚未接入。
+
+Writer从已保存版本导出，修改正文或证据需重新审核。Hunter裁决/映射更新或原文替换使旧绑定停止新审核/导出；已导出文件不覆盖。旧统计任务若缺少完成时哈希不能自动追认为原生证据。逐字匹配与引用ID校验不等于论断正确，支持性由作者核对。
+
+## 附加依赖
+
+- PDF原文解析：系统安装Poppler的 `pdfinfo`、`pdftotext`；扫描PDF需先OCR，本包不自动OCR。
+- Word生成：python-docx随Python依赖安装；无需安装Office。
+- 实际PDF排版预览：安装LibreOffice Writer及中文字体，运行 `scripts/office_render.py 输入.docx 输出目录`。不影响只导出Word。
+- 桌面自动化验收：另装Node、Playwright和Chromium，见 [浏览器说明](scripts/browser/README.md)。正常使用应用不需要这些测试依赖。
+
+## 验证与交接
+
+完整ZIP发行包包含MANIFEST.json，可运行 `python3 scripts/verify_package.py` 核对文件哈希；Git检出以提交记录为准，不附带ZIP清单。执行测试后reports会更新。
 
 ```bash
-.venv/bin/python -m workbench enqueue PROJECT_ID search search.json
-.venv/bin/python -m workbench run JOB_ID
-.venv/bin/python -m workbench jobs PROJECT_ID
+.venv/bin/python scripts/validate.py
 ```
 
-`search.json`：`{"query":"anesthesia AND postoperative pain","limit":20}`。
-检索调用PubMed，复用Hunter XML解析；显示命中数和取得数，超过上限明确标记不完整。不会自动筛除或按标题合并文献；旧版去重/LLM筛选保持在原模块，默认策略仍待决定。
+最近完整Python检查235项通过；主工作台38项、Writer7项、Hunter接入3项桌面流程均有验收记录，具体运行轮次见 [当前验收摘要](reports/ACCEPTANCE_SUMMARY.md)。Word已用LibreOffice实际渲染；Microsoft Word/WPS桌面未实测。
 
-统计任务输入见examples/statistics.json，仅合成数据验收；复用MedStat Pearson/Spearman实现，不调用模型。其他统计方法保留在modules，尚未接入统一队列或通过方法学验证。
+- [当前进展](PROGRESS.md) / [后续计划](NEXT_STEPS.md)
+- [总交接](docs/handoffs/medtoolkit-handoff-20261120.md)
+- [Writer交接](docs/handoffs/medpaperwriter-handoff-20261120.md)
+- [Stat交接](docs/handoffs/medstat-handoff-20261121.md)
+- `reports/`：分阶段报告与合成验收证据；`docs/history/`：整理前历史说明。
+- `modules/`：保留的旧模块及适配来源。不要直接把旧模块的README当作统一工作台能力；其独立应用及模型客户端未因此完成验收。
 
-写作任务输入见examples/write.json。服务端通过环境变量配置GEMINI_API_KEY、GEMINI_MODEL；不在聊天或仓库填写密钥。每次仅送显式批准的公开证据，字符限额20000、最多一次生成请求、最多3000输出token。结果记录服务端实际token用量。引用ID错误与没有引用均不能通过机器检查；所有草稿仍需人工核验事实与数字。当前为单章节生成适配器，完整多步写作agent与自动证据检索尚未完成；不会将其称为已完成的完整agent。
-
-## 手机布局预览
-
-服务端配置至少32字符的WORKBENCH_ACCESS_TOKEN后：
-
-```bash
-.venv/bin/python -m workbench serve --port 8765
-```
-
-默认只监听127.0.0.1。浏览器打开本地地址，在页面输入访问令牌。令牌仅保留在页面内存，不写浏览器持久存储。该页面支持自然语言填写研究问题、检索任务提交、运行及产物查看；统计可在页面输入合成数据JSON，写作暂通过CLI输入，完整自然语言编排尚未接入。远程手机访问需经带HTTPS的认证网关，不直接公网暴露本地服务。
-
-## 状态与安全边界
-
-SQLite保存任务和输入，项目目录权限0700、数据库及产物0600；磁盘未加密，属于单所有者本地研发版。不得用于真实病例；身份映射、敏感字段检查、加密存储、保留期/删除、备份恢复、分用户权限仍需生产实现。统计入口仅允许synthetic标记，写作仅允许public标记，这不是自动识别敏感信息的能力。
-
-任务状态queued/running/completed/failed/needs_review。完成任务不可重复运行，同项目同输入复用任务ID。进程中断后先确认没有工作线程，再运行`python -m workbench recover`将不确定任务标记为待复核，避免重复远端调用。未提供自动重试付费任务或强制取消正在进行的HTTP请求。
-
-Skills中旧版流程不自动生效；本目录README与统一入口描述当前实际能力。modules中的旧版应用仅作为源码与迁移对象，不要直接运行并开放公网。本版已按修复要求更新统计逻辑；后续改变研究范围或方法选择仍需决定，来源版本见source-version.json。
-
-Gemini接口依据：[Google官方generateContent文档](https://ai.google.dev/api/generate-content)。
-
-## 新增资料与复核
-
-20份他山Skill主说明见skills/catalog，58份配套文档见skills/catalog-resources。脚本仅有清单，未把缺失脚本伪装成可运行工具。Zotero的4个组件已按原材料提取至skills/zotero，仅完成语法检查，未连接用户桌面、未重启Zotero或写入文献库。当前可在检索任务后导出RIS。
-
-失败/待复核任务可使用`retry JOB_ID --confirmed`建立新任务，旧任务及产物保留；重复确认同一失败任务不会生成多个重试任务。执行中的任务持有跨进程锁，恢复操作不会将活跃工作误标记为中断。
-
-已通过15项本地测试；真实PubMed查询抓取3条并导出RIS，完整命中数大于获取数时标注不完整；合成数据Pearson计算返回r=1、n=4。没有Gemini调用。完整验证记录见validation-tests.txt与validation-live.json。
-
-## 统计修复版
-
-基础15项与统计58项检查通过，完整运行命令：`.venv/bin/python scripts/validate.py`。修复前后对照见reports/ACCEPTANCE_SUMMARY.md、reports/baseline及source-diff.json。统计依赖现要求SciPy>=1.15与statsmodels>=0.14。
-
-分类/离散缺失尚无适用模型，明确拒绝；linear/ridge只允许单次插补，不输出多重插补推断。数值缺失码需按变量字典显式给出，999不再自动认作缺失。Web端均值合并使用真实逐份估计及方差，有限样本自由度采用Barnard–Rubin。
+完整包不含真实项目数据库、凭据、.git历史、虚拟环境或本机浏览器/Office运行时。保留AUTHORS、NOTICE、AI_DISCLOSURE及原模块文档；继承的source-version.json记录历史来源，Git版本以当前提交为准；完整ZIP发行包另附RELEASE.json与MANIFEST.json。
