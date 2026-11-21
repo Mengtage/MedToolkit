@@ -133,6 +133,33 @@ def _evaluate_record_rule_based(item, protocol):
                 **({'quote': quote} if stage == 'full_text' else {}),
             }
 
+    # 3b. If the protocol requires AI / ML / deep learning / LLM / algorithmic modeling, check that at least one AI/ML concept or nociception index is present
+    ai_protocol = any(k in incl_lower or k in (protocol.get('question') or '').lower() for k in ('artificial intelligence', 'machine learning', 'deep learning', 'large language model', 'neural network', '人工智能', '机器学习', '深度学习', '大模型'))
+    if ai_protocol:
+        ai_signals = (
+            'artificial intelligence', 'machine learning', 'deep learning', 'neural network', 'cnn', 'lstm', 'transformer',
+            'random forest', 'xgboost', 'catboost', 'lightgbm', 'support vector', 'svm', 'logistic regression', 'lasso',
+            'ridge', 'elastic net', 'gradient boosting', 'autoencoder', 'computer vision', 'facial expression',
+            'large language model', 'llm', 'chatgpt', 'gpt-4', 'gemini', 'copilot', 'ernie', 'natural language processing',
+            'nociception level', 'nol ', 'nol-', 'analgesia nociception index', 'surgical pleth index', 'spi ', 'ani ',
+            'biosignal', 'photoplethysmograph', 'wearable', 'algorithm', 'predictive model', 'prediction model', 'robot',
+            'closed-loop', 'closed loop',
+            '人工智能', '机器学习', '深度学习', '神经网络', '大模型', '自然语言处理', '预测模型', '随机森林', '算法', '闭环',
+        )
+        # Note: psychological "neuro-linguistic programming" is not AI natural language processing
+        cleaned_for_ai = re.sub(r'neuro-linguistic programming\s*\(nlp\)', 'psychological_therapy', combined)
+        cleaned_for_ai = re.sub(r'neuro-linguistic programming', 'psychological_therapy', cleaned_for_ai)
+        if not any(sig in cleaned_for_ai for sig in ai_signals):
+            code = _pick_valid_reason_code('intervention', protocol)
+            return {
+                'record_id': item['record_id'],
+                'decision': 'exclude',
+                **({'reason_code': code} if code else {}),
+                'reason': '规则辅助筛查排除：未涉及人工智能、机器学习或客观数字化监测算法（干预不符）',
+                'locator': locator,
+                **({'quote': quote} if stage == 'full_text' else {}),
+            }
+
     # 4. Positive keyword matching against question & inclusion criteria
     q_terms = _extract_protocol_terms(protocol.get('question', '') + ' ' + protocol.get('inclusion', ''))
     matched = [t for t in q_terms if t in combined]
@@ -336,6 +363,22 @@ def batch_register_fulltext(fulltext_service, review, actor, mode='auto_snapshot
 TRIAL_ID_RE = re.compile(r'\b(NCT\d{6,10}|ChiCTR[A-Za-z0-9-]{5,18}|ISRCTN\d{6,10}|KCT\d{6,10}|ACTRN\d{10,16}|UMIN\d{6,12}|EUCTR\d{4}-\d{6}-\d{2})\b', re.I)
 
 
+def _cohort_signature(rec, combined):
+    """Build a cohort signature (first_author + sample_size/recordings) to detect multi-report studies even when one report omits the NCT ID."""
+    authors = rec.get('authors') or []
+    if not authors:
+        return None
+    first_au = re.sub(r'[^a-z0-9]', '', str(authors[0]).lower())
+    second_au = re.sub(r'[^a-z0-9]', '', str(authors[1]).lower()) if len(authors) > 1 else ''
+    if not first_au:
+        return None
+    # Look for distinct sample counts >= 25 in the text (e.g. "155 facial expressions", "65 patients")
+    counts = sorted({int(n) for n in re.findall(r'\b([2-9]\d|[1-9]\d{2,4})\s+(?:patients|participants|subjects|women|children|infants|adults|recordings|facial expressions|videos|cases)\b', combined, re.I)})
+    if not counts:
+        return None
+    return (first_au, second_au, tuple(counts))
+
+
 def suggest_study_mappings(study_service, review, actor):
     """Automatically suggest study_ids, verbatim quote, locator, and grouping reason for all included full-text reports."""
     state = study_service.state(review, actor)
@@ -343,7 +386,8 @@ def suggest_study_mappings(study_service, review, actor):
         raise ValueError('请先完成全部全文裁决后再生成研究映射建议')
     suggestions = []
     trial_groups = {}
-    cohort_groups = {}
+    cohort_to_study_id = {}
+    raw_items = []
     for idx, item in enumerate(state['records'], 1):
         rid = item['record_id']
         rec = item['record']
@@ -354,11 +398,34 @@ def suggest_study_mappings(study_service, review, actor):
         combined = f'{title}\n{abstract}\n{full_text}'
         locator, quote = _find_verbatim_quote(rec)
         trials = sorted({m.upper() for m in TRIAL_ID_RE.findall(combined)})
+        sig = _cohort_signature(rec, combined)
+        if trials:
+            sids = [f'study_{re.sub(r"[^A-Za-z0-9_-]", "_", t.lower())}' for t in trials]
+            if sig:
+                cohort_to_study_id[sig] = (sids, trials[0])
+        raw_items.append((rid, rec, combined, locator, quote, trials, sig))
+
+    # Second pass: also group reports that share an exact (first_author, second_author, sample_counts) signature
+    sig_occurrences = {}
+    for rid, rec, combined, locator, quote, trials, sig in raw_items:
+        if sig:
+            sig_occurrences.setdefault(sig, []).append(rid)
+
+    for rid, rec, combined, locator, quote, trials, sig in raw_items:
         if trials:
             study_ids = [f'study_{re.sub(r"[^A-Za-z0-9_-]", "_", t.lower())}' for t in trials]
             for t in trials:
                 trial_groups.setdefault(t, []).append(rid)
             reason = f'基于全文识别到临床试验注册号 {", ".join(trials)} 进行同源研究归并'
+        elif sig and sig in cohort_to_study_id:
+            study_ids, matched_trial = cohort_to_study_id[sig]
+            trial_groups.setdefault(matched_trial, []).append(rid)
+            reason = f'基于第一/第二作者及完全相同的队列样本量特征与同源注册试验 {matched_trial} 归并为同一独立研究'
+        elif sig and len(sig_occurrences.get(sig, [])) > 1:
+            shared_sid = f'study_cohort_{sig[0]}_{sig[2][0]}'
+            study_ids = [shared_sid]
+            trial_groups.setdefault(shared_sid, []).append(rid)
+            reason = f'基于相同作者团队与相同受试者/样本记录数（n={sig[2][0]}）归并为同一独立研究'
         else:
             authors = rec.get('authors') or []
             first_author = re.sub(r'[^a-z0-9]', '', (authors[0] if authors else '').lower())[:16]

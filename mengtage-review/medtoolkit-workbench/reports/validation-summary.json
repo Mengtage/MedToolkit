@@ -37,7 +37,7 @@
       }
     }
   ],
-  "validated_at": "2026-11-21T15:08:25.459734+00:00",
+  "validated_at": "2026-11-21T15:22:31.272417+00:00",
   "python": "3.14.4",
   "source_sha256": {
     "workbench/review_access.py": "d53c26e244a522322de52828ff4139a59b6f73a2c89320ae2c70fce17e5c70e7",
@@ -55,7 +55,7 @@
     "workbench/writer.py": "d83530d7ae244f4fc7c12343f8c8247975ada99929a32253d0cc5343c65a0715",
     "workbench/server.py": "b79d4165d678b67a9d65d81459c042fbdb8cdb867979e75b17960e43aa7eaf55",
     "workbench/regression.py": "da9b43675744660013626c294fdeb46db5ca1dbe8e8bd5009155bd51d01b2fce",
-    "workbench/writer_autopilot.py": "a0321936370804de7edec2330c6725804e791d268eedfcc7a6c5ddeee69c7798",
+    "workbench/writer_autopilot.py": "13f6f903b9f3b003d8c2292049f01b0376a0d71ed281a3fde9c0e11c7fea6a7c",
     "workbench/writer_docx.py": "9265e39b47ee82cfad74976f9bbe6cf07e1ff1dcf786c38022165f640c7a7d65",
     "workbench/sources.py": "abe684e603d4fc2022522e98a32d8dccf23afd908640744cf158a44b3898adc9",
     "workbench/studies.py": "6ffde0e714f3e7a192a74944e33207539719c2a6d9e9db6f51ef03ed2b60d7b3",
@@ -63,7 +63,7 @@
     "workbench/categorical.py": "95e1a64a073fa9ef90b7647da8f092ff762d4c241beecb678e1e74ea0cad3ab3",
     "workbench/importers.py": "520debd90556041113e893c25717bf82c426fc3455ab241b58d9626c63281b3f",
     "workbench/evaluation_extended.py": "0e8f0e953de7920a6a8c15ab78e4b2e4689939e52ad18d23978f80a84ec1d09c",
-    "workbench/screening_autopilot.py": "1e51ae8848e0ef206cbf7c04550f5e5f86f8710d43c5f663253c6c97e1669828",
+    "workbench/screening_autopilot.py": "0182a89d0d6ec640b5d3217358784f2f31b0a581e527fb47d27b04be8b22ab16",
     "workbench/screening.py": "2c9da1e8b74217ed6c3284c5c7470932ab241b260a8522ea4d1ebade91ce672f",
     "workbench/deduplication_cli.py": "7c00f9e9d0f0b9ae3ecfa69c75c5cf7ed43b7da8246936ec3ed59f5ed8cdc62a",
     "workbench/writer_hunter.py": "f8ea867243660c08d24952943d326ee0201854612943238aec97c414333b83cb",

@@ -102,30 +102,127 @@ def _format_p_sci(p_val):
     return f'{p:.2f}'
 
 
-def _classify_study_domain(item):
-    bib = item.get('bibliographic') or {}
-    text = f"{bib.get('title', '')} {item.get('excerpt', '')}".lower()
-    if any(k in text for k in ('closed-loop', 'pca', 'analgesia nociception index', 'ani', 'nol', 'nociception level', 'infusion', 'dosing', '闭环', '镇痛泵')):
-        return '闭环镇痛与连续伤害感受监测'
-    if any(k in text for k in ('facial', 'wearable', 'ecg', 'ppg', 'eeg', 'vital', 'biosignal', 'physiol', 'sensor', '可穿戴', '面部', '生理')):
-        return '多模态生物信号与客观疼痛评估'
-    if any(k in text for k in ('random', 'rct', 'clinical trial', 'prospective trial', '随机对照')):
-        return '临床试验与围术期路径验证'
-    return '临床预测模型与风险分层'
+def _doc_full_text(store, project, item):
+    try:
+        from .writer import WriterService
+        doc = WriterService(store).load(project, item['document_id'], 'document')
+        pages = (doc.get('snapshot') or {}).get('pages') or []
+        return '\n'.join(p.get('text', '') for p in pages)
+    except Exception:
+        return item.get('excerpt', '')
 
 
-def _infer_study_design(item):
+def _extract_study_metrics(full_text, title=''):
+    """Extract quantitative metrics (sample size N, AUROC, r, OR/aOR, P-value, trial ID) from report fulltext/abstract."""
+    combined = f'{title}\n{full_text}'
+    metrics = []
+    # Sample size
+    for pat in (
+        r'\b(?:total of|enrolled|included|analyzed|comprising|in)\s+([1-9]\d{1,5}(?:,\d{3})*)\s+(?:adult\s+|pediatric\s+|surgical\s+|postoperative\s+|gastric\s+|obstetric\s+|cesarean\s+|female\s+)?(?:patients|participants|women|children|infants|records|recordings|cases|procedures)\b',
+        r'\b([1-9]\d{1,5}(?:,\d{3})*)\s+(?:adult\s+|pediatric\s+|surgical\s+|postoperative\s+)?(?:patients|participants|women|children|infants|facial expressions|anesthesia records)\b',
+        r'\b[Nn]\s*=\s*([1-9]\d{1,5}(?:,\d{3})*)\b',
+    ):
+        m = re.search(pat, combined, re.I)
+        if m:
+            metrics.append(f"样本量 N = {m.group(1)}")
+            break
+    # AUROC / AUC
+    aucs = re.findall(r'\b(?:AUROC|AUC|c-statistic)s?\s*(?:of|=|:|\(|was|were|reached|achieved)?\s*(0\.\d{2,3}(?:\s*(?:to|–|-)\s*0\.\d{2,3})?)', combined, re.I)
+    if aucs:
+        metrics.append(f"AUROC = {aucs[0]}")
+    # Accuracy / sensitivity / specificity / F1 / R2
+    acc = re.search(r'\b(?:accuracy|balanced accuracy)\s*(?:of|=|:|\(|was)?\s*(\d{2,3}(?:\.\d+)?%)', combined, re.I)
+    if acc:
+        metrics.append(f"准确率 {acc.group(1)}")
+    f1 = re.search(r'\bF1(?:-score|\s+score)?\s*(?:of|=|:|\(|was)?\s*(0\.\d{2,3}|\d{2,3}(?:\.\d+)?%)', combined, re.I)
+    if f1:
+        metrics.append(f"F1 = {f1.group(1)}")
+    r2 = re.search(r'\bR\^?2\s*=\s*(0\.\d{2,3}|\d{2}(?:\.\d+)?%)', combined, re.I)
+    if r2:
+        metrics.append(f"R² = {r2.group(1)}")
+    corr = re.search(r'\b(?:r|ICC)\s*=\s*(0\.\d{2,3})', combined)
+    if corr:
+        metrics.append(f"相关性 r/ICC = {corr.group(1)}")
+    aor = re.search(r'\b(?:aOR|OR|odds ratio)\s*(?:of|=|:|\(|was)?\s*(\d+\.\d{1,2})', combined, re.I)
+    if aor:
+        metrics.append(f"OR/aOR = {aor.group(1)}")
+    p_m = re.search(r'\b[Pp]\s*([<≤=]\s*0\.\d{2,4})', combined)
+    if p_m:
+        p_raw = p_m.group(1).replace(' ', '')
+        if re.match(r'^=0\.000+$', p_raw):
+            p_raw = '< 0.001'
+        else:
+            p_raw = p_raw[0] + ' ' + p_raw[1:]
+        metrics.append(f"P {p_raw}")
+    trial = re.search(r'\b(NCT\d{6,10}|ChiCTR[A-Za-z0-9-]{5,18}|KCT\d{6,10}|ISRCTN\d{6,10})\b', combined, re.I)
+    if trial:
+        metrics.append(f"注册号 {trial.group(1).upper()}")
+    return '；'.join(metrics)
+
+
+def _extract_key_finding_sentence(full_text, title=''):
+    """Extract the most informative empirical conclusion/results sentence from the report snapshot."""
+    lines = [ln.strip() for ln in full_text.splitlines() if ln.strip() and not ln.strip().startswith(('Title:', 'Authors:', 'Journal:', 'Identifiers:', 'Full Text /'))]
+    body = ' '.join(lines)
+    if not body:
+        return title
+    sentences = [s.strip() for s in re.split(r'(?<=[.!?。！？])\s+', body) if len(s.strip()) >= 35]
+    if not sentences:
+        return body[:240]
+    scored = []
+    for idx, s in enumerate(sentences):
+        sl = s.lower()
+        if any(bad in sl for bad in ('date of registration', 'trial registration', 'registered at', 'ethics committee', 'institutional review board')):
+            continue
+        if s[0].isdigit() and ')' in s[:15]:
+            continue
+        score = 0
+        if any(k in sl for k in ('results:', 'conclusion:', 'conclusions:', 'findings:', 'outperformed', 'significantly', 'auroc', 'auc', 'accuracy', 'reduced', 'decreased', 'associated with', 'demonstrated', 'achieved')):
+            score += 4
+        if any(k in sl for k in ('background:', 'methods:', 'purpose:', 'enrolled', 'initially included', 'were analysed')):
+            score -= 2
+        if re.search(r'\d', s):
+            score += 2
+        if idx >= len(sentences) // 2:
+            score += 1
+        scored.append((score, idx, s))
+    if not scored:
+        return sentences[-1][:240]
+    scored.sort(key=lambda x: (-x[0], x[1]))
+    best = re.sub(r'^(?:\[?RESULTS\]?|\[?CONCLUSIONS?\]?|\[?FINDINGS\]?|\[?PURPOSE\]?|\[?BACKGROUND\]?|\[?METHODS\]?)\s*:?\s*', '', scored[0][2], flags=re.I).strip()
+    best = re.sub(r'\.?\s*Clinical relevance-\s*.*$', '.', best, flags=re.I)
+    if len(best) > 220:
+        cut = best[:217].rsplit(' ', 1)[0]
+        best = cut.rstrip('.,;:') + '...'
+    elif best and best[-1] not in '.!?。！？':
+        best += '.'
+    return best
+
+
+def _classify_study_domain(item, full_text=''):
     bib = item.get('bibliographic') or {}
-    text = f"{bib.get('title', '')} {item.get('excerpt', '')}".lower()
-    if any(k in text for k in ('randomized', 'randomised', 'rct', '随机对照')):
-        return '随机对照试验 (RCT)'
-    if any(k in text for k in ('prospective', '前瞻性')):
-        return '前瞻性队列/验证研究'
-    if any(k in text for k in ('external validation', 'multicenter', 'multi-center', '多中心', '外部验证')):
-        return '多中心回顾/外部验证队列'
-    if any(k in text for k in ('retrospective', 'cohort', '回顾性')):
-        return '回顾性队列/建模研究'
-    return '临床观察与算法验证研究'
+    text = f"{bib.get('title', '')} {item.get('excerpt', '')} {full_text}".lower()
+    if any(k in text for k in ('large language model', 'llm', 'chatgpt', 'gpt-4', 'gemini', 'copilot', 'ernie', 'natural language processing', 'stigmatizing language', '大模型', '自然语言处理')):
+        return '大语言模型与临床自然语言处理 (LLM & NLP)'
+    if any(k in text for k in ('facial', 'video', 'action unit', 'camera', 'socially assistive robot', 'audio', 'voice', 'infant', '面部', '视频', '计算机视觉', '机器人')):
+        return '计算机视觉、面部动作单元与具身交互 (Computer Vision & Robotics)'
+    if any(k in text for k in ('closed-loop', 'analgesia nociception index', 'ani ', 'nol ', 'nol-', 'nociception level', 'surgical pleth index', 'spi ', 'photoplethysmograph', 'ppg', 'wearable', 'biosignal', 'ecg', 'semg', '闭环', '生理', '可穿戴', '伤害性感受')):
+        return '连续生理波形、可穿戴传感与闭环镇痛滴定 (Biosignals, Wearables & NOL)'
+    return '多源电子病历、高频生命体征与精准风险预测 (Multimodal EHR & Predictive ML)'
+
+
+def _infer_study_design(item, full_text=''):
+    bib = item.get('bibliographic') or {}
+    text = f"{bib.get('title', '')} {item.get('excerpt', '')} {full_text}".lower()
+    if any(k in text for k in ('randomized', 'randomised', 'rct', 'single-blind', 'double-blind', '随机对照')):
+        return '前瞻性随机对照试验 (RCT)'
+    if any(k in text for k in ('external validation', 'two university hospitals', 'multicenter', 'multi-center', '多中心', '外部验证')):
+        return '多中心队列 / 外部验证研究'
+    if any(k in text for k in ('prospective', 'pilot study', 'nct0', 'kct0', '前瞻性')):
+        return '前瞻性临床队列 / 验证研究'
+    if any(k in text for k in ('retrospective', 'cohort', 'cross-sectional', '回顾性')):
+        return '回顾性队列 / 建模研究'
+    return '临床实证与算法验证研究'
 
 
 def _summarize_stat_evidence(store, project, stat_items):
@@ -233,8 +330,11 @@ def build_sci_manuscript_sections(store, project, package, prisma_report=None, g
         db_str = 'PubMed 与生物医学文献数据库'
 
     domains = {}
+    full_texts = {}
     for e in bib_items:
-        dom = _classify_study_domain(e)
+        ft = _doc_full_text(store, project, e)
+        full_texts[e['id']] = ft
+        dom = _classify_study_domain(e, ft)
         domains.setdefault(dom, []).append(e)
 
     stat_summaries = _summarize_stat_evidence(store, project, stat_items)
@@ -254,7 +354,12 @@ def build_sci_manuscript_sections(store, project, package, prisma_report=None, g
     )
 
     # 2. Keywords
-    keywords_body = f"{question[:30]}；循证医学；系统证据综合；{guideline}；临床研究方法学"
+    kw_tokens = [w.strip() for w in re.split(r'[：:；;，,、（）()—\-\s]+', question) if 2 <= len(w.strip()) <= 12]
+    kw_list = []
+    for k in kw_tokens + ['人工智能', '循证医学', guideline, '系统证据综合', '临床研究方法学']:
+        if k and k not in kw_list:
+            kw_list.append(k)
+    keywords_body = '；'.join(kw_list[:7])
 
     # 3. Introduction
     intro_body = (
@@ -299,26 +404,31 @@ def build_sci_manuscript_sections(store, project, package, prisma_report=None, g
     domain_paragraphs = []
     for d_idx, (dom_name, dom_items) in enumerate(domains.items(), 1):
         dom_tags = ''.join(f"[E:{e['id']}]" for e in dom_items)
-        examples = []
-        for e in dom_items[:4]:
+        study_Syntheses = []
+        for e in dom_items:
             bib = e.get('bibliographic') or {}
             authors = bib.get('authors') or []
-            first_au = (authors[0].split()[0] if authors else e['id'])
+            raw_first = authors[0].strip() if authors else e['id']
+            parts_au = raw_first.split()
+            first_au = ' '.join(parts_au[:-1]) if len(parts_au) > 1 and len(parts_au[-1]) <= 3 and parts_au[-1].isupper() else (parts_au[0] if parts_au else e['id'])
             yr_m = re.search(r'(19|20)\d{2}', str(bib.get('pub_date') or ''))
-            yr = yr_m.group(0) if yr_m else ''
-            t_short = (bib.get('title') or e.get('source') or '')[:90].rstrip('.')
-            examples.append(f"{first_au} 等（{yr}）探讨了“{t_short}” [E:{e['id']}]")
-        example_str = '；'.join(examples)
+            yr = yr_m.group(0) if yr_m else 'n.d.'
+            ft = full_texts.get(e['id'], '')
+            design = _infer_study_design(e, ft)
+            metrics = _extract_study_metrics(ft, bib.get('title', ''))
+            finding = _extract_key_finding_sentence(ft, bib.get('title', ''))
+            metric_clause = f"（{design}；{metrics}）" if metrics else f"（{design}）"
+            study_Syntheses.append(f"- **{first_au} 等（{yr}）**{metric_clause}：{finding} [E:{e['id']}]")
         domain_paragraphs.append(
             f"### 3.{d_idx + 1} {dom_name}\n\n"
-            f"本主题共纳入 {len(dom_items)} 篇全文报告 {dom_tags}。代表性研究证据显示：{example_str}。"
-            f"上述研究从临床实证角度验证了该方向在目标人群中的测量信效度、预测区分度或临床干预效应 {dom_tags}。"
+            f"该方向共纳入 {len(dom_items)} 篇全文报告（涉及 {len({s for e in dom_items for s in (e.get('study_ids') or [e['id']])})} 项独立研究） {dom_tags}。各纳入研究的人群设计、定量指标与主要实证发现如下：\n\n"
+            + '\n'.join(study_Syntheses)
         )
 
     char_rows = [
-        "**表 2  纳入研究核心特征与证据溯源汇总表（三线表）**\n",
-        "| 研究标识 | 第一作者 (年份) | 期刊 | 研究设计/主题领域 | 核心证据摘录与主要发现 | 文献引用 |",
-        "| :--- | :--- | :--- | :--- | :--- | :--- |",
+        "**表 2  纳入研究核心特征、定量指标与主要实证结论汇总表（三线表）**\n",
+        "| 研究标识 | 第一作者 (年份) | 来源期刊 | 研究设计 | 样本量与定量结果指标 | 核心实证结论与证据摘录 | 文献引用 |",
+        "| :--- | :--- | :--- | :--- | :--- | :--- | :--- |",
     ]
     for e in bib_items:
         bib = e.get('bibliographic') or {}
@@ -326,30 +436,33 @@ def build_sci_manuscript_sections(store, project, package, prisma_report=None, g
         first_au = authors[0] if authors else 'Author'
         yr_m = re.search(r'(19|20)\d{2}', str(bib.get('pub_date') or ''))
         yr = yr_m.group(0) if yr_m else 'n.d.'
-        journal = (bib.get('journal') or 'Journal').replace('|', '\\|')[:45]
-        design = _infer_study_design(e)
-        excerpt_clean = re.sub(r'\s+', ' ', (e.get('excerpt') or bib.get('title') or '')).replace('|', '\\|')[:110]
+        journal = (bib.get('journal') or 'Journal').replace('|', '\\|')[:42]
+        ft = full_texts.get(e['id'], '')
+        design = _infer_study_design(e, ft)
+        metrics = (_extract_study_metrics(ft, bib.get('title', '')) or '详见正文').replace('|', '\\|')
+        finding_clean = re.sub(r'\s+', ' ', _extract_key_finding_sentence(ft, bib.get('title', ''))).replace('|', '\\|')
         sids = _humanize_study_label(e.get('study_ids'), e['id'])
-        char_rows.append(f"| {sids} | {first_au} ({yr}) | {journal} | {design} | {excerpt_clean} | [E:{e['id']}] |")
+        char_rows.append(f"| {sids} | {first_au} ({yr}) | {journal} | {design} | {metrics} | {finding_clean} | [E:{e['id']}] |")
     char_table = '\n'.join(char_rows)
 
+    next_sec_no = len(domains) + 2
     stat_section = ''
     if stat_summaries:
-        stat_idx = len(domains) + 2
         stat_section = (
-            f"\n\n### 3.{stat_idx} 定量统计分析与模型性能汇总\n\n"
+            f"\n\n### 3.{next_sec_no} 定量统计分析与模型性能汇总\n\n"
             + '\n\n'.join(stat_summaries)
         )
+        next_sec_no += 1
 
     results_body = (
         f"### 3.1 文献检索与 PRISMA 筛选结果\n\n"
         f"检索共识别 {rec_id} 条原始文献记录，去重后对 {rec_scr} 条记录开展初筛，最终纳入 {rep_inc} 篇全文报告（归属 {stu_inc} 项独立研究） {all_bib_tags}。完整筛选流程见表 1。\n\n"
         f"{prisma_table}\n\n"
         + '\n\n'.join(domain_paragraphs)
-        + f"\n\n### 3.{len(domains) + 2 if not stat_summaries else len(domains) + 3} 纳入研究特征汇总\n\n"
-        f"表 2 汇总了全部纳入研究的第一作者、发表年份、来源期刊、研究设计及核心证据摘录。\n\n"
-        f"{char_table}"
         + stat_section
+        + f"\n\n### 3.{next_sec_no} 纳入研究特征汇总\n\n"
+        f"表 2 汇总了全部纳入研究的第一作者、发表年份、来源期刊、研究设计、样本量与定量结果指标及核心实证结论。\n\n"
+        f"{char_table}"
     )
 
     # 6. Discussion
