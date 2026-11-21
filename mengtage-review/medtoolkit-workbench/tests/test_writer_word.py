@@ -13,7 +13,12 @@ class WriterWordTest(unittest.TestCase):
   with patch('urllib.request.urlopen',side_effect=AssertionError('No network')):out=self.s.export_word(self.pid,m['id'])
   raw=base64.b64decode(out['content_base64']);self.assertEqual(sha(raw),out['file_sha256']);self.assertEqual(raw,self.store.artifact(self.pid,out['filename']).read_bytes())
   doc=Document(io.BytesIO(raw));text='\n'.join(p.text for p in doc.paragraphs)
-  self.assertIn('中文 & English <example> [E:e1]',text);self.assertIn('已获作者批准',text);self.assertIn('Synthetic finding 42.',text);self.assertEqual(len(doc.tables),1);self.assertEqual(doc.tables[0].cell(2,1).text,'a|b');self.assertEqual(doc.tables[0].cell(1,1).text,'42 [E:e1]')
+  self.assertIn('中文 & English <example> [1]',text);self.assertIn('[E:e1] → [1]',text);self.assertIn('已获作者批准',text);self.assertIn('Synthetic finding 42.',text);self.assertEqual(len(doc.tables),1);self.assertEqual(doc.tables[0].cell(2,1).text,'a|b');self.assertEqual(doc.tables[0].cell(1,1).text,'42 [1]')
+  tbl_borders=doc.tables[0]._tbl.tblPr.xpath('.//w:tblBorders/w:insideV/@w:val')
+  self.assertEqual(tbl_borders,['nil'])
+  academic_doc=Document(io.BytesIO(base64.b64decode(out['academic_content_base64'])))
+  academic_text='\n'.join(p.text for p in academic_doc.paragraphs)
+  self.assertIn('中文 & English <example> [1]',academic_text);self.assertNotIn('原件 SHA256',academic_text)
   self.assertEqual(out['manifest']['audit_sha256'],json_hash(out['audit']));self.assertEqual(self.s.load(self.pid,out['manifest']['id'])['version'],m['id'])
   with zipfile.ZipFile(io.BytesIO(raw)) as z:
    self.assertIsNone(z.testzip());self.assertNotIn(b'TargetMode="External"',z.read('word/_rels/document.xml.rels'))
@@ -35,5 +40,5 @@ class WriterWordTest(unittest.TestCase):
   headings=[p.text for p in doc.paragraphs if p.style.name=='Heading 2']
   self.assertIn('二级子标题',headings)
   joined='\n'.join(p.text for p in doc.paragraphs)
-  self.assertIn('第一行软换行 第二行同一段落 粗体 与 斜体 [E:e1]',joined)
+  self.assertIn('第一行软换行 第二行同一段落 粗体 与 斜体 [1]',joined)
   self.assertNotIn('**粗体**',joined)

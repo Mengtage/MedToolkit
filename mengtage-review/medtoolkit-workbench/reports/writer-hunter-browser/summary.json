@@ -16,9 +16,9 @@
   ],
   "page_errors": [],
   "source_sha256": {
-    "workbench/writer.py": "6879a1218af1c7a60605bcfd1533eff7d5a34bc67dd3323c3ea324e8e883584d",
-    "workbench/writer_hunter.py": "ceab0696e6d70562206cc6d5c7a9db78d638bbaf923ffed790d43cdd63efaa04",
-    "workbench/writer_docx.py": "95b48b6eb2adbe10441a4a9a6b3d85084eabd89ed0261252eb40199461806696",
+    "workbench/writer.py": "ae2b39036a6eb55893d1ace6348bd45af0a6fd779f1c2e419c925f0a6deb946a",
+    "workbench/writer_hunter.py": "f8ea867243660c08d24952943d326ee0201854612943238aec97c414333b83cb",
+    "workbench/writer_docx.py": "9265e39b47ee82cfad74976f9bbe6cf07e1ff1dcf786c38022165f640c7a7d65",
     "workbench/screening_http.py": "ec5e75a8e6cd666214a4ab5ea980f0b65ca1c7ac15573483353add59b9e24881",
     "web/writer.html": "df4104da471cafa68991854c9f536fc21d1941be0798aabe5c5531a19c3e8fdb",
     "web/writer.js": "d0c44f4c860bcd49836d132f6df9a5363ad355b68ec6a27e8cfdeb99438c2f1b",

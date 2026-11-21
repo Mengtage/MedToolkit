@@ -54,7 +54,8 @@ def capture(service,project,review,record_id,screening_event_hash,mapping_event_
     if row is None:raise ValueError('只能选择本批次最终纳入的全文报告')
     from .writer import WriterService
     record=row['record'];source=record.get('title','')+' · '+(record.get('doi') or record.get('pmid') or record['report_id'])
-    return WriterService(service.store).persist(project,'document',{'source':source,'classification':classification,'classification_assurance':'adjudicator_declared','snapshot':record['fulltext'],'origin':'native_hunter','native_hunter':row['binding'],'captured_by':actor,'screening_inclusion':'included_in_selected_fulltext_version','parent_changed_at_capture':view['parent_changed']})
+    bib={'title':(record.get('title') or '').strip(),'authors':record.get('authors') or [],'journal':(record.get('journal') or record.get('journal_title') or '').strip(),'pub_date':str(record.get('pub_date') or record.get('year') or '').strip(),'volume':str(record.get('volume') or '').strip(),'issue':str(record.get('issue') or '').strip(),'pages':str(record.get('pages') or '').strip(),'doi':(record.get('doi') or '').strip(),'pmid':str(record.get('pmid') or '').strip()}
+    return WriterService(service.store).persist(project,'document',{'source':source,'bibliographic':bib,'classification':classification,'classification_assurance':'adjudicator_declared','snapshot':record['fulltext'],'origin':'native_hunter','native_hunter':row['binding'],'captured_by':actor,'screening_inclusion':'included_in_selected_fulltext_version','parent_changed_at_capture':view['parent_changed']})
 
 
 def verify(store,project,obj):

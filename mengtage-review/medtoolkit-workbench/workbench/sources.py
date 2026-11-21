@@ -21,7 +21,7 @@ def validate_metadata(value,count):
 
 def records_valid(records):
     if not isinstance(records,list) or len(records)>1000:raise ValueError('每次最多1000条记录')
-    allowed={'title','abstract','pmid','doi','authors','journal','pub_date'}
+    allowed={'title','abstract','pmid','doi','authors','journal','pub_date','volume','issue','pages'}
     for record in records:
         if not isinstance(record,dict) or set(record)-allowed:raise ValueError('仅允许题名、摘要、PMID、DOI、作者、期刊和日期字段')
         if not isinstance(record.get('title'),str) or not record['title'].strip():raise ValueError('每条记录须有题名')

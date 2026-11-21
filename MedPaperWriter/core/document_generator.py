@@ -11,6 +11,7 @@
 from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from typing import Any, Dict, List
 
@@ -169,7 +170,43 @@ class DocumentGenerator:
                             run.font.size = Pt(10)
             current_row += 1
 
+        self._apply_three_line_borders(table)
         return table
+
+    @staticmethod
+    def _apply_three_line_borders(table):
+        """应用医学 SCI 标准三线表边框（顶线 1.5pt、表头底线 0.75pt、底线 1.5pt，无竖线）"""
+        def _border(container, edge, val="nil", sz=None):
+            el = OxmlElement(f"w:{edge}")
+            el.set(qn("w:val"), val)
+            if sz is not None:
+                el.set(qn("w:sz"), str(sz))
+                el.set(qn("w:space"), "0")
+                el.set(qn("w:color"), "000000")
+            container.append(el)
+
+        tbl_pr = table._tbl.tblPr
+        for old in tbl_pr.findall(qn("w:tblBorders")):
+            tbl_pr.remove(old)
+        borders = OxmlElement("w:tblBorders")
+        _border(borders, "top", "single", 12)
+        _border(borders, "left", "nil")
+        _border(borders, "bottom", "single", 12)
+        _border(borders, "right", "nil")
+        _border(borders, "insideH", "nil")
+        _border(borders, "insideV", "nil")
+        tbl_pr.append(borders)
+        if table.rows:
+            for c in table.rows[0].cells:
+                tc_pr = c._tc.get_or_add_tcPr()
+                for old in tc_pr.findall(qn("w:tcBorders")):
+                    tc_pr.remove(old)
+                cb = OxmlElement("w:tcBorders")
+                _border(cb, "top", "single", 12)
+                _border(cb, "bottom", "single", 6)
+                _border(cb, "left", "nil")
+                _border(cb, "right", "nil")
+                tc_pr.append(cb)
 
     def add_references(self, references: List[Dict[str, Any]], style: str = "vancouver",
                        language: str = "中文") -> List[str]:

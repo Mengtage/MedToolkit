@@ -31,6 +31,9 @@ from services.writing import truncate_preserving_structure, unified_diff
     ("队列研究", "strobe"),
     ("诊断准确性研究", "stard_2015"),
     ("临床预测模型", "tripod"),
+    ("AI预测模型", "tripod_ai"),
+    ("范围综述", "prisma_scr"),
+    ("Scoping Review", "prisma_scr"),
     ("叙述性综述", "narrative_review"),
 ])
 def test_guideline_routing(study_type, expected):
@@ -187,3 +190,21 @@ def test_format_references_batch():
     ])
     assert len(formatted) == 2
     assert all("[J]" in item for item in formatted)
+
+
+def test_vancouver_truncates_more_than_six_authors_and_formats_semicolon():
+    formatted = ReferenceFormatter("vancouver").format_reference({
+        "title": "Perioperative AI pain assessment.",
+        "authors": ["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8"],
+        "journal": "Anesthesiology",
+        "pub_date": "2025-06",
+        "volume": "142",
+        "issue": "6",
+        "pages": "101-110",
+        "doi": "10.1097/ALN.00001",
+        "pmid": "40123456",
+    })
+    assert "A1, A2, A3, A4, A5, A6, et al." in formatted
+    assert "A7" not in formatted
+    assert "2025;142(6):101-110." in formatted
+    assert "PMID: 40123456." in formatted

@@ -210,6 +210,60 @@ _NARRATIVE_STRUCTURE = """
 6. 参考文献
 """
 
+_PRISMA_SCR_STRUCTURE = """
+PRISMA-ScR 范围综述（Scoping Review）标准结构（Tricco et al., Ann Intern Med 2018）：
+1. 摘要（结构化摘要）
+   1.1 背景与目的（Background & Objectives）
+   1.2 纳入标准与信息来源（Eligibility Criteria [PCC] & Information Sources）
+   1.3 证据筛选与数据绘制方法（Study Selection & Data Charting）
+   1.4 结果（Results）
+   1.5 结论（Conclusions）
+2. 引言（Introduction）
+   2.1 临床背景与证据转化张力（Rationale）
+   2.2 研究目的与 PCC 框架问题（Objectives: Population, Concept, Context）
+3. 方法（Methods）
+   3.1 方法学框架与报告规范（Protocol & Reporting Framework: Arksey & O'Malley / JBI / PRISMA-ScR）
+   3.2 纳入与排除标准（Eligibility Criteria — PCC 框架）
+   3.3 信息来源与完整检索策略（Information Sources & Full Search Strategy）
+   3.4 文献去重与证据筛选流程（Deduplication & Selection of Sources of Evidence）
+   3.5 数据提取、报告—研究归并与证据综合方法（Data Charting Process, Study Mapping & Synthesis of Results）
+4. 结果（Results）
+   4.1 文献检索与筛选流程（Selection of Sources of Evidence & PRISMA Flow Diagram）
+   4.2 纳入研究的总体特征与方法学基线（Characteristics of Included Studies）
+   4.3 按核心临床或技术维度的证据综合（Synthesis of Results by Clinical/Technical Domain）
+   4.4 方法学成熟度、外部验证与临床效用映射（Methodological Maturity, Validation & Clinical Utility）
+5. 讨论（Discussion）
+   5.1 主要研究发现总结（Summary of Evidence）
+   5.2 关键临床与方法学机制剖析（Mechanistic & Methodological Interpretation）
+   5.3 证据库与本范围综述的局限性（Strengths and Limitations）
+   5.4 临床实践启示与未来研究方向（Implications for Practice and Future Research）
+6. 结论（Conclusions）
+7. 声明（Declarations：伦理、资助、利益冲突与数据可用性）
+8. 参考文献（References — Vancouver 格式）
+"""
+
+_TRIPOD_AI_STRUCTURE = """
+TRIPOD+AI 临床人工智能/机器学习预测模型标准结构（Collins et al., BMJ 2024）：
+1. 结构化摘要（背景、目的、设计与数据源、建模与验证人群、预测因子与模型架构、区分度/校准/临床效用、结论）
+2. 引言（临床场景与决策痛点、现有模型局限、本研究预期临床用途与目标人群）
+3. 方法
+   3.1 数据来源、研究设计与伦理审批
+   3.2 研究人群与纳入排除标准
+   3.3 结局定义、测量方式与盲法评估
+   3.4 候选预测因子、信号预处理与防数据泄露（Data Leakage Prevention）
+   3.5 样本量、事件数（EPV）与缺失数据处理策略
+   3.6 模型架构、超参数调优与训练策略
+   3.7 模型评估指标（区分度 AUROC/AUPRC、校准曲线/Brier 分数、临床效用 DCA、重分类 NRI/IDI）
+   3.8 内部验证、外部/时间验证与亚组公平性审计（Algorithmic Fairness）
+4. 结果
+   4.1 研究队列纳入流程与基线特征（训练集 vs 验证集 Table 1）
+   4.2 模型构建、特征重要性或可解释性分析（SHAP / 注意力权重）
+   4.3 模型区分度、校准度与决策曲线净获益（DCA）
+   4.4 亚组表现、公平性审计与敏感性分析
+5. 讨论（核心发现、与既往模型对比、域偏移与校准漂移机制、局限性、临床部署路径）
+6. 结论与声明（伦理、资助、利益冲突、数据与模型代码可用性）
+"""
+
 
 GUIDELINES: Dict[str, ReportingGuideline] = {
     "prisma_2020": ReportingGuideline(
@@ -319,6 +373,44 @@ GUIDELINES: Dict[str, ReportingGuideline] = {
             ("综述范围", ["范围", "scope"]),
             ("主题组织", ["主题"]),
             ("局限性", ["局限", "limitation"]),
+        ],
+    ),
+    "prisma_scr": ReportingGuideline(
+        id="prisma_scr",
+        name="PRISMA-ScR",
+        version="2018",
+        source="https://www.prisma-statement.org/scoping",
+        applies_to="范围综述（Scoping Review）与证据映射",
+        structure=_PRISMA_SCR_STRUCTURE,
+        aliases=["prisma-scr", "prisma_scr", "范围综述", "scoping review", "scoping", "证据映射综述"],
+        key_items=[
+            ("研究目的与PCC框架", ["目的", "pcc", "范围", "objective", "concept", "context"]),
+            ("纳入排除标准", ["纳入标准", "排除标准", "纳入与排除", "eligibility"]),
+            ("信息来源与检索策略", ["检索", "pubmed", "database", "search strategy", "数据库"]),
+            ("证据筛选与PRISMA流程", ["筛选", "prisma", "流程图", "flow"]),
+            ("数据提取与证据绘制", ["提取", "数据", "charting", "特征", "矩阵"]),
+            ("结果主题综合", ["结果", "评估", "监测", "治疗", "synthesis"]),
+            ("局限性", ["局限", "limitation"]),
+            ("利益冲突与资助声明", ["利益冲突", "资助", "声明", "funding", "competing", "declaration"]),
+        ],
+    ),
+    "tripod_ai": ReportingGuideline(
+        id="tripod_ai",
+        name="TRIPOD+AI",
+        version="2024",
+        source="https://www.tripod-statement.org/",
+        applies_to="临床人工智能与机器学习预测模型",
+        structure=_TRIPOD_AI_STRUCTURE,
+        aliases=["tripod+ai", "tripod-ai", "tripod_ai", "ai预测模型", "机器学习预测模型", "ai prediction model"],
+        key_items=[
+            ("研究人群与结局", ["纳入", "排除", "结局", "outcome"]),
+            ("预测因子与预处理", ["预测因子", "特征", "predictor", "feature"]),
+            ("样本量与事件数", ["样本量", "事件数", "epv", "阳性"]),
+            ("模型架构与训练", ["模型", "训练", "超参数", "验证"]),
+            ("区分度", ["auc", "auroc", "c统计量", "区分度"]),
+            ("校准", ["校准", "brier", "calibration"]),
+            ("临床效用", ["dca", "决策曲线", "净获益", "临床效用"]),
+            ("公平性与外部验证", ["公平", "亚组", "外部验证", "时间验证", "fairness"]),
         ],
     ),
 }

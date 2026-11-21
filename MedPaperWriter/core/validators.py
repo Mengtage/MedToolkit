@@ -220,6 +220,70 @@ def check_overclaiming(text: str, section_kind: str = "") -> List[Dict[str, str]
     return issues
 
 
+_INTERNAL_JARGON_RE = re.compile(
+    r"(?:/api/\w+|/sources\b|/screening\b|/studies\b|/writer\b|\bselected_lineage_complete\b"
+    r"|\btableone\b|\bcategorical_auto\b|\bprediction_evaluation_extended\b"
+    r"|\bmengtage-owner\b|\baria-gemini-reviewer\b|\bstudy_pmid_\w+|\bSHA256\b|\[E:[A-Za-z0-9_-]+\])"
+)
+
+
+def check_sci_writing_conventions(text: str, section_kind: str = "") -> List[Dict[str, str]]:
+    """医学 SCI 论文写作规范检查：
+    1. P 值规范：严禁写作 P = 0.000（须写作 P < 0.001）。
+    2. 摘要规范：摘要不得包含文献引用编号，且应包含结构化要素（目的/方法/结果/结论）。
+    3. 严禁泄露工作台内部路由、哈希或未渲染的 [E:id] 证据标签。
+    """
+    issues: List[Dict[str, str]] = []
+    text = text or ""
+    if not text.strip():
+        return issues
+
+    p_zero = re.findall(r"\b[Pp]\s*=\s*0\.000+\b", text)
+    if p_zero:
+        issues.append(_issue(
+            "invalid_p_value_zero",
+            "error",
+            "医学 SCI 统计报告规范禁止将 P 值写作 P = 0.000，应报告为 P < 0.001",
+            ", ".join(p_zero[:3]),
+        ))
+
+    jargon = _INTERNAL_JARGON_RE.findall(text)
+    if jargon:
+        issues.append(_issue(
+            "internal_pipeline_jargon",
+            "error",
+            "正文含系统内部路由、哈希、函数名或未转换的 [E:id] 标签，不符合学术论文出版规范",
+            ", ".join(dict.fromkeys(jargon))[:120],
+        ))
+
+    if section_kind == "abstract":
+        if _NUMERIC_CITATION.search(text) or _AUTHOR_YEAR.search(text):
+            issues.append(_issue(
+                "citation_in_abstract",
+                "warning",
+                "按 ICMJE 与 SCI 期刊规范，摘要应独立成篇，不应包含文献引用",
+                text[:80],
+            ))
+        lower = text.lower()
+        has_struct = (
+            sum(any(k in lower for k in grp) for grp in [
+                ("目的", "背景", "background", "objective", "purpose"),
+                ("方法", "纳入", "检索", "methods", "eligibility"),
+                ("结果", "results", "findings"),
+                ("结论", "conclusion", "conclusions"),
+            ]) >= 3
+        )
+        if len(text.strip()) >= 80 and not has_struct:
+            issues.append(_issue(
+                "unstructured_abstract",
+                "warning",
+                "医学 SCI 摘要建议采用结构化四要素（背景/目的、方法、结果、结论）",
+                text[:80],
+            ))
+
+    return issues
+
+
 def check_guideline_completeness(text: str, guideline) -> List[Dict[str, str]]:
     """报告规范必报条目缺失检查（导出前执行）
 
@@ -288,6 +352,7 @@ def validate_section(
     issues += check_numbers(text, source_text, section_kind)
     issues += check_abbreviations(text)
     issues += check_overclaiming(text, section_kind)
+    issues += check_sci_writing_conventions(text, section_kind)
     return sorted(issues, key=lambda i: SEVERITY_ORDER.get(i["severity"], 9))
 
 
@@ -299,6 +364,7 @@ def validate_manuscript(session, guideline=None, full_text: str = "") -> List[Di
     if full_text:
         issues += check_placeholders(full_text)
         issues += check_citations(full_text, has_refs)
+        issues += check_sci_writing_conventions(full_text)
 
     sections: List[Dict[str, str]] = []
     if getattr(session, "outline", None):

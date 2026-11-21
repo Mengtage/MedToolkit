@@ -141,7 +141,7 @@ class FulltextService:
             document=event['document'];validate_snapshot(document)
             raw=self.store.artifact(audit['events'][0]['project_id'],document['blob']).read_bytes()
             if sha(raw)!=document['file_sha256']:raise ValueError('全文原件哈希不匹配')
-            bib={k:v for k,v in records[rid]['record'].items() if k in ('title','abstract','pmid','doi','authors','journal','pub_date')}
+            bib={k:v for k,v in records[rid]['record'].items() if k in ('title','abstract','pmid','doi','authors','journal','pub_date','volume','issue','pages')}
             selected.append({**bib,'parent_review_id':review,'parent_record_id':rid,'report_id':review+':'+rid,
                 'parent_record_sha256':records[rid]['record_sha256'],'parent_decision_hash':decisions[rid],
                 'fulltext':document,'retrieval_event_hash':event['event_hash']})

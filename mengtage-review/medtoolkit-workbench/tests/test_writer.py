@@ -36,6 +36,10 @@ class WriterTest(unittest.TestCase):
    with self.subTest(body=body),self.assertRaises(ValueError):self.approve(m)
   m=self.save('42 without citation\n\nSupported [E:e1]');self.assertTrue(m['checks']['warnings']);self.assertFalse(m['checks']['blockers'])
   m_sub=self.save('### 1.1 Subheading with number\n\nSupported [E:e1]');self.assertFalse(m_sub['checks']['warnings']);self.assertFalse(m_sub['checks']['blockers'])
+  m_imrad=self.s.save(self.pid,'SCI稿件',[{'title':'摘要','body':'目的：评估疼痛。\n方法：范围综述。\n结果：纳入36项研究。\n结论：可行。'},{'title':'关键词','body':'术后疼痛；人工智能；范围综述'},{'title':'1. 引言','body':'背景阐述 [E:e1]。'},{'title':'2. 方法','body':'检索2022至2026年文献。'},{'title':'5. 结论','body':'本研究总结了核心证据。'},{'title':'6. 声明','body':'无利益冲突。'}],self.package['id'])
+  self.assertFalse(m_imrad['checks']['blockers']);self.assertFalse(m_imrad['checks']['warnings'])
+  m_bad_sci=self.s.save(self.pid,'Bad SCI',[{'title':'摘要','body':'摘要误引文献 [E:e1]'},{'title':'结果','body':'在 /sources 中运行 tableone 得到 P = 0.000 [E:e1]'}],self.package['id'])
+  self.assertGreaterEqual(len(m_bad_sci['checks']['warnings']),3)
  def test_confirmation_validation(self):
   m=self.save()
   with self.assertRaises(ValueError):self.s.review(self.pid,m['id'],'approved','Author','Checked',False)

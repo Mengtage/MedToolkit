@@ -107,56 +107,66 @@ class ReferenceFormatter:
         return [self.format_reference(ref) for ref in references or []]
 
     def _format_authors(self, authors: Any, max_display: int = 6) -> str:
-        """格式化作者列表"""
+        """格式化作者列表（兼容列表或已逗号拼接的字符串，超过 max_display 自动加 et al.）"""
         if not authors:
             return ""
 
         if isinstance(authors, str):
-            return authors
+            names = [a.strip().rstrip(".") for a in authors.split(",") if a.strip()]
+        elif isinstance(authors, list):
+            names = [a.rstrip(".") for a in (_author_to_text(x) for x in authors) if a]
+        else:
+            names = [str(authors).strip().rstrip(".")]
 
-        if isinstance(authors, list):
-            names = [_author_to_text(a) for a in authors]
-            if len(names) <= max_display:
-                return ", ".join(names)
-            return ", ".join(names[:max_display]) + ", et al."
-
-        return str(authors)
+        if not names:
+            return ""
+        if len(names) <= max_display:
+            return ", ".join(names)
+        return ", ".join(names[:max_display]) + ", et al"
 
     def _format_vancouver(self, article: Dict[str, Any]) -> str:
-        """温哥华格式 - Author(s). Title. Journal. Year;Volume(Issue):Pages."""
+        """温哥华格式 (ICMJE / NLM) - Author(s). Title. Journal. Year;Volume(Issue):Pages. doi: xxx. PMID: xxx."""
         authors = self._format_authors(article.get("authors", ""), 6)
-        title = article.get("title", "")
-        journal = article.get("journal", "")
-        year = article.get("year", "")
-        volume = article.get("volume", "")
-        issue = article.get("issue", "")
-        pages = article.get("pages", "")
+        title = (article.get("title", "") or "").strip()
+        journal = (article.get("journal", "") or "").strip().rstrip(".")
+        year = (article.get("year", "") or "").strip()
+        volume = (article.get("volume", "") or "").strip()
+        issue = (article.get("issue", "") or "").strip()
+        pages = (article.get("pages", "") or "").strip()
 
-        parts = [authors]
+        parts: List[str] = []
+        if authors:
+            parts.append(authors if authors.endswith(".") else authors + ".")
 
         if title:
-            parts.append(title + ".")
+            parts.append(title if title[-1] in ".?!" else title + ".")
 
         if journal:
             parts.append(journal + ".")
 
-        if year:
-            parts.append(year)
-
+        loc = year
         if volume:
+            loc += (f";{volume}" if loc else str(volume))
             if issue:
-                parts.append(f"{volume}({issue})")
-            else:
-                parts.append(str(volume))
-
-        if pages:
-            parts.append(f":{pages}")
+                loc += f"({issue})"
+            if pages:
+                loc += f":{pages}"
+        elif pages:
+            loc += (f":{pages}" if loc else pages)
+        if loc:
+            parts.append(loc if loc.endswith(".") else loc + ".")
 
         # DOI 是引用可核验性的关键：有就附上，便于读者定位原文
         if article.get("doi"):
-            parts.append(f"doi: {article['doi']}")
+            doi_clean = article["doi"].strip().rstrip(".")
+            parts.append(f"doi: {doi_clean}.")
 
-        return " ".join(parts) + "."
+        if article.get("pmid"):
+            pmid_clean = str(article["pmid"]).strip().rstrip(".")
+            parts.append(f"PMID: {pmid_clean}.")
+
+        out = " ".join(parts).strip()
+        return out if out.endswith(".") else (out + "." if out else "")
 
     def _format_apa(self, article: Dict[str, Any]) -> str:
         """APA格式 - Author(s). (Year). Title. Journal, Volume(Issue), Pages."""
