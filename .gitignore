@@ -9,3 +9,7 @@ runtime-*/
 *.bundle
 *.zip
 .env.*
+
+.browser-tools/
+
+.office-tools/

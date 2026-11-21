@@ -1,0 +1,178 @@
+{
+  "status": "PASS",
+  "tested_at": "2026-11-21T07:44:41.649Z",
+  "browser": "159.0.8154.6",
+  "viewport": "1440x1000",
+  "pubmed": "synthetic transport fixture; real parser, store and HTTP",
+  "gemini": "blank; no calls",
+  "results": [
+    {
+      "name": "empty and incorrect token rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "connect; create project; literal user text",
+      "status": "PASS"
+    },
+    {
+      "name": "invalid JSON and invalid payload show errors without new job",
+      "status": "PASS"
+    },
+    {
+      "name": "pearson submit/run/refresh/artifact",
+      "status": "PASS"
+    },
+    {
+      "name": "spearman submit/run/refresh/artifact",
+      "status": "PASS"
+    },
+    {
+      "name": "categorical_auto submit/run/refresh/artifact",
+      "status": "PASS"
+    },
+    {
+      "name": "chi2 submit/run/refresh/artifact",
+      "status": "PASS"
+    },
+    {
+      "name": "fisher submit/run/refresh/artifact",
+      "status": "PASS"
+    },
+    {
+      "name": "yates submit/run/refresh/artifact",
+      "status": "PASS"
+    },
+    {
+      "name": "group_numeric submit/run/refresh/artifact",
+      "status": "PASS"
+    },
+    {
+      "name": "tableone submit/run/refresh/artifact",
+      "status": "PASS"
+    },
+    {
+      "name": "linear_regression submit/run/refresh/artifact",
+      "status": "PASS"
+    },
+    {
+      "name": "logistic_regression submit/run/refresh/artifact",
+      "status": "PASS"
+    },
+    {
+      "name": "poisson_regression submit/run/refresh/artifact",
+      "status": "PASS"
+    },
+    {
+      "name": "gamma_regression submit/run/refresh/artifact",
+      "status": "PASS"
+    },
+    {
+      "name": "prediction_evaluation submit/run/refresh/artifact",
+      "status": "PASS"
+    },
+    {
+      "name": "mice_imputation submit/run/refresh/artifact",
+      "status": "PASS"
+    },
+    {
+      "name": "extended prediction evaluation tables DCA and JSON download",
+      "status": "PASS"
+    },
+    {
+      "name": "extended evaluation undefined values remain visible without errors",
+      "status": "PASS"
+    },
+    {
+      "name": "legacy MedStat template display functions accept null HL and IDI",
+      "status": "PASS"
+    },
+    {
+      "name": "PubMed fixture search and RIS download",
+      "status": "PASS"
+    },
+    {
+      "name": "desktop dedup task and duplicate submission",
+      "status": "PASS"
+    },
+    {
+      "name": "desktop human keep, required reason and immutable parent",
+      "status": "PASS"
+    },
+    {
+      "name": "desktop human merge branch and result persistence",
+      "status": "PASS"
+    },
+    {
+      "name": "screening reviewer setup and frozen checkpoint",
+      "status": "PASS"
+    },
+    {
+      "name": "independent human submission hides rationale from model",
+      "status": "PASS"
+    },
+    {
+      "name": "model fixture submission, reveal, adjudicate and audit download",
+      "status": "PASS"
+    },
+    {
+      "name": "coded exclusion revision and both CSV downloads",
+      "status": "PASS"
+    },
+    {
+      "name": "fulltext retrieval registration and child checkpoint",
+      "status": "PASS"
+    },
+    {
+      "name": "fulltext exact quote validation and independent submissions",
+      "status": "PASS"
+    },
+    {
+      "name": "fulltext adjudication lineage JSON and CSV exports",
+      "status": "PASS"
+    },
+    {
+      "name": "study mapping requires human confirmation and preserves revisions",
+      "status": "PASS"
+    },
+    {
+      "name": "selected-lineage PRISMA counts and JSON CSV SVG exports",
+      "status": "PASS"
+    },
+    {
+      "name": "source capture imports and immutable incremental collections",
+      "status": "PASS"
+    },
+    {
+      "name": "combined source screening produces partial PRISMA with source provenance",
+      "status": "PASS"
+    },
+    {
+      "name": "reviewer credential revocation clears screen",
+      "status": "PASS"
+    },
+    {
+      "name": "project switching and reload persistence; token not persisted",
+      "status": "PASS"
+    },
+    {
+      "name": "desktop width and unconfigured writing",
+      "status": "PASS"
+    }
+  ],
+  "source_sha256": {
+    "web/index.html": "7a52951cab476ef022be581a65bf0a21f2e1c3174b9e267fa6a92c46c30e129c",
+    "web/app.js": "c2cf54ae712bc86e6497b949537f73ebfb0acde8de89614190b93032eca90e8a",
+    "web/style.css": "34a0d16872f05f5869a19e1382267e52bd3c6a2726f639386af99978dd44b27b",
+    "web/screening.html": "a00db56c316f956397701c5c97f55ae7b784f12b71f69bbb4ed02ebdde0e97e6",
+    "web/screening.js": "492beae3a16603e3e1493ce97f4d3c39a99eeafbadc083463e99f6338fbbb9f3",
+    "web/fulltext.js": "261f79259a67669d2d5a8f7e260bd76de97c29dddedf23a1a6bf5498b1ef8c21",
+    "web/studies.js": "3aaba393c3e480ef97b674b5828080590c60e56a2c6a12b2d42c30ee3940d649",
+    "web/sources.html": "1a9b5178ddaf0f2d77ef90698ecbd775cf4cab6094a43435e132e788ba291aa4",
+    "web/sources.js": "8a491cfe2c5d1dbabe0408caf6f1d2372970605bd3e9ee630e508fcdccf3804e",
+    "web/evaluation.js": "72afc30199b3330f636576ca0e1b3ec3feba469eb86dc042e334e296dfc24518",
+    "modules/MedStat/templates/index.html": "8a195fb332c3989b6035f0966f49a514302fe655c61b054cf4a72d6efcdf5ef7",
+    "scripts/browser/acceptance.cjs": "3d9c9db0b2f6f83b355bbfa6f18cc049d7d42c78635620c923d87cd0b7d1acaf",
+    "scripts/browser/server.py": "5bbb71a9de3ca9dac78f86dc76ac0128ca9c09a2087f49de84e883464fa8278e"
+  },
+  "page_errors": []
+}

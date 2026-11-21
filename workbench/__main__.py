@@ -9,7 +9,7 @@ def main():
     c=commands.add_parser('create');c.add_argument('question')
     commands.add_parser('projects')
     c=commands.add_parser('jobs');c.add_argument('project')
-    c=commands.add_parser('enqueue');c.add_argument('project');c.add_argument('kind',choices=['search','statistics','write']);c.add_argument('payload')
+    c=commands.add_parser('enqueue');c.add_argument('project');c.add_argument('kind',choices=['search','statistics','write','deduplicate','dedup_review']);c.add_argument('payload')
     c=commands.add_parser('run');c.add_argument('id')
     commands.add_parser('recover')
     c=commands.add_parser('retry');c.add_argument('id');c.add_argument('--confirmed',action='store_true')

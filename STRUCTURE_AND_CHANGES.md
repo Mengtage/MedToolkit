@@ -1,55 +1,40 @@
-# 文件结构与修改清单
+# 文件结构与当前实现
 
-截至本次交付，所有工作在独立目录完成，没有推送或修改GitHub仓库，也没有替换现有WebApp。
+2026-11-21 PaperWriter接续：新增 `/writer` 本地证据包、章节编辑/版本、作者审核与Markdown/审计JSON导出；保留旧Word/翻译行为。221项Python检查通过，原桌面38项及Writer独立5项通过。详见 [Writer验收](reports/PAPERWRITER_ACCEPTANCE_20261121.md)。Hunter细化仍暂停；本次按用户要求从MedStat转到Writer。下文旧状态以本段及专项报告为准。
 
-```text
-medtoolkit-workbench/
-├── modules/
-│   ├── MedPaperHunter/       32个上游文件
-│   ├── MedPaperWriter/       62个上游文件
-│   └── MedStat/              68个上游文件
-├── skills/
-│   ├── med-extract/          两个相同原附件合并收录一份
-│   ├── search-strategy/      包内版本3.0.0
-│   ├── workbench/            统一流程参考
-│   ├── catalog/              20份Skill说明与按需索引
-│   ├── catalog-resources/    58份配套文档
-│   └── zotero/               说明、路由参考、配置、辅助脚本
-├── workbench/
-│   ├── core.py               项目、SQLite任务、进程锁、重试与恢复
-│   ├── adapters.py           检索、统计及待配置Gemini接口
-│   ├── exports.py            RIS格式输出
-│   ├── server.py             单所有者本地HTTP接口与访问令牌检查
-│   └── __main__.py           命令行入口
-├── web/                      竖屏页面、检索、合成数据统计及RIS导出
-├── tests/                    15项基础回归及58项统计验收
-├── examples/                 合成统计输入与未授权写作模板
-├── source-version.json       源码提交版本
-├── source-diff.json          原模块逐文件差异清单
-├── requirements-tested.txt   本机验证的依赖版本
-├── validation-tests.txt      测试输出
-├── validation-live.json      真实检索及合成统计验收摘要
-└── README.md                 运行方法、接口边界、未完成项
-```
 
-## 对原模块的改动
+当前源码在 `medtoolkit-workbench/`，上游核对基准为 `d3486d0` 中的 `mengtage-review/medtoolkit-workbench/`。以文件和验收哈希为准，旧 Git HEAD 不代表当前内容；未提交或推送。
 
-原模块162个文件完整收录；与上游提交相比，12个文件有本地修改，详见source-diff.json。包括统计修复涉及的8个分析模块及MedStat/app.py，以及此前的3项说明或项目署名调整。
+| 路径 | 职责 |
+|---|---|
+| `workbench/core.py` | 项目、SQLite 任务、输入校验入口、进程锁、重试与恢复 |
+| `workbench/adapters.py` | PubMed、相关性、统计分派、证据约束章节写作 |
+| `workbench/categorical.py`、`groups.py`、`tableone.py` | 列联表、独立组比较、基线表 |
+| `workbench/regression.py`、`glm.py` | 数值 OLS/Logistic、Poisson/Gamma |
+| `workbench/evaluation.py`、`imputation.py` | 基础预测评估、连续插补及可选均值合并 |
+| `workbench/server.py`、`__main__.py`、`exports.py` | 本机 HTTP、CLI、RIS |
+| `web/` | 桌面统计表单、任务、TableOne/回归表格与 JSON 产物 |
+| `examples/` | 合成统计输入及未配置写作模板 |
+| `tests/`、`scripts/validate.py` | 107 项基础/HTTP/单元检查及 58 项统计检查 |
+| `workbench/deduplication*.py`、`screening*.py` | 去重CLI与dedup_jobs.py任务/HTTP/桌面闭环、人工checkpoint与双评审审计原型，非多人身份认证 |
+| `workbench/review_access.py`、`screening_http.py`、`web/screening.*` | 独立评审令牌、批次权限与题名摘要/全文筛选桌面 |
+| `workbench/screening_exports.py` | 冻结排除原因词表、逐条决定和完整判断历史CSV |
+| `scripts/browser/` | 独立服务、合成 PubMed 响应、真实 Chromium 点击验收 |
+| `reports/` | 当前验收、数值结果、日志、哈希及逐轮证据 |
+| `reports/history/`、`CHANGELOG.md` | 整理前文档与历史状态 |
+| `modules/` | MedPaperHunter、MedPaperWriter、MedStat 原模块及本地修复，保留许可 |
+| `skills/` | med-extract、search-strategy、workbench、catalog、catalog-resources、zotero 参考材料 |
 
-本版已修复MH、分类检验、TableOne、预测评估、缺失统计和插补合并等问题。旧失败证据见reports/baseline，当前验收报告见reports/ACCEPTANCE_SUMMARY.md。原始去重、筛选策略没有改变。旧WebApp尚未完成生产安全验收，不应直接开放公网。
+已同步的 7 个上游源文件见 `reports/upstream-sync.json`。早期原模块差异清单 `source-diff.json` 仅反映当时快照，不是后续累计改动总数。尤其旧 `modules/MedStat/src/analysis/regression.py` 的无新数据 `predict_proba()` 已修正为概率，累计交付必须保留此项。
 
-## 新增整合代码
+统一适配器显式拒绝未支持输入，不代表旧模块已全面改写。保留 TableOne 等方差 t、group_numeric Welch、Gamma inverse 等各自行为；完整能力与限制以 [README](README.md) 为准。旧模块 WebApp 没有本轮浏览器验收，也不应直接开放公网。
 
-- 检索适配器复用Hunter的PubMed XML解析，记录查询、命中总数、实际取得数和原始响应；默认不做删除式去重，不把有限结果当完整系统综述检索。
-- 统计适配器复用MedStat的Pearson/Spearman计算，记录数据哈希、软件版本、原始行数、有效行数和缺失剔除数；仅合成数据验收，零模型调用。
-- 任务写入前校验类型、字段白名单及数据分类；额外字段不落盘。重复任务复用ID，显式重试创建关联任务；执行和恢复使用跨进程锁。原任务和结果保留。
-- 写作接口保留但未配置；未配置时不接收写作任务。它目前是证据约束的章节生成适配器，尚非完整多步写作agent。
-- 本地HTTP入口要求访问令牌，监听127.0.0.1；前端用textContent呈现用户文本。无公网发布、无远程手机认证网关。
-- 新增RIS出口供Zotero导入，未连接用户桌面、未改动Zotero配置或文献库。
-- Skill及配套文档按模块索引保存，不全量加入提示词；只有说明的脚本不视为已经实现。第三方资源尚未全套安装或自动启用。
+本轮浏览器依赖仅在 `.browser-tools/`，临时项目使用系统临时目录，运行后清理；不进入累计补丁。源码、复现说明及测试证据保留在项目内。
 
-## 验证结果与限制
+全文：`workbench/fulltext.py`负责原件/文本快照、取得审计与阶段关联，`web/fulltext.js`负责登记、材料预览和原件下载；验证见 `tests/test_fulltext.py` 及 `reports/FULLTEXT_ACCEPTANCE_20261121.md`。
 
-15项基础回归及58项统计检查通过；基础测试覆盖鉴权、路径隔离、输入未落盘、重试幂等、中断恢复、引用标识、RIS字段换行以及已知合成相关性结果。真实查询“anesthesia AND postoperative pain”命中43256条，本轮仅获取3条并标记不完整，成功导出RIS。合成统计r=1、n=4，没有Gemini调用。
+研究映射：`workbench/studies.py`；来源链计数与导出：`workbench/prisma.py`；桌面：`web/studies.js`；后端测试：`tests/test_studies_prisma.py`。
 
-当前版本提供可运行的非LLM基础链路，尚未完成全部统计方法迁移、临床方法学验证、自动全文提取、完整写作agent或生产安全验收。真实患者数据、自动画像/记忆、付费检索、对外投稿均未接入。Gemini按当前安排留空。
+多来源：`workbench/sources.py`负责来源快照和完整集合版本，`web/sources.html/js`提供独立管理员页面；`prisma.py`增加逐来源核验/明细和记录位置关联。
+
+MedStat扩展评估：`workbench/evaluation_extended.py`负责严格输入和原统计模块适配，`web/evaluation.js`提供HL/NRI/IDI表格、DCA曲线和下载；旧模板null处理在`modules/MedStat/templates/index.html`。

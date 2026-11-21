@@ -1,17 +1,13 @@
-# 修复后统计验收汇总
+# 当前验收摘要 · 2026-11-21
 
-基础工作台15项回归、统计58项固定合成数据检查全部通过。原41项中的20个失败场景已处理，并新增边界检查；未支持的统计情形通过明确拒绝处理，不冒充方法实现。旧结果保存在baseline/。
+| 范围 | 最近结果 | 证据 |
+|---|---|---|
+| 完整Python | 177基础/HTTP/单元+58统计=235通过 | validation-summary.json、validation-core.log |
+| 主工作台桌面 | 38通过；完整包独立副本重新完成 | browser/summary.json |
+| Writer桌面 | 7通过；完整包独立副本重新完成 | writer-browser/summary.json |
+| Hunter→Writer桌面 | 3通过；完整包独立副本重新完成 | writer-hunter-browser/summary.json |
+| Word实际排版 | LibreOffice26.2.6.3，65行表格/4页A4压力稿通过 | office-layout/after/checks.json、PAPERWRITER_OFFICE_20261121.md |
 
-| 范围 | 通过 | 失败 | 报告 |
-|---|---:|---:|---|
-| 相关、组间、分类、TableOne | 23 | 0 | acceptance-groups.md |
-| 回归与预测评估 | 14 | 0 | acceptance-regression.md |
-| 缺失数据、插补与合并 | 21 | 0 | acceptance-missing.md |
+模型配置空白，统计/浏览器使用合成材料。Microsoft Word/WPS、真实模型、真实临床数据和手机不在验收范围。旧独立模块不因统一测试通过而被视为全栈验收通过。
 
-修复了MH条件检验和合并区间、同质性检验、真实RxC Monte Carlo、森林图、样本SD及百分比分母、预测概率与校准边界、分类公式矩阵、缺失掩码、Rubin合并与有限样本自由度。详见各组报告及源文件哈希记录validation-summary.json。
-
-支持范围收紧：分类/离散缺失暂不插补；linear/ridge仅允许单次插补；全缺失列明确拒绝；单份或无缺失数据不产生多重插补推断。实际Web路由函数已以合成请求执行，未启动旧WebApp做完整HTTP或临床验收。
-
-本次没有调用Gemini，没有使用真实病例。固定样例通过不等于全部统计方法或参数范围已验证；HL、NRI、DCA等未覆盖项仍见各组报告。统一工作台入口仍只开放已接通的相关性计算，其他已修正模块尚待逐项迁移。
-
-运行全部验证：`.venv/bin/python scripts/validate.py`。任一套件非零退出、缺失报告或含FAIL/BLOCKED，整包验证均失败。
+完整包的干净解压检查见PACKAGE_CHECKS.json（该文件由打包过程生成）。合成测试会在reports写入新结果；文件哈希清单描述的是原始交付状态。

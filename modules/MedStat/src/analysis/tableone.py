@@ -71,7 +71,7 @@ class TableOne:
     
     def _test_normality(self):
         """
-        测试数值变量的正态性
+        测试数值变量的正态性。检验失败时记录原因，不再静默吞掉。
         """
         for var in self.numeric_vars:
             vals = self.df[var].dropna()
@@ -83,21 +83,40 @@ class TableOne:
                             'test': 'Shapiro-Wilk',
                             'statistic': float(stat),
                             'p_value': float(p),
-                            'is_normal': p > 0.05
+                            'is_normal': bool(p > 0.05)
                         }
-                    except:
-                        pass
+                    except Exception as error:
+                        self.normality_results[var] = self._normality_failure(
+                            'Shapiro-Wilk', error)
                 else:
                     try:
-                        stat, p = stats.kstest(vals, 'norm', args=(vals.mean(), vals.std()))
+                        mu = float(vals.mean())
+                        sigma = float(vals.std(ddof=1))
+                        if not np.isfinite(sigma) or sigma <= 0:
+                            raise ValueError('方差为0，正态性检验不可估计')
+                        stat, p = stats.kstest(
+                            vals.to_numpy(),
+                            stats.norm(loc=mu, scale=sigma).cdf)
                         self.normality_results[var] = {
                             'test': 'Kolmogorov-Smirnov',
                             'statistic': float(stat),
                             'p_value': float(p),
-                            'is_normal': p > 0.05
+                            'is_normal': bool(p > 0.05),
+                            'note': '参数由样本估计，P值为近似值；建议同时参考Lilliefors检验'
                         }
-                    except:
-                        pass
+                    except Exception as error:
+                        self.normality_results[var] = self._normality_failure(
+                            'Kolmogorov-Smirnov', error)
+
+    @staticmethod
+    def _normality_failure(test, error):
+        """把正态性检验失败记录为结构化结果，供界面与审计追溯。"""
+        return {
+            'test': test,
+            'error': f'{type(error).__name__}: {error}',
+            'is_normal': False,
+            'method_fallback': '正态性检验失败，组间比较回退为秩检验'
+        }
     
     def _process_numeric(self, var):
         """
@@ -245,7 +264,14 @@ class TableOne:
                         'statistic': float(stat),
                         'p_value': float(p)
                     })
-                except:
-                    pass
+                except Exception as error:
+                    p_results.append({
+                        'variable': var,
+                        'type': 'categorical',
+                        'test': 'not_estimable',
+                        'statistic': None,
+                        'p_value': None,
+                        'error': f'{type(error).__name__}: {error}'
+                    })
         
         self.p_values = p_results

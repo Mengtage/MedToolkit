@@ -1,0 +1,14 @@
+{
+  "commit": "d3486d0b6d7139ddbc4dd7f189567f3839c553b1",
+  "synced_files": [
+    "requirements.txt",
+    "requirements-tested.txt",
+    "modules/MedPaperWriter/security_best_practices_report.md",
+    "modules/MedStat/app.py",
+    "modules/MedStat/src/analysis/tableone.py",
+    "modules/MedStat/src/analysis/regression.py",
+    "modules/MedStat/src/analysis/diagnostics.py"
+  ],
+  "backup": "research/medtoolkit-pre-sync-20261120",
+  "transport": "GitHub immutable commit archive; git executable unavailable"
+}

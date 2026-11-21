@@ -3670,6 +3670,9 @@
             });
         }
 
+        function evaluationNumber(value) {
+            return typeof value === 'number' && Number.isFinite(value) ? value.toFixed(4) : 'N/A';
+        }
         function displayCalibration(calibration) {
             if (!calibration || calibration.error) {
                 document.getElementById('metricBrier').textContent = 'N/A';
@@ -3679,9 +3682,10 @@
                 return;
             }
             
-            document.getElementById('metricBrier').textContent = calibration.brier_score.toFixed(4);
-            document.getElementById('metricHL').textContent = calibration.hosmer_lemeshow.p_value.toFixed(4);
+            document.getElementById('metricBrier').textContent = evaluationNumber(calibration.brier_score);
+            document.getElementById('metricHL').textContent = evaluationNumber(calibration.hosmer_lemeshow?.p_value);
             
+            document.getElementById('metricHL').title = '等宽分组；' + (calibration.hosmer_lemeshow?.status || '未知状态');
             const predicted = calibration.calibration_curve.map(d => d.mean_predicted);
             const observed = calibration.calibration_curve.map(d => d.mean_observed);
             
@@ -3758,21 +3762,23 @@
             const tableBody = document.getElementById('nriTable').querySelector('tbody');
             tableBody.innerHTML = '';
             
+            if (!nri || nri.error) return;
             Object.values(nri).forEach(data => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${data.threshold}</td>
-                    <td>${data.nri_event.toFixed(4)}</td>
-                    <td>${data.nri_non_event.toFixed(4)}</td>
-                    <td>${data.nri_total.toFixed(4)}</td>
+                    <td>${evaluationNumber(data.nri_event)}</td>
+                    <td>${evaluationNumber(data.nri_non_event)}</td>
+                    <td>${evaluationNumber(data.nri_total)}</td>
                 `;
                 tableBody.appendChild(row);
             });
         }
 
         function displayIDI(idi) {
-            document.getElementById('metricIDI').textContent = idi.idi.toFixed(4);
-            document.getElementById('metricZ').textContent = idi.z_score.toFixed(4);
+            document.getElementById('metricIDI').textContent = evaluationNumber(idi?.idi);
+            document.getElementById('metricZ').textContent = evaluationNumber(idi?.z_score);
+            document.getElementById('metricZ').title = '固定配对预测近似；' + (idi?.inference_status || '无结果');
         }
 
         switchPanel = (function(original) {

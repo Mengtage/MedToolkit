@@ -1,0 +1,177 @@
+{
+  "review_id": "302177d93799426ba6a71832b2fe60d2",
+  "events": [
+    {
+      "actor": "administrator",
+      "data": {
+        "identity_assurance": "scoped_reviewer_token",
+        "protocol": {
+          "adjudicator": "browser-human",
+          "exclusion": "Exclude wrong population",
+          "human_reviewer": "browser-human",
+          "inclusion": "Include synthetic adults",
+          "llm_reviewer": "browser-model",
+          "question": "Synthetic blinded review",
+          "reason_codebook_version": "medhunter-exclusion-v1",
+          "reason_codes": {
+            "comparator": "对照不符",
+            "design": "研究设计不符",
+            "duplicate_report": "重复报告，需注明关联记录",
+            "intervention": "干预或暴露不符",
+            "other": "其他，须说明具体原因",
+            "outcome": "结局不符",
+            "population": "研究对象不符",
+            "publication_type": "文献类型不符"
+          },
+          "stage": "title_abstract"
+        },
+        "protocol_sha256": "e2c66c518320402a8d0311ba579648f51ecc3a7d55ea5331535975a76665b13c",
+        "records": [
+          {
+            "record": {
+              "abstract": "",
+              "authors": [],
+              "doi": null,
+              "journal": "",
+              "pmid": "111",
+              "pub_date": "",
+              "source": "pubmed",
+              "title": "Synthetic conflict paper"
+            },
+            "record_id": "r000001",
+            "record_sha256": "c7accb34ac00060d08c64edb71c74a658571407d99f8220ce77670001ebf8c2a"
+          }
+        ],
+        "source_artifact": "272b961aa73a46979cf759b291be4600-dedup.json",
+        "source_sha256": "b133a909308c9a43292d1c5f24c7299f72e0911c6b45b44c88a28ef3c2c07944"
+      },
+      "event_hash": "d3b2bbb5a9787060ea0cba1d0bf76996bca6470e47924d708fef492b72d49ddc",
+      "event_id": "59b536a9640e42f2b7b038411519c3cf",
+      "kind": "prepared",
+      "previous_hash": "",
+      "project_id": "8687946528b847b9ac062d8f803028c8",
+      "review_id": "302177d93799426ba6a71832b2fe60d2",
+      "timestamp": "2026-11-21T07:44:28.976949+00:00"
+    },
+    {
+      "actor": "browser-human",
+      "data": {
+        "protocol_sha256": "e2c66c518320402a8d0311ba579648f51ecc3a7d55ea5331535975a76665b13c",
+        "source_sha256": "b133a909308c9a43292d1c5f24c7299f72e0911c6b45b44c88a28ef3c2c07944"
+      },
+      "event_hash": "d1358468800429dad42b2c279a125cf85d2cbd967831f2fc25ca03ecb41ce157",
+      "event_id": "91963a58a3ff4036afa333cace27b737",
+      "kind": "approved",
+      "previous_hash": "d3b2bbb5a9787060ea0cba1d0bf76996bca6470e47924d708fef492b72d49ddc",
+      "project_id": "8687946528b847b9ac062d8f803028c8",
+      "review_id": "302177d93799426ba6a71832b2fe60d2",
+      "timestamp": "2026-11-21T07:44:29.376857+00:00"
+    },
+    {
+      "actor": "browser-human",
+      "data": {
+        "decisions": [
+          {
+            "decision": "include",
+            "locator": "title",
+            "reason": "HUMAN_PRIVATE_REASON",
+            "reason_code": "",
+            "record_id": "r000001"
+          }
+        ],
+        "protocol_sha256": "e2c66c518320402a8d0311ba579648f51ecc3a7d55ea5331535975a76665b13c",
+        "provenance": {
+          "type": "human_manual"
+        }
+      },
+      "event_hash": "28d2c2b05db686d85622fe507a1a04a39369941d0a53a9d3281aa087eac15a96",
+      "event_id": "102685f353ab4489895033fa47c9f844",
+      "kind": "submitted",
+      "previous_hash": "d1358468800429dad42b2c279a125cf85d2cbd967831f2fc25ca03ecb41ce157",
+      "project_id": "8687946528b847b9ac062d8f803028c8",
+      "review_id": "302177d93799426ba6a71832b2fe60d2",
+      "timestamp": "2026-11-21T07:44:29.492964+00:00"
+    },
+    {
+      "actor": "browser-model",
+      "data": {
+        "decisions": [
+          {
+            "decision": "uncertain",
+            "locator": "title",
+            "reason": "Synthetic model uncertainty",
+            "reason_code": "",
+            "record_id": "r000001"
+          }
+        ],
+        "protocol_sha256": "e2c66c518320402a8d0311ba579648f51ecc3a7d55ea5331535975a76665b13c",
+        "provenance": {
+          "model": "synthetic-fixture-no-call",
+          "parameters": {},
+          "prompt": "synthetic prompt",
+          "raw_response": "synthetic uncertain response",
+          "run_id": "browser-fixture"
+        }
+      },
+      "event_hash": "349d1d28cde59801ccf421639a4ee8773e9cca022ae89cc722d542e4f0446143",
+      "event_id": "0d040d5a2e8041e4ab57bcff75251de4",
+      "kind": "submitted",
+      "previous_hash": "28d2c2b05db686d85622fe507a1a04a39369941d0a53a9d3281aa087eac15a96",
+      "project_id": "8687946528b847b9ac062d8f803028c8",
+      "review_id": "302177d93799426ba6a71832b2fe60d2",
+      "timestamp": "2026-11-21T07:44:29.660166+00:00"
+    },
+    {
+      "actor": "browser-human",
+      "data": {},
+      "event_hash": "8453841b40bc2408267cc047ea5e9bd4761ba7305c3e2a0938aa2eaa8ed1ca01",
+      "event_id": "b9605ba6b5c84507bf52929b2c9995e3",
+      "kind": "revealed",
+      "previous_hash": "349d1d28cde59801ccf421639a4ee8773e9cca022ae89cc722d542e4f0446143",
+      "project_id": "8687946528b847b9ac062d8f803028c8",
+      "review_id": "302177d93799426ba6a71832b2fe60d2",
+      "timestamp": "2026-11-21T07:44:29.776699+00:00"
+    },
+    {
+      "actor": "browser-human",
+      "data": {
+        "decision": "include",
+        "reason": "Human adjudication after comparing both independent decisions",
+        "record_id": "r000001"
+      },
+      "event_hash": "85d41fedc1ec5dc84788d3a28e2314e16d332c67fc96ce2f51fdedd04159df40",
+      "event_id": "b33464d878234623878ef4cdd27e7300",
+      "kind": "adjudicated",
+      "previous_hash": "8453841b40bc2408267cc047ea5e9bd4761ba7305c3e2a0938aa2eaa8ed1ca01",
+      "project_id": "8687946528b847b9ac062d8f803028c8",
+      "review_id": "302177d93799426ba6a71832b2fe60d2",
+      "timestamp": "2026-11-21T07:44:29.843059+00:00"
+    },
+    {
+      "actor": "browser-human",
+      "data": {
+        "decision": "exclude",
+        "reason": "Synthetic exclusion: wrong population",
+        "reason_code": "population",
+        "record_id": "r000001"
+      },
+      "event_hash": "49a34a22cafaefca32b817b3d67393e6816267ff2e961523e515603d562593e1",
+      "event_id": "839ef55c82ae41529df745fe51156c9e",
+      "kind": "adjudicated",
+      "previous_hash": "85d41fedc1ec5dc84788d3a28e2314e16d332c67fc96ce2f51fdedd04159df40",
+      "project_id": "8687946528b847b9ac062d8f803028c8",
+      "review_id": "302177d93799426ba6a71832b2fe60d2",
+      "timestamp": "2026-11-21T07:44:30.109334+00:00"
+    }
+  ],
+  "final_decisions": [
+    {
+      "decision": "exclude",
+      "reason": "Synthetic exclusion: wrong population",
+      "reason_code": "population",
+      "record_id": "r000001"
+    }
+  ],
+  "pending_final": 0,
+  "integrity": "hash_chain_verified; no_external_anchor; administrator_and_disk_access_trusted"
+}

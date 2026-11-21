@@ -1,0 +1,104 @@
+{
+  "manuscript": {
+    "actor": "local_owner",
+    "checks": {
+      "blockers": [],
+      "rule_version": "writer-citations-v1",
+      "semantic_support": "requires_human_review",
+      "warnings": []
+    },
+    "created": "2026-11-21T07:44:17.909419+00:00",
+    "evidence_id": "f0e63d9aaa4a49b0813014dd400ef900",
+    "evidence_sha256": "68efbc516617182caab1a92ed6dc8d98deed6f60be24f06e8eee643becdd3f9a",
+    "id": "c18be8ee45204f57897c65873f54c9ef",
+    "identity_assurance": "single_owner_access_token",
+    "kind": "manuscript",
+    "llm_calls": 0,
+    "manuscript_id": "75166068fe42404fb96446799481fdcd",
+    "origin": "manual_draft",
+    "parent_version": "fedda82473fd4a22b8f34beb58245d4f",
+    "project": "73ab3c2477904c678793bb6a631136ed",
+    "sections": [
+      {
+        "body": "Synthetic finding 42. [E:e1]",
+        "title": "结果"
+      }
+    ],
+    "title": "合成稿件 & Desktop"
+  },
+  "evidence": {
+    "actor": "local_owner",
+    "created": "2026-11-21T07:44:17.564667+00:00",
+    "id": "f0e63d9aaa4a49b0813014dd400ef900",
+    "identity_assurance": "single_owner_access_token",
+    "items": [
+      {
+        "classification": "synthetic",
+        "document_id": "4fa257d604984d35a934196b81647f54",
+        "document_sha256": "deba417310d75a821e9ab95b9492f37a1cc0bb93cc23f81104b15cd3afa63bf4",
+        "excerpt": "Synthetic finding 42.",
+        "file_sha256": "4fca7f9469b2117f31104f526739dd6e63083f0ec066d68f3eda972290c3b65b",
+        "id": "e1",
+        "lineage_assurance": "manual_ids_not_linked_to_hunter",
+        "locator": "p:1",
+        "report_id": "",
+        "source": "Synthetic source — 中文 & <test>",
+        "study_ids": [],
+        "support_assurance": "human_declared",
+        "support_note": "Synthetic only, no clinical inference",
+        "text_sha256": "53df00108806ff2314952ec7d5689a0bffba84ce65f5f167fb5fd6fb987c6182",
+        "verified_by": "Synthetic Author"
+      }
+    ],
+    "kind": "evidence",
+    "label": "章节证据",
+    "parent_id": null,
+    "project": "73ab3c2477904c678793bb6a631136ed"
+  },
+  "reviews": [
+    {
+      "actor": "local_owner",
+      "author": "Synthetic Author",
+      "author_assurance": "owner_declared_name",
+      "decision": "approved",
+      "hash": "6d6461db1dccfbd8f603d797e45e9cb49c4bb83c99a336888e39dc88bd933736",
+      "manuscript_sha256": "0597a9ab6bb0c5744bba61aa9f5e6b4517cbad3fadb4bc8de66426729f5644cc",
+      "note": "Checked",
+      "previous_hash": "",
+      "support_confirmed": true,
+      "timestamp": "2026-11-21T07:44:18.028520+00:00",
+      "version": "c18be8ee45204f57897c65873f54c9ef"
+    }
+  ],
+  "status": "approved",
+  "is_current": true,
+  "exported_at": "2026-11-21T07:44:18.096729+00:00",
+  "markdown": "# 合成稿件 & Desktop\n\n已获作者批准 · 版本 c18be8ee45204f57897c65873f54c9ef\n\n## 结果\n\nSynthetic finding 42. [E:e1]\n\n## 引用证据\n\n- [E:e1] Synthetic source — 中文 & <test>；p:1；原件 SHA256 4fca7f9469b2117f31104f526739dd6e63083f0ec066d68f3eda972290c3b65b\n  摘录：Synthetic finding 42.\n",
+  "references": [
+    {
+      "classification": "synthetic",
+      "document_id": "4fa257d604984d35a934196b81647f54",
+      "document_sha256": "deba417310d75a821e9ab95b9492f37a1cc0bb93cc23f81104b15cd3afa63bf4",
+      "excerpt": "Synthetic finding 42.",
+      "file_sha256": "4fca7f9469b2117f31104f526739dd6e63083f0ec066d68f3eda972290c3b65b",
+      "id": "e1",
+      "lineage_assurance": "manual_ids_not_linked_to_hunter",
+      "locator": "p:1",
+      "report_id": "",
+      "source": "Synthetic source — 中文 & <test>",
+      "study_ids": [],
+      "support_assurance": "human_declared",
+      "support_note": "Synthetic only, no clinical inference",
+      "text_sha256": "53df00108806ff2314952ec7d5689a0bffba84ce65f5f167fb5fd6fb987c6182",
+      "verified_by": "Synthetic Author"
+    }
+  ],
+  "llm_calls": 0,
+  "format": "local_markdown_and_audit_json_no_translation",
+  "id": "81e86112ac38488691cee64cf2374526",
+  "kind": "export",
+  "project": "73ab3c2477904c678793bb6a631136ed",
+  "created": "2026-11-21T07:44:18.096757+00:00",
+  "actor": "local_owner",
+  "identity_assurance": "single_owner_access_token"
+}

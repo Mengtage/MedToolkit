@@ -76,11 +76,14 @@ class Store:
 
     def enqueue(self,pid,kind,payload):
         self.project(pid)
-        if kind not in ['search','statistics','write']:raise ValueError('未知任务')
+        if kind not in ['search','statistics','write','deduplicate','dedup_review']:raise ValueError('未知任务')
         if not isinstance(payload,dict):raise ValueError('任务输入必须是对象')
         payload=dict(payload)
         from .adapters import validate_payload
         validate_payload(kind,payload)
+        if kind in ('deduplicate','dedup_review'):
+            from .dedup_jobs import load_source
+            load_source(self,pid,payload)
         if kind=='write':payload['_model']=os.environ.get('GEMINI_MODEL','unconfigured')
         raw=canonical(payload)
         if len(raw)>1_000_000:raise ValueError('任务输入过大')
@@ -122,7 +125,13 @@ class Store:
         pid,kind,payload,_=r
         try:
             from .adapters import search, statistics, write
-            result={'search':search,'statistics':statistics,'write':write}[kind](self,pid,json.loads(payload),jid)
+            if kind in ('deduplicate','dedup_review'):
+                from .dedup_jobs import run
+                result=run(self,pid,json.loads(payload),jid,kind)
+            else:result={'search':search,'statistics':statistics,'write':write}[kind](self,pid,json.loads(payload),jid)
+            if kind=='statistics':
+                result['artifact_sha256']=hashlib.sha256(self.artifact(pid,result['artifact']).read_bytes()).hexdigest()
+                result['payload_sha256']=hashlib.sha256(canonical(json.loads(payload)).encode()).hexdigest()
             with self.db() as db:db.execute('UPDATE jobs SET state=?,updated=?,result=? WHERE id=?',('completed',now(),canonical(result),jid))
             return result
         except Exception as e:
