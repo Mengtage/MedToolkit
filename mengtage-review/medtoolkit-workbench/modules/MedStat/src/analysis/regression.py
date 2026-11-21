@@ -370,7 +370,8 @@ class LogisticRegressionAnalyzer:
 
         if X_new is not None:
             return self.results.predict(X_new)
-        return self.results.fittedvalues
+        # Discrete LogitResults.fittedvalues contains X beta, not probabilities.
+        return self.results.predict()
 
 
 class GLMAnalyzer:

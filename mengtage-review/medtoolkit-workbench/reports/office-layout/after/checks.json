@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "pages": 4,
+  "paper": "A4",
+  "table_rows": 65,
+  "checks": [
+    "all 65 rows in order",
+    "Chinese English and symbols retained",
+    "table headers repeat on each table page",
+    "page fields correct",
+    "rendered word bounds inside pages"
+  ],
+  "engine": "LibreOffice 26.2.6.3; not Microsoft Word",
+  "sha256": {
+    "layout-stress.pdf": "83147d99302a2bb3d4b96eb82ad72a13a22f26daa75d97c3797292c632bb26e6",
+    "layout-stress.docx": "cd534ff42587cad671dbfa2b5757650afc1f4ad50888609a05e76c60e81d713d"
+  }
+}

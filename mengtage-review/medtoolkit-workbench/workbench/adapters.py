@@ -13,26 +13,71 @@ from .core import ROOT, canonical
 
 
 def validate_payload(kind,payload):
-    allowed={'search':{'query','limit','_retry_of'},'statistics':{'classification','method','x','y','rows','_retry_of'},'write':{'section','external_processing_approved','evidence','_model','_retry_of'}}
+    if kind in ('deduplicate','dedup_review'):
+        from .dedup_jobs import validate
+        validate(kind,payload)
+        return
+    allowed={'search':{'query','limit','_retry_of'},'statistics':{'classification','method','x','y','rows','dca_thresholds','nri_thresholds','paired_confirmed','strategy','n_imputations','max_iter','pool_means','threshold','n_bins','evaluation_scope','outcome','predictors','group','value','variable_types','strata','table','row_labels','column_labels','_retry_of'},'write':{'section','external_processing_approved','evidence','_model','_retry_of'}}
     if kind not in allowed or set(payload)-allowed[kind]:raise ValueError('任务包含未允许的字段')
     if '_retry_of' in payload and (not isinstance(payload['_retry_of'],str) or not re.fullmatch('[a-f0-9]{32}',payload['_retry_of'])):
         raise ValueError('重试来源ID无效')
     if kind=='statistics':
         if payload.get('classification')!='synthetic':raise ValueError('仅允许合成数据验收')
+        if payload.get('method')=='mice_imputation':
+            from .imputation import validate
+            validate(payload)
+            return
+        if payload.get('method')=='prediction_evaluation_extended':
+            from .evaluation_extended import validate
+            validate(payload)
+            return
+        if payload.get('method')=='prediction_evaluation':
+            from .evaluation import validate
+            validate(payload)
+            return
+        from .glm import METHODS as GLM_METHODS
+        if payload.get('method') in GLM_METHODS:
+            from .glm import validate
+            validate(payload)
+            return
+        from .regression import METHODS as REGRESSION_METHODS
+        if payload.get('method') in REGRESSION_METHODS:
+            from .regression import validate
+            validate(payload)
+            return
+        if payload.get('method')=='tableone':
+            from .tableone import validate
+            validate(payload)
+            return
+        if payload.get('method')=='group_numeric':
+            from .groups import validate
+            validate(payload)
+            return
+        from .categorical import METHODS, validate
+        if payload.get('method') in METHODS:
+            validate(payload)
+            return
+        if set(payload)-{'classification','method','x','y','rows','_retry_of'}:raise ValueError('相关分析包含未允许的字段')
         rows=payload.get('rows');x=payload.get('x');y=payload.get('y')
         if payload.get('method') not in ['pearson','spearman'] or not isinstance(rows,list) or not 3<=len(rows)<=10000:
             raise ValueError('统计输入或方法无效')
         if not isinstance(x,str) or not isinstance(y,str) or not x or not y or x==y:raise ValueError('两个变量必须不同')
         for row in rows:
             if not isinstance(row,dict) or set(row)!={x,y}:raise ValueError('仅允许两个分析变量，不附带其他字段')
-            if any(v is not None and (type(v) not in (int,float) or not math.isfinite(v)) for v in row.values()):
+            if any(v is not None and (type(v) not in (int,float) or not math.isfinite(v) or abs(v)>1e100) for v in row.values()):
                 raise ValueError('统计输入必须是有限数值或缺失值')
+        complete=[row for row in rows if row[x] is not None and row[y] is not None]
+        if len(complete)<3 or len({row[x] for row in complete})<2 or len({row[y] for row in complete})<2:
+            raise ValueError('有效样本不足或变量为常量')
     elif kind=='search':
         query=payload.get('query');limit=payload.get('limit',50)
         if not isinstance(query,str) or not query.strip() or len(query)>8000 or type(limit) is not int or not 1<=limit<=500:
             raise ValueError('检索输入无效')
     elif kind=='write':
-        evidence(payload)
+        items,_=evidence(payload)
+        section=payload.get('section','')
+        if not isinstance(section,str) or not section.strip() or len(section)>300:raise ValueError('指定章节')
+        if len(canonical(items))>20000:raise ValueError('章节证据超过字符预算，请缩小本轮范围')
         if not os.environ.get('GEMINI_API_KEY') or not os.environ.get('GEMINI_MODEL'):
             raise ValueError('写作入口未配置，暂不接收任务')
 
@@ -61,8 +106,9 @@ def search(store,pid,payload,jid):
         time.sleep(.4)
         xml=get(base+'efetch.fcgi?'+urllib.parse.urlencode({'db':'pubmed','id':','.join(ids[offset:offset+100]),'retmode':'xml'}))
         store.save(pid,f'{jid}-source-{offset}.json',{'xml':xml.decode(),'sha256':hashlib.sha256(xml).hexdigest()})
-        for article in ET.fromstring(xml).findall('PubmedArticle'):
-            articles.append(parser._parse_article_xml(article))
+        for article in ET.fromstring(xml):
+            if article.tag in ('PubmedArticle','PubmedBookArticle'):
+                articles.append(parser._parse_article_xml(article))
     result={'query':query,'total_hits':total,'retrieved':len(articles),'complete':total==len(articles),
             'records':articles,'deduplication':'not_applied','llm_calls':0,'search_response':data}
     name=store.save(pid,f'{jid}-search.json',result)
@@ -70,6 +116,32 @@ def search(store,pid,payload,jid):
 
 
 def statistics(store,pid,payload,jid):
+    validate_payload('statistics',payload)
+    if payload['method']=='mice_imputation':
+        from .imputation import analyze
+        return analyze(store,pid,payload,jid)
+    from .glm import METHODS as GLM_METHODS
+    if payload['method'] in GLM_METHODS:
+        from .glm import analyze
+        return analyze(store,pid,payload,jid)
+    if payload['method']=='prediction_evaluation_extended':
+        from .evaluation_extended import analyze
+        return analyze(store,pid,payload,jid)
+    if payload['method']=='prediction_evaluation':
+        from .evaluation import analyze
+        return analyze(store,pid,payload,jid)
+    from .regression import METHODS as REGRESSION_METHODS
+    if payload['method'] in REGRESSION_METHODS:
+        from .regression import analyze
+        return analyze(store,pid,payload,jid)
+    if payload['method']=='tableone':
+        from .tableone import analyze
+        return analyze(store,pid,payload,jid)
+    if payload['method']=='group_numeric':
+        from .groups import analyze
+        return analyze(store,pid,payload,jid)
+    from .categorical import METHODS, analyze
+    if payload['method'] in METHODS:return analyze(store,pid,payload,jid)
     import pandas as pd
     if payload.get('classification')!='synthetic':
         raise ValueError('首版统计验收仅接受合成数据，真实研究数据接入待安全验收')
@@ -98,7 +170,7 @@ def statistics(store,pid,payload,jid):
 
 def evidence(payload):
     items=payload.get('evidence',[])
-    if payload.get('external_processing_approved') is not True or not items or len(items)>30:
+    if payload.get('external_processing_approved') is not True or not isinstance(items,list) or not items or len(items)>30:
         raise ValueError('需明确允许外部处理并提供1至30条公开证据')
     ids=set()
     for e in items:

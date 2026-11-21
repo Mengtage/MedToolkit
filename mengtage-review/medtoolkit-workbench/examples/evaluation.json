@@ -1,0 +1,25 @@
+{
+  "classification": "synthetic",
+  "method": "prediction_evaluation",
+  "threshold": 0.5,
+  "n_bins": 4,
+  "evaluation_scope": "held_out",
+  "rows": [
+    {
+      "observed": 0,
+      "probability": 0.1
+    },
+    {
+      "observed": 0,
+      "probability": 0.4
+    },
+    {
+      "observed": 1,
+      "probability": 0.35
+    },
+    {
+      "observed": 1,
+      "probability": 0.8
+    }
+  ]
+}

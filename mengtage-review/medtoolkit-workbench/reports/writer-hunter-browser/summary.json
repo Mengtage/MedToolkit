@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "results": [
+    {
+      "name": "model cannot capture adjudicated Hunter material",
+      "status": "PASS"
+    },
+    {
+      "name": "adjudicator captures selected report with native study IDs",
+      "status": "PASS"
+    },
+    {
+      "name": "native Hunter evidence reaches approved Word and audit download",
+      "status": "PASS"
+    }
+  ],
+  "page_errors": [],
+  "source_sha256": {
+    "workbench/writer.py": "6879a1218af1c7a60605bcfd1533eff7d5a34bc67dd3323c3ea324e8e883584d",
+    "workbench/writer_hunter.py": "ceab0696e6d70562206cc6d5c7a9db78d638bbaf923ffed790d43cdd63efaa04",
+    "workbench/writer_docx.py": "95b48b6eb2adbe10441a4a9a6b3d85084eabd89ed0261252eb40199461806696",
+    "workbench/screening_http.py": "ec5e75a8e6cd666214a4ab5ea980f0b65ca1c7ac15573483353add59b9e24881",
+    "web/writer.html": "df4104da471cafa68991854c9f536fc21d1941be0798aabe5c5531a19c3e8fdb",
+    "web/writer.js": "d0c44f4c860bcd49836d132f6df9a5363ad355b68ec6a27e8cfdeb99438c2f1b",
+    "scripts/browser/writer_hunter.cjs": "9e1b941db9258bbb304e66ec069918f096a91eb97eb350c95c23ba18652189bc",
+    "scripts/browser/writer_hunter_server.py": "78c4a1687a2a24102ce822a1286cce5869c0fc25a02a076762399023ee5a335d"
+  },
+  "gemini": "blank; zero calls",
+  "browser": "159.0.8154.6"
+}

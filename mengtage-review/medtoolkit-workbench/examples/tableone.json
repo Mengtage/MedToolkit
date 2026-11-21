@@ -1,0 +1,42 @@
+{
+  "classification": "synthetic",
+  "method": "tableone",
+  "strata": "group",
+  "variable_types": {
+    "group": "categorical",
+    "value": "numeric_continuous",
+    "category": "categorical"
+  },
+  "rows": [
+    {
+      "group": "A",
+      "value": 1,
+      "category": "yes"
+    },
+    {
+      "group": "A",
+      "value": 2,
+      "category": "no"
+    },
+    {
+      "group": "A",
+      "value": 3,
+      "category": null
+    },
+    {
+      "group": "B",
+      "value": 4,
+      "category": "yes"
+    },
+    {
+      "group": "B",
+      "value": 5,
+      "category": "no"
+    },
+    {
+      "group": "B",
+      "value": 6,
+      "category": null
+    }
+  ]
+}

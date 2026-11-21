@@ -1,0 +1,116 @@
+{
+  "manuscript": {
+    "actor": "local_owner",
+    "checks": {
+      "blockers": [],
+      "rule_version": "writer-citations-v1",
+      "semantic_support": "requires_human_review",
+      "warnings": []
+    },
+    "created": "2026-11-21T12:03:36.538413+00:00",
+    "evidence_id": "fd95fc14eb234a4d8f78619587341258",
+    "evidence_sha256": "6c67cbe4fddca9a7ff35cc255cc5580b39431dc52e48527c023525de426e28a8",
+    "id": "b76937246b684df18d1103aaffbfcb77",
+    "identity_assurance": "single_owner_access_token",
+    "kind": "manuscript",
+    "llm_calls": 0,
+    "manuscript_id": "007e78e18f3f42858cb0c3ac03c4bd49",
+    "origin": "manual_draft",
+    "parent_version": null,
+    "project": "98272b71ee8c4ccbb2ae620a7cc73994",
+    "sections": [
+      {
+        "body": "Synthetic Pearson analysis [E:stat1]",
+        "title": "Methods"
+      }
+    ],
+    "title": "Native stats draft"
+  },
+  "evidence": {
+    "actor": "local_owner",
+    "created": "2026-11-21T12:03:36.438023+00:00",
+    "id": "fd95fc14eb234a4d8f78619587341258",
+    "identity_assurance": "single_owner_access_token",
+    "items": [
+      {
+        "classification": "synthetic",
+        "document_id": "7ce4c938592648ba8af7dc2fa73a2c0e",
+        "document_sha256": "e99d75b6a8f2345525dd6627911b3dd57d8626396e1bb96bf26db394475207d9",
+        "excerpt": "\"method\": \"pearson\"",
+        "file_sha256": "55f47c337a9d6d49cdff556897fc43f0e5bcf7a6498283c3715376ac0d7b75b2",
+        "id": "stat1",
+        "lineage_assurance": "manual_ids_not_linked_to_hunter",
+        "locator": "p:1",
+        "native_statistics": {
+          "analysis_input_sha256": "004dfb78dfcfaeba287e3b6d6c49b09f4f4b29b8c414c27e7dbd5319c3494478",
+          "artifact": "50754d86de564cebbfc0aca6e189e7fb-statistics.json",
+          "artifact_sha256": "de08a6263064ce95e78efc739defb76198414806cb96a9df498e2e4c986a565b",
+          "classification": "synthetic",
+          "environment": {
+            "pandas": "3.1.1",
+            "scipy": "1.18.1"
+          },
+          "job_id": "50754d86de564cebbfc0aca6e189e7fb",
+          "method": "pearson",
+          "payload_sha256": "c1d1209e23fc03f84ec9bca3af1cc089f0c65175189bc6b9295dae5643630e5d"
+        },
+        "report_id": "",
+        "source": "MedStat pearson · synthetic · 50754d86de564cebbfc0aca6e189e7fb",
+        "study_ids": [],
+        "support_assurance": "human_declared",
+        "support_note": "Synthetic method provenance only",
+        "text_sha256": "e14ebcbe0dbde0b0a5cd64a3e2f16ad96a04bb30be2d78613a6af99610d23508",
+        "verified_by": "Synthetic Author"
+      }
+    ],
+    "kind": "evidence",
+    "label": "章节证据",
+    "parent_id": null,
+    "project": "98272b71ee8c4ccbb2ae620a7cc73994"
+  },
+  "reviews": [],
+  "status": "needs_human_review",
+  "is_current": true,
+  "exported_at": "2026-11-21T12:03:36.606375+00:00",
+  "markdown": "# Native stats draft\n\n未批准草稿 · 版本 b76937246b684df18d1103aaffbfcb77\n\n## Methods\n\nSynthetic Pearson analysis [E:stat1]\n\n## 引用证据\n\n- [E:stat1] MedStat pearson · synthetic · 50754d86de564cebbfc0aca6e189e7fb；p:1；原件 SHA256 55f47c337a9d6d49cdff556897fc43f0e5bcf7a6498283c3715376ac0d7b75b2\n  摘录：\"method\": \"pearson\"\n\n统计证据 [E:stat1]：任务 50754d86de564cebbfc0aca6e189e7fb；输入 SHA256 c1d1209e23fc03f84ec9bca3af1cc089f0c65175189bc6b9295dae5643630e5d；结果 SHA256 de08a6263064ce95e78efc739defb76198414806cb96a9df498e2e4c986a565b；仅合成数据。\n",
+  "references": [
+    {
+      "classification": "synthetic",
+      "document_id": "7ce4c938592648ba8af7dc2fa73a2c0e",
+      "document_sha256": "e99d75b6a8f2345525dd6627911b3dd57d8626396e1bb96bf26db394475207d9",
+      "excerpt": "\"method\": \"pearson\"",
+      "file_sha256": "55f47c337a9d6d49cdff556897fc43f0e5bcf7a6498283c3715376ac0d7b75b2",
+      "id": "stat1",
+      "lineage_assurance": "manual_ids_not_linked_to_hunter",
+      "locator": "p:1",
+      "native_statistics": {
+        "analysis_input_sha256": "004dfb78dfcfaeba287e3b6d6c49b09f4f4b29b8c414c27e7dbd5319c3494478",
+        "artifact": "50754d86de564cebbfc0aca6e189e7fb-statistics.json",
+        "artifact_sha256": "de08a6263064ce95e78efc739defb76198414806cb96a9df498e2e4c986a565b",
+        "classification": "synthetic",
+        "environment": {
+          "pandas": "3.1.1",
+          "scipy": "1.18.1"
+        },
+        "job_id": "50754d86de564cebbfc0aca6e189e7fb",
+        "method": "pearson",
+        "payload_sha256": "c1d1209e23fc03f84ec9bca3af1cc089f0c65175189bc6b9295dae5643630e5d"
+      },
+      "report_id": "",
+      "source": "MedStat pearson · synthetic · 50754d86de564cebbfc0aca6e189e7fb",
+      "study_ids": [],
+      "support_assurance": "human_declared",
+      "support_note": "Synthetic method provenance only",
+      "text_sha256": "e14ebcbe0dbde0b0a5cd64a3e2f16ad96a04bb30be2d78613a6af99610d23508",
+      "verified_by": "Synthetic Author"
+    }
+  ],
+  "llm_calls": 0,
+  "format": "local_markdown_and_audit_json_no_translation",
+  "id": "85d9bd12160d43cda2d24dc036f7f5f5",
+  "kind": "export",
+  "project": "98272b71ee8c4ccbb2ae620a7cc73994",
+  "created": "2026-11-21T12:03:36.606400+00:00",
+  "actor": "local_owner",
+  "identity_assurance": "single_owner_access_token"
+}

@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "results": [
+    {
+      "name": "upload text and freeze exact located evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "manual chapter citation blockers prevent approval",
+      "status": "PASS"
+    },
+    {
+      "name": "save revision approve and actual Markdown audit downloads",
+      "status": "PASS"
+    },
+    {
+      "name": "Word saved version download and paired audit",
+      "status": "PASS"
+    },
+    {
+      "name": "unsaved changes cannot approve and saved edits require renewed review",
+      "status": "PASS"
+    },
+    {
+      "name": "native MedStat result captured as versioned writing evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "owner auth required and logout clears evidence without persistence",
+      "status": "PASS"
+    }
+  ],
+  "page_errors": [],
+  "source_sha256": {
+    "workbench/writer.py": "6879a1218af1c7a60605bcfd1533eff7d5a34bc67dd3323c3ea324e8e883584d",
+    "workbench/writer_docx.py": "95b48b6eb2adbe10441a4a9a6b3d85084eabd89ed0261252eb40199461806696",
+    "workbench/writer_statistics.py": "c7fd15f83ec6e7c03787340d4f410f0212adfa5690a188583ebb752fb9e53460",
+    "workbench/core.py": "ad29235c7eaec1e768b3f704ec50d586bcbeb03a25f72d90bc93de918d5eb5ca",
+    "workbench/server.py": "df002d679b0df77742e928ebc6735b999223dd938256ad17e27a5eabb6f7b416",
+    "web/writer.html": "df4104da471cafa68991854c9f536fc21d1941be0798aabe5c5531a19c3e8fdb",
+    "web/writer.js": "d0c44f4c860bcd49836d132f6df9a5363ad355b68ec6a27e8cfdeb99438c2f1b",
+    "scripts/browser/writer.cjs": "c71fda847d2809b8b2b145a196bee261ad62104a4a6f96a41f0e7c342e640c10"
+  },
+  "gemini": "blank; zero calls",
+  "browser": "159.0.8154.6"
+}

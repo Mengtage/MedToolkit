@@ -1,0 +1,156 @@
+{
+  "manuscript": {
+    "actor": "local_owner",
+    "checks": {
+      "blockers": [],
+      "rule_version": "writer-citations-v1",
+      "semantic_support": "requires_human_review",
+      "warnings": []
+    },
+    "created": "2026-11-21T06:56:13.228243+00:00",
+    "evidence_id": "d50292bcc8c041c893fc910f6818cf51",
+    "evidence_sha256": "049becd5b7d946d9dcdff397176782ebaa3ef5e1ae95b18bacd31cd2175452f9",
+    "id": "51e1c04fe9ad47ce912e837346b5e483",
+    "identity_assurance": "single_owner_access_token",
+    "kind": "manuscript",
+    "llm_calls": 0,
+    "manuscript_id": "f7bab693945341bfb7bbc13517716869",
+    "origin": "manual_draft",
+    "parent_version": null,
+    "project": "498078dc3f794ec99f9914cbfd4b3add",
+    "sections": [
+      {
+        "title": "一、中文与英文混排",
+        "body": "这是合成排版材料，用于检查中文、English、希腊字母 α β、置信区间 95% CI、符号 ≤ ≥ ± 与引用 [E:e1]。所有数字仅用于版式检查，不是临床结论。\n\n这是合成排版材料，用于检查中文、English、希腊字母 α β、置信区间 95% CI、符号 ≤ ≥ ± 与引用 [E:e1]。所有数字仅用于版式检查，不是临床结论。\n\n这是合成排版材料，用于检查中文、English、希腊字母 α β、置信区间 95% CI、符号 ≤ ≥ ± 与引用 [E:e1]。所有数字仅用于版式检查，不是临床结论。\n\n这是合成排版材料，用于检查中文、English、希腊字母 α β、置信区间 95% CI、符号 ≤ ≥ ± 与引用 [E:e1]。所有数字仅用于版式检查，不是临床结论。\n\n这是合成排版材料，用于检查中文、English、希腊字母 α β、置信区间 95% CI、符号 ≤ ≥ ± 与引用 [E:e1]。所有数字仅用于版式检查，不是临床结论。\n\n这是合成排版材料，用于检查中文、English、希腊字母 α β、置信区间 95% CI、符号 ≤ ≥ ± 与引用 [E:e1]。所有数字仅用于版式检查，不是临床结论。\n\n这是合成排版材料，用于检查中文、English、希腊字母 α β、置信区间 95% CI、符号 ≤ ≥ ± 与引用 [E:e1]。所有数字仅用于版式检查，不是临床结论。"
+      },
+      {
+        "title": "二、跨页表格 / Multipage table",
+        "body": "| 指标 / Measure | 合成值 | 说明 / Notes |\n| --- | ---: | --- |\n| 项目 01 | 0.10 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 02 | 0.20 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 03 | 0.30 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 04 | 0.40 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 05 | 0.50 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 06 | 0.60 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 07 | 0.70 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 08 | 0.80 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 09 | 0.90 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 10 | 1.00 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 11 | 1.10 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 12 | 1.20 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 13 | 1.30 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 14 | 1.40 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 15 | 1.50 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 16 | 1.60 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 17 | 1.70 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 18 | 1.80 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 19 | 1.90 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 20 | 2.00 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 21 | 2.10 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 22 | 2.20 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 23 | 2.30 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 24 | 2.40 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 25 | 2.50 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 26 | 2.60 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 27 | 2.70 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 28 | 2.80 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 29 | 2.90 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 30 | 3.00 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 31 | 3.10 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 32 | 3.20 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 33 | 3.30 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 34 | 3.40 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 35 | 3.50 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 36 | 3.60 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 37 | 3.70 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 38 | 3.80 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 39 | 3.90 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 40 | 4.00 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 41 | 4.10 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 42 | 4.20 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 43 | 4.30 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 44 | 4.40 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 45 | 4.50 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 46 | 4.60 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 47 | 4.70 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 48 | 4.80 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 49 | 4.90 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 50 | 5.00 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 51 | 5.10 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 52 | 5.20 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 53 | 5.30 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 54 | 5.40 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 55 | 5.50 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 56 | 5.60 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 57 | 5.70 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 58 | 5.80 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 59 | 5.90 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 60 | 6.00 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 61 | 6.10 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 62 | 6.20 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 63 | 6.30 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 64 | 6.40 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |\n| 项目 65 | 6.50 | 合成表格行，检查跨页表头与行完整性。 [E:e1] |"
+      },
+      {
+        "title": "三、长引用及特殊字符",
+        "body": "Special <tags> & quotes \"example\" remain literal. [E:e1]\n\n这是合成排版材料，用于检查中文、English、希腊字母 α β、置信区间 95% CI、符号 ≤ ≥ ± 与引用 [E:e1]。所有数字仅用于版式检查，不是临床结论。"
+      }
+    ],
+    "title": "MedToolkit 排版验收 / Office layout — 合成材料"
+  },
+  "evidence": {
+    "actor": "local_owner",
+    "created": "2026-11-21T06:56:13.111203+00:00",
+    "id": "d50292bcc8c041c893fc910f6818cf51",
+    "identity_assurance": "single_owner_access_token",
+    "items": [
+      {
+        "captured_by": "human",
+        "classification": "synthetic",
+        "document_id": "827709469b5a4b06ade2d68588999d03",
+        "document_sha256": "7e58d8bc20feb5c055201642afed03467eb949b624001a02fcb4e334913945a2",
+        "excerpt": "Trial X and Trial Y enrolled adults.",
+        "file_sha256": "462a3761e2d77f7fec95d32e29f7288d7e258197ba2f24abed6086a9a95f9c29",
+        "id": "e1",
+        "lineage_assurance": "native_hunter_selected_version",
+        "locator": "p:1",
+        "native_hunter": {
+          "decision_event_hash": "779d5881da500318d5540e44ac1874d81c5a0b0a59db4a9ea2f3b996f080e5d5",
+          "mapping_event_hash": "bb8b3700d519ae1c6f435d8d9321ac68f764a9dedf72bb51b1b61b878cd0dc39",
+          "parent_event_hash": "7feee8527599811edca52b6e51c18e172ca9668fe41bd6e7852a49e388aba865",
+          "parent_review_id": "f25d5b86a7004463977350a87417ffc7",
+          "protocol_sha256": "e0b9d12af67d34a54f6ac616e9e72d984d379e442592b67fb59072e48390bb0a",
+          "record_id": "r000001",
+          "record_sha256": "d58af016f122312d3e72a21ace1a85d17650d0c887d8fc211c690ec7478441be",
+          "report_id": "f25d5b86a7004463977350a87417ffc7:r000001",
+          "retrieval_event_hash": "5f2b950f7398e92c6ecd50b9391e7cc83e142cd4ff26cfdfd9fb39dd14196e0d",
+          "review_id": "71939ab906604d0d96feaf642f352f2a",
+          "screening_event_hash": "f26d608c436aae5511ca936f7c689ee39bc180d55a47d97af14a360b9b6f3df9",
+          "source_artifact": "5ba969b7265940f5aeee873547e2003a-fulltext.json",
+          "source_sha256": "ec43985a8b6b1767abd3b665173743f1bde2b84b105fb37e3741269a1617874a",
+          "study_ids": [
+            "trial_x"
+          ],
+          "study_scope": "selected_review_only"
+        },
+        "report_id": "f25d5b86a7004463977350a87417ffc7:r000001",
+        "source": "合成来源 · 中文题名 & English DOI 10.0000/synthetic-layout-not-real",
+        "study_ids": [
+          "trial_x"
+        ],
+        "support_assurance": "human_declared",
+        "support_note": "Synthetic report evidence only",
+        "text_sha256": "5ae219748b83811abf28b4d6268807c404afae14bf81528231b482e44730add9",
+        "verified_by": "Synthetic Author"
+      }
+    ],
+    "kind": "evidence",
+    "label": "章节证据",
+    "parent_id": null,
+    "project": "498078dc3f794ec99f9914cbfd4b3add"
+  },
+  "reviews": [
+    {
+      "actor": "local_owner",
+      "author": "Synthetic Author",
+      "author_assurance": "owner_declared_name",
+      "decision": "approved",
+      "hash": "de93d9b386a51b7185780a717ca9e010df277de0369d4ab68e2ed99a77411d25",
+      "manuscript_sha256": "16a51cd06d509157671c5511f4bbe45b867a1a8c453bc4f9677caea784306162",
+      "note": "Checked original page and trial mapping",
+      "previous_hash": "",
+      "support_confirmed": true,
+      "timestamp": "2026-11-21T06:56:13.328452+00:00",
+      "version": "51e1c04fe9ad47ce912e837346b5e483"
+    }
+  ],
+  "status": "approved",
+  "is_current": true,
+  "exported_at": "2026-11-21T06:56:13.430458+00:00",
+  "markdown": "# Hunter linked draft\n\n已获作者批准 · 版本 51e1c04fe9ad47ce912e837346b5e483\n\n## Results\n\nSynthetic trial description [E:e1]\n\n## 引用证据\n\n- [E:e1] A · 1；p:1；原件 SHA256 462a3761e2d77f7fec95d32e29f7288d7e258197ba2f24abed6086a9a95f9c29\n  摘录：Trial X and Trial Y enrolled adults.\n\nHunter证据 [E:e1]：报告 f25d5b86a7004463977350a87417ffc7:r000001；研究 trial_x（限批次 71939ab906604d0d96feaf642f352f2a）；裁决版本 f26d608c436aae5511ca936f7c689ee39bc180d55a47d97af14a360b9b6f3df9；映射版本 bb8b3700d519ae1c6f435d8d9321ac68f764a9dedf72bb51b1b61b878cd0dc39。\n",
+  "references": [
+    {
+      "captured_by": "human",
+      "classification": "synthetic",
+      "document_id": "827709469b5a4b06ade2d68588999d03",
+      "document_sha256": "7e58d8bc20feb5c055201642afed03467eb949b624001a02fcb4e334913945a2",
+      "excerpt": "Trial X and Trial Y enrolled adults.",
+      "file_sha256": "462a3761e2d77f7fec95d32e29f7288d7e258197ba2f24abed6086a9a95f9c29",
+      "id": "e1",
+      "lineage_assurance": "native_hunter_selected_version",
+      "locator": "p:1",
+      "native_hunter": {
+        "decision_event_hash": "779d5881da500318d5540e44ac1874d81c5a0b0a59db4a9ea2f3b996f080e5d5",
+        "mapping_event_hash": "bb8b3700d519ae1c6f435d8d9321ac68f764a9dedf72bb51b1b61b878cd0dc39",
+        "parent_event_hash": "7feee8527599811edca52b6e51c18e172ca9668fe41bd6e7852a49e388aba865",
+        "parent_review_id": "f25d5b86a7004463977350a87417ffc7",
+        "protocol_sha256": "e0b9d12af67d34a54f6ac616e9e72d984d379e442592b67fb59072e48390bb0a",
+        "record_id": "r000001",
+        "record_sha256": "d58af016f122312d3e72a21ace1a85d17650d0c887d8fc211c690ec7478441be",
+        "report_id": "f25d5b86a7004463977350a87417ffc7:r000001",
+        "retrieval_event_hash": "5f2b950f7398e92c6ecd50b9391e7cc83e142cd4ff26cfdfd9fb39dd14196e0d",
+        "review_id": "71939ab906604d0d96feaf642f352f2a",
+        "screening_event_hash": "f26d608c436aae5511ca936f7c689ee39bc180d55a47d97af14a360b9b6f3df9",
+        "source_artifact": "5ba969b7265940f5aeee873547e2003a-fulltext.json",
+        "source_sha256": "ec43985a8b6b1767abd3b665173743f1bde2b84b105fb37e3741269a1617874a",
+        "study_ids": [
+          "trial_x"
+        ],
+        "study_scope": "selected_review_only"
+      },
+      "report_id": "f25d5b86a7004463977350a87417ffc7:r000001",
+      "source": "合成来源 · 中文题名 & English DOI 10.0000/synthetic-layout-not-real",
+      "study_ids": [
+        "trial_x"
+      ],
+      "support_assurance": "human_declared",
+      "support_note": "Synthetic report evidence only",
+      "text_sha256": "5ae219748b83811abf28b4d6268807c404afae14bf81528231b482e44730add9",
+      "verified_by": "Synthetic Author"
+    }
+  ],
+  "llm_calls": 0,
+  "format": "local_markdown_and_audit_json_no_translation",
+  "id": "520888eee8a54dc0afd46adaa82105c5",
+  "kind": "export",
+  "project": "498078dc3f794ec99f9914cbfd4b3add",
+  "created": "2026-11-21T06:56:13.430480+00:00",
+  "actor": "local_owner",
+  "identity_assurance": "single_owner_access_token"
+}
