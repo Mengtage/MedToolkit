@@ -25,6 +25,10 @@ INTERNAL_JARGON_RE = re.compile(
     r'(?:/api/\w+|/sources\b|/screening\b|/studies\b|/writer\b|\bselected_lineage_complete\b|\btableone\b|\bcategorical_auto\b|\bprediction_evaluation_extended\b|\bmengtage-owner\b|\baria-gemini-reviewer\b|\bstudy_pmid_\w+)'
 )
 
+AI_TEMPLATE_AND_OVERCLAIM_RE = re.compile(
+    r'(?:全面赋能|生态底座|阶段门|显著赋能|完全治愈|无任何副作用|首次证明)'
+)
+
 
 def infer_section_kind(title):
     t = (title or '').strip().lower()
@@ -187,6 +191,8 @@ def citation_check(sections, evidence):
             warnings.append(title+'：统计P值不应写作P=0.000，按医学SCI规范应写为P<0.001')
         if INTERNAL_JARGON_RE.search(body):
             warnings.append(title+'：正文疑似包含工作台内部路由或变量标识符，请改为规范学术表述')
+        if AI_TEMPLATE_AND_OVERCLAIM_RE.search(body):
+            warnings.append(title+'：正文包含AI模板腔或过度因果/绝对化表述，请按证据强度降级表述')
         if kind not in NON_CITING_KINDS and kind not in OPTIONAL_CITING_KINDS:
             for paragraph in body.split('\n\n'):
                 p_strip=paragraph.strip()

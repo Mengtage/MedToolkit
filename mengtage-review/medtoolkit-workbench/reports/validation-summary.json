@@ -37,7 +37,7 @@
       }
     }
   ],
-  "validated_at": "2026-11-21T13:38:50.918503+00:00",
+  "validated_at": "2026-11-21T14:39:36.376179+00:00",
   "python": "3.14.4",
   "source_sha256": {
     "workbench/review_access.py": "d53c26e244a522322de52828ff4139a59b6f73a2c89320ae2c70fce17e5c70e7",
@@ -51,7 +51,7 @@
     "workbench/screening_http.py": "ec5e75a8e6cd666214a4ab5ea980f0b65ca1c7ac15573483353add59b9e24881",
     "workbench/__init__.py": "f9c2ff8b7f0cdb391a8556abd3862b921d4ad64f7de5c2d193e8adcd1f2cdcb9",
     "workbench/imputation.py": "8547d7bc7a56a06309e60a80b449b319c01cae0701ca89b04769703d9b99ad74",
-    "workbench/writer.py": "ae2b39036a6eb55893d1ace6348bd45af0a6fd779f1c2e419c925f0a6deb946a",
+    "workbench/writer.py": "763b91737005d3a567e4c9da5c6a60c081b8b78a5e79cfc744671918225e7c6e",
     "workbench/server.py": "df002d679b0df77742e928ebc6735b999223dd938256ad17e27a5eabb6f7b416",
     "workbench/regression.py": "ef73ac9ad8285cc03a490ca5fe4048ce36b69482814c088ddad74e446be30143",
     "workbench/writer_docx.py": "9265e39b47ee82cfad74976f9bbe6cf07e1ff1dcf786c38022165f640c7a7d65",
