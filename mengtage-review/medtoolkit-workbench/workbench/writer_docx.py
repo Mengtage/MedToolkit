@@ -1,5 +1,6 @@
-"""Local DOCX rendering of a frozen writer export with SCI three-line tables and Vancouver references."""
+"""Local DOCX rendering of a frozen writer export with SCI three-line tables, native PRISMA 2020 Figure 1 flowchart, Vancouver references, and standalone Technical Supplement DOCX."""
 import io
+import json
 import re
 from docx import Document
 from docx.shared import Pt, Mm
@@ -39,6 +40,144 @@ def _set_border(container, edge, val='nil', sz=None, color='000000'):
         el.set(qn('w:space'),'0')
         el.set(qn('w:color'),color)
     container.append(el)
+
+
+def _set_cell_box_style(cell, border_color='126B64', fill_color='F1F8F7', border_sz=10):
+    tcPr = cell._tc.get_or_add_tcPr()
+    for old in tcPr.findall(qn('w:tcBorders')):
+        tcPr.remove(old)
+    cb = OxmlElement('w:tcBorders')
+    for edge in ('top', 'left', 'bottom', 'right'):
+        _set_border(cb, edge, 'single', border_sz, border_color)
+    tcPr.append(cb)
+    for old_shd in tcPr.findall(qn('w:shd')):
+        tcPr.remove(old_shd)
+    shd = OxmlElement('w:shd')
+    shd.set(qn('w:val'), 'clear')
+    shd.set(qn('w:color'), 'auto')
+    shd.set(qn('w:fill'), fill_color)
+    tcPr.append(shd)
+
+
+def _set_cell_clear_borders(cell):
+    tcPr = cell._tc.get_or_add_tcPr()
+    for old in tcPr.findall(qn('w:tcBorders')):
+        tcPr.remove(old)
+    cb = OxmlElement('w:tcBorders')
+    for edge in ('top', 'left', 'bottom', 'right'):
+        _set_border(cb, edge, 'nil')
+    tcPr.append(cb)
+
+
+def add_prisma_flow_figure(doc, flow_json_str):
+    """Render Figure 1 (PRISMA 2020 Standard Flow Diagram) natively as a structured two-column boxed flowchart inside Word."""
+    try:
+        d = json.loads(flow_json_str)
+    except Exception:
+        p = doc.add_paragraph()
+        add_inline(p, flow_json_str)
+        return
+
+    cap = doc.add_paragraph()
+    cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    cap.paragraph_format.space_before = Pt(8)
+    cap.paragraph_format.space_after = Pt(6)
+    r_cap = cap.add_run('图 1  PRISMA 2020 文献检索、筛选与纳入标准流程图（Figure 1. PRISMA 2020 Flow Diagram）')
+    r_cap.bold = True
+    r_cap.font.size = Pt(10.5)
+
+    stages = [
+        (
+            f"【阶段 1：识别 Identification】\n数据库与注册库检索识别原始记录 (n = {d.get('records_identified', 0)})\n来源：{d.get('source_summary', '多数据库检索')}",
+            '──────►',
+            f"筛选前移除重复记录\n(n = {d.get('duplicates_removed', 0)})",
+        ),
+        (
+            f"【阶段 2：初筛 Screening】\n题名与摘要独立双盲筛选记录\n(n = {d.get('records_screened', 0)})",
+            '──────►',
+            f"初筛排除不符合纳入标准记录\n(n = {d.get('records_excluded', 0)})",
+        ),
+        (
+            f"【阶段 3：全文获取 Retrieval】\n拟获取全文进行资格评估报告\n(n = {d.get('reports_sought', 0)})",
+            '──────►',
+            f"未能获取全文报告\n(n = {d.get('reports_not_retrieved', 0)})",
+        ),
+        (
+            f"【阶段 4：全文评估 Eligibility】\n全文资格评估报告\n(n = {d.get('reports_assessed', 0)})",
+            '──────►',
+            f"全文评估排除报告 (n = {d.get('reports_excluded', 0)})\n排除原因：{d.get('exclusion_breakdown', '不符合纳入标准')}",
+        ),
+        (
+            f"【阶段 5：最终纳入 Included】\n纳入本综述定量与定性综合全文报告 (n = {d.get('reports_included', 0)})\n归属独立原始临床研究 (n = {d.get('studies_included', 0)})",
+            '',
+            '',
+        ),
+    ]
+
+    # Build a 9-row x 3-column flowchart grid (5 stage rows interleaved with 4 downward arrow rows)
+    table = doc.add_table(rows=len(stages) * 2 - 1, cols=3)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.autofit = False
+    tblPr = table._tbl.tblPr
+    for old in tblPr.findall(qn('w:tblBorders')):
+        tblPr.remove(old)
+    borders = OxmlElement('w:tblBorders')
+    for edge in ('top', 'left', 'bottom', 'right', 'insideH', 'insideV'):
+        _set_border(borders, edge, 'nil')
+    tblPr.append(borders)
+
+    total_w = doc.sections[0].page_width - doc.sections[0].left_margin - doc.sections[0].right_margin
+    col_widths = [int(total_w * 0.48), int(total_w * 0.10), int(total_w * 0.42)]
+
+    for s_idx, (left_txt, arrow_txt, right_txt) in enumerate(stages):
+        r_i = s_idx * 2
+        row = table.rows[r_i]
+        row._tr.get_or_add_trPr().append(OxmlElement('w:cantSplit'))
+        c_left, c_mid, c_right = row.cells[0], row.cells[1], row.cells[2]
+        for k, c in enumerate((c_left, c_mid, c_right)):
+            c.width = col_widths[k]
+
+        c_left.text = left_txt
+        _set_cell_box_style(c_left, border_color='126B64', fill_color='F1F8F7', border_sz=10)
+        for p in c_left.paragraphs:
+            p.paragraph_format.space_before = Pt(4)
+            p.paragraph_format.space_after = Pt(4)
+            p.paragraph_format.line_spacing = 1.15
+            for r in p.runs:
+                r.font.size = Pt(9.5)
+
+        c_mid.text = arrow_txt
+        _set_cell_clear_borders(c_mid)
+        c_mid.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+        for r in c_mid.paragraphs[0].runs:
+            r.bold = True
+            r.font.size = Pt(10)
+
+        c_right.text = right_txt
+        if right_txt:
+            _set_cell_box_style(c_right, border_color='8A4B12', fill_color='FDF7F2', border_sz=8)
+            for p in c_right.paragraphs:
+                p.paragraph_format.space_before = Pt(4)
+                p.paragraph_format.space_after = Pt(4)
+                p.paragraph_format.line_spacing = 1.15
+                for r in p.runs:
+                    r.font.size = Pt(9.5)
+        else:
+            _set_cell_clear_borders(c_right)
+
+        if s_idx < len(stages) - 1:
+            ar_row = table.rows[r_i + 1]
+            ar_row._tr.get_or_add_trPr().append(OxmlElement('w:cantSplit'))
+            for k, c in enumerate(ar_row.cells):
+                c.width = col_widths[k]
+                _set_cell_clear_borders(c)
+            ar_row.cells[0].text = '▼'
+            ar_row.cells[0].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+            ar_row.cells[0].paragraphs[0].paragraph_format.space_before = Pt(1)
+            ar_row.cells[0].paragraphs[0].paragraph_format.space_after = Pt(1)
+            for r in ar_row.cells[0].paragraphs[0].runs:
+                r.bold = True
+                r.font.size = Pt(10)
 
 
 def apply_three_line_table_borders(table):
@@ -82,6 +221,14 @@ def add_body(doc,body):
         if buf:
             p=doc.add_paragraph();add_inline(p,' '.join(buf));buf.clear()
     while i<len(lines):
+        if lines[i].strip()==':::prisma-flow':
+            flush()
+            j=i+1;flow_lines=[]
+            while j<len(lines) and lines[j].strip()!=':::':
+                flow_lines.append(lines[j]);j+=1
+            add_prisma_flow_figure(doc,'\n'.join(flow_lines))
+            i=j+1 if j<len(lines) else j
+            continue
         header=cells(lines[i]);divider=cells(lines[i+1]) if i+1<len(lines) else None
         if header and divider and len(header)==len(divider) and all(re.fullmatch(r':?-{3,}:?',v) for v in divider):
             rows=[];j=i+2
@@ -114,7 +261,7 @@ def add_body(doc,body):
                         for para in c.paragraphs:
                             para.paragraph_format.space_after=Pt(3);para.paragraph_format.space_before=Pt(3);para.paragraph_format.line_spacing=1.1
                             para.alignment=WD_ALIGN_PARAGRAPH.CENTER if divider[k].startswith(':') and divider[k].endswith(':') else WD_ALIGN_PARAGRAPH.RIGHT if divider[k].endswith(':') else WD_ALIGN_PARAGRAPH.LEFT
-                            for run in para.runs:run.font.size=Pt(9.5)
+                            for run in para.runs:run.font.size=Pt(9.0)
                 i=j;continue
         raw=lines[i].strip()
         if not raw:
@@ -123,6 +270,8 @@ def add_body(doc,body):
             flush();p=doc.add_heading(level=3);add_inline(p,raw[5:].strip());i+=1;continue
         if raw.startswith('### '):
             flush();p=doc.add_heading(level=2);add_inline(p,raw[4:].strip());i+=1;continue
+        if raw.startswith('## '):
+            flush();p=doc.add_heading(level=1);add_inline(p,raw[3:].strip());i+=1;continue
         if re.match(r'^[-*]\s+\S',raw) or re.match(r'^\d+\.\s+\S',raw):
             flush();p=doc.add_paragraph();add_inline(p,raw);i+=1;continue
         if raw.startswith('|'):
@@ -132,8 +281,8 @@ def add_body(doc,body):
     flush()
 
 
-def render(bundle, include_audit_appendix=True):
-    m=bundle['manuscript'];doc=Document()
+def _init_styled_doc(title_text, subject_text):
+    doc=Document()
     for name,east in [('Normal','宋体'),('Title','黑体'),('Heading 1','黑体'),('Heading 2','黑体'),('Heading 3','黑体')]:
         if name not in doc.styles:continue
         style=doc.styles[name];style.font.name='Times New Roman';style.element.get_or_add_rPr().get_or_add_rFonts().set(qn('w:eastAsia'),east)
@@ -147,14 +296,21 @@ def render(bundle, include_audit_appendix=True):
         fonts=doc.styles[name].element.get_or_add_rPr().get_or_add_rFonts()
         for attr in ['asciiTheme','hAnsiTheme','eastAsiaTheme','cstheme']:
             if qn('w:'+attr) in fonts.attrib:del fonts.attrib[qn('w:'+attr)]
-    label='已获作者批准' if bundle['status']=='approved' else '未批准草稿'
-    doc.core_properties.title=m['title'];doc.core_properties.subject='稿件版本 '+m['id'];doc.core_properties.author='local_owner';doc.core_properties.last_modified_by='local_owner';doc.core_properties.comments='Local saved-version export; no translation or model calls.'
-    title_h=doc.add_heading(m['title'],0)
+    doc.core_properties.title=title_text;doc.core_properties.subject=subject_text;doc.core_properties.author='local_owner';doc.core_properties.last_modified_by='local_owner';doc.core_properties.comments='Local saved-version export; no translation or model calls.'
+    title_h=doc.add_heading(title_text,0)
     title_h.alignment=WD_ALIGN_PARAGRAPH.CENTER
+    return doc
+
+
+def render(bundle, include_audit_appendix=True):
+    m=bundle['manuscript']
+    doc=_init_styled_doc(m['title'],'稿件版本 '+m['id'])
+    label='已获作者批准' if bundle['status']=='approved' else '未批准草稿'
     bib_numbers,bib_refs,stat_ids,_=order_citations(m['sections'],bundle['evidence']['items'])
     for sec in m['sections']:
         doc.add_heading(sec['title'],1)
-        add_body(doc,render_academic_text(sec['body'],bib_numbers,stat_ids))
+        # Keep :::prisma-flow block intact for add_body so Word renders native PRISMA Figure 1 flowchart boxes
+        add_body(doc,render_academic_text(sec['body'],bib_numbers,stat_ids,convert_prisma_block=False))
     if bib_refs:
         doc.add_heading('参考文献 (References)',1)
         for idx,e in enumerate(bib_refs,1):
@@ -202,3 +358,30 @@ def render(bundle, include_audit_appendix=True):
     for run in footer.runs:run.font.size=Pt(8)
     footer.alignment=WD_ALIGN_PARAGRAPH.CENTER
     output=io.BytesIO();doc.save(output);return output.getvalue()
+
+
+def render_technical_supplement(bundle):
+    """Render the standalone Technical Supplement (technical_supplement_markdown) into a formatted Word (.docx) document."""
+    m = bundle['manuscript']
+    supp_title = f"{m['title']} — 技术补充说明 (Technical Supplement)"
+    doc = _init_styled_doc(supp_title, '技术补充说明 · 对应主稿版本 ' + m['id'])
+    md_text = bundle.get('technical_supplement_markdown') or ''
+    # Strip the top H1 line since _init_styled_doc already added the document title heading
+    lines = md_text.splitlines()
+    if lines and lines[0].startswith('# '):
+        lines = lines[1:]
+    add_body(doc, '\n'.join(lines))
+    footer = doc.sections[0].footer.paragraphs[0]
+    footer.text = f"Technical Supplement · Manuscript {m['id'][:8]} · "
+    for instruction in ['PAGE', 'NUMPAGES']:
+        if instruction == 'NUMPAGES':
+            footer.add_run(' / ')
+        field = OxmlElement('w:fldSimple')
+        field.set(qn('w:instr'), instruction)
+        footer._p.append(field)
+    for run in footer.runs:
+        run.font.size = Pt(8)
+    footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    output = io.BytesIO()
+    doc.save(output)
+    return output.getvalue()

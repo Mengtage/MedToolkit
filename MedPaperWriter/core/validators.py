@@ -227,15 +227,28 @@ def check_overclaiming(text: str, section_kind: str = "") -> List[Dict[str, str]
 _INTERNAL_JARGON_RE = re.compile(
     r"(?:/api/\w+|/sources\b|/screening\b|/studies\b|/writer\b|\bselected_lineage_complete\b"
     r"|\btableone\b|\bcategorical_auto\b|\bprediction_evaluation_extended\b"
-    r"|\bmengtage-owner\b|\baria-gemini-reviewer\b|\bstudy_pmid_\w+|\bSHA256\b|\[E:[A-Za-z0-9_-]+\])"
+    r"|\bmengtage-owner\b|\baria-gemini-reviewer\b|\bstudy_pmid_\w+|\bSHA256\b|\bSHA-256\b"
+    r"|哈希冻结|快照冻结|确定性去重|工作台统计模块|按医学\s*SCI\s*规范|\[E:[A-Za-z0-9_-]+\])"
+)
+
+_STUDY_BULLET_LAUNDRY_RE = re.compile(
+    r"^\s*[-*]\s+\*\*[^*\n]{1,60}\*\*\s*(?:[（(][^)\n]{1,120}[)）])?\s*[：:]",
+    re.M,
+)
+
+_UNTRANSLATED_EN_RUN_RE = re.compile(
+    r"\b[A-Za-z]{2,}[A-Za-z0-9/-]*\b(?:\s+\b[A-Za-z]{2,}[A-Za-z0-9,.;:/-]*\b){7,}"
 )
 
 
 def check_sci_writing_conventions(text: str, section_kind: str = "") -> List[Dict[str, str]]:
-    """医学 SCI 论文写作规范检查：
+    """医学 SCI 论文写作规范检查（6大质量门禁）：
     1. P 值规范：严禁写作 P = 0.000（须写作 P < 0.001）。
     2. 摘要规范：摘要不得包含文献引用编号，且应包含结构化要素（目的/方法/结果/结论）。
-    3. 严禁泄露工作台内部路由、哈希或未渲染的 [E:id] 证据标签。
+    3. 严禁泄露工作台内部路由、SHA-256哈希、确定性去重、SCI规则自述或未渲染的 [E:id] 证据标签。
+    4. 严禁宽泛无效引用堆砌（单处引用跨度 > 6 篇，如 [1–37]）。
+    5. 严禁结果/讨论章节使用无序列表（- **Author**）逐篇提纲式罗列。
+    6. 严禁中文正文/表格残留连续 >= 8 个英文单词的未翻译摘要原句、...截断符或“详见正文”占位符。
     """
     issues: List[Dict[str, str]] = []
     text = text or ""
@@ -256,9 +269,46 @@ def check_sci_writing_conventions(text: str, section_kind: str = "") -> List[Dic
         issues.append(_issue(
             "internal_pipeline_jargon",
             "error",
-            "正文含系统内部路由、哈希、函数名或未转换的 [E:id] 标签，不符合学术论文出版规范",
+            "正文含系统内部路由、SHA-256哈希、去重算法、规则自述或未转换的 [E:id] 标签，须移入技术补充说明",
             ", ".join(dict.fromkeys(jargon))[:120],
         ))
+
+    for rng_m in re.finditer(r"\[(\d{1,3})\s*[–\-]\s*(\d{1,3})\]", text):
+        s_n, e_n = int(rng_m.group(1)), int(rng_m.group(2))
+        if e_n - s_n + 1 > 6:
+            issues.append(_issue(
+                "broad_citation_dumping",
+                "error",
+                f"单处引用跨度超过 6 篇文献（[{s_n}–{e_n}]），属于宽泛无效引用堆砌",
+                rng_m.group(0),
+            ))
+
+    if section_kind in ("results", "discussion", ""):
+        m_laundry = _STUDY_BULLET_LAUNDRY_RE.search(text)
+        if m_laundry:
+            issues.append(_issue(
+                "study_laundry_bullet_list",
+                "error",
+                "结果或讨论章节严禁使用无序列表（- **Author**）逐篇罗列研究，须按主题横向综合为连贯学术段落",
+                m_laundry.group(0),
+            ))
+        if re.search(r"[\u4e00-\u9fff]", text):
+            stripped_en = re.sub(r"[（(][A-Za-z0-9\s,/+&-]{3,160}[）)]", " ", text)
+            en_m = _UNTRANSLATED_EN_RUN_RE.search(stripped_en)
+            if en_m:
+                issues.append(_issue(
+                    "untranslated_english_excerpt",
+                    "error",
+                    "中文稿件残留连续未翻译的英文原句摘录",
+                    en_m.group(0),
+                ))
+            if "详见正文" in text:
+                issues.append(_issue(
+                    "perfunctory_table_placeholder",
+                    "error",
+                    "严禁使用“详见正文”敷衍占位符，须填入具体定量指标",
+                    "详见正文",
+                ))
 
     if section_kind == "abstract":
         if _NUMERIC_CITATION.search(text) or _AUTHOR_YEAR.search(text):

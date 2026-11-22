@@ -1,6 +1,6 @@
 {
   "status": "PASS",
-  "tested_at": "2026-11-21T15:09:02.139Z",
+  "tested_at": "2026-11-22T11:40:16.284Z",
   "browser": "159.0.8154.6",
   "viewport": "1440x1000",
   "pubmed": "synthetic transport fixture; real parser, store and HTTP",

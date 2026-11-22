@@ -94,7 +94,8 @@ class SourceService:
             cleaned.append(rec)
         records_valid(cleaned)
         db_name=raw.get('database') or 'PubMed'
-        meta={'database':db_name,'kind':'database','query':raw['query'],'searched_at':jobs[0]['created'],'total_hits':raw['total_hits'],
+        source_kind='register' if db_name=='ClinicalTrials.gov' else 'database'
+        meta={'database':db_name,'kind':source_kind,'query':raw['query'],'searched_at':jobs[0]['created'],'total_hits':raw['total_hits'],
             'complete':raw['complete'],'coverage_note':'原生检索任务 '+jobs[0]['id']+'；时间为任务创建时间，非数据库更新时间'}
         validate_metadata(meta,count)
         return self.persist(project,{'method':'source_run','metadata':meta,'records':cleaned,'retrieved':count,'total_hits':raw['total_hits'],'complete':raw['complete'],

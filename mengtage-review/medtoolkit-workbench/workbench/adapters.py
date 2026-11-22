@@ -1,4 +1,4 @@
-"""Explicit adapters: network search, local statistics, approved writing evidence."""
+"""Explicit adapters: network search (with auto-pagination and open academic APIs), local statistics, approved writing evidence."""
 import hashlib
 import importlib.util
 import json
@@ -12,12 +12,15 @@ import xml.etree.ElementTree as ET
 from .core import ROOT, canonical
 
 
+SUPPORTED_SEARCH_DATABASES = ('pubmed', 'europe_pmc', 'openalex', 'crossref', 'clinicaltrials')
+
+
 def validate_payload(kind,payload):
     if kind in ('deduplicate','dedup_review'):
         from .dedup_jobs import validate
         validate(kind,payload)
         return
-    allowed={'search':{'query','limit','database','_retry_of'},'statistics':{'classification','method','x','y','rows','dca_thresholds','nri_thresholds','paired_confirmed','strategy','n_imputations','max_iter','pool_means','threshold','n_bins','evaluation_scope','outcome','predictors','group','value','variable_types','strata','table','row_labels','column_labels','_retry_of'},'write':{'section','external_processing_approved','evidence','_model','_retry_of'}}
+    allowed={'search':{'query','limit','database','fetch_all','page_size','_retry_of'},'statistics':{'classification','method','x','y','rows','dca_thresholds','nri_thresholds','paired_confirmed','strategy','n_imputations','max_iter','pool_means','threshold','n_bins','evaluation_scope','outcome','predictors','group','value','variable_types','strata','table','row_labels','column_labels','_retry_of'},'write':{'section','external_processing_approved','evidence','_model','_retry_of'}}
     if kind not in allowed or set(payload)-allowed[kind]:raise ValueError('任务包含未允许的字段')
     if '_retry_of' in payload and (not isinstance(payload['_retry_of'],str) or not re.fullmatch('[a-f0-9]{32}',payload['_retry_of'])):
         raise ValueError('重试来源ID无效')
@@ -71,9 +74,15 @@ def validate_payload(kind,payload):
             raise ValueError('有效样本不足或变量为常量')
     elif kind=='search':
         query=payload.get('query');limit=payload.get('limit',50);db=payload.get('database','pubmed')
-        if db not in ('pubmed','europe_pmc'):raise ValueError('检索数据库仅支持pubmed或europe_pmc')
-        if not isinstance(query,str) or not query.strip() or len(query)>8000 or type(limit) is not int or not 1<=limit<=500:
+        fetch_all=payload.get('fetch_all',False);page_size=payload.get('page_size',None)
+        if db not in SUPPORTED_SEARCH_DATABASES:
+            raise ValueError('检索数据库仅支持pubmed、europe_pmc、openalex、crossref或clinicaltrials')
+        if not isinstance(query,str) or not query.strip() or len(query)>8000 or type(limit) is not int or not 1<=limit<=5000:
             raise ValueError('检索输入无效')
+        if type(fetch_all) is not bool:
+            raise ValueError('fetch_all须为布尔值')
+        if page_size is not None and (type(page_size) is not int or not 1<=page_size<=1000):
+            raise ValueError('page_size须为1至1000之间的整数')
     elif kind=='write':
         items,_=evidence(payload)
         section=payload.get('section','')
@@ -89,7 +98,8 @@ def module(path,name):
 
 
 def get(url):
-    with urllib.request.urlopen(url,timeout=30) as response:return response.read()
+    req = urllib.request.Request(url, headers={'User-Agent': 'MedToolkit-Workbench/2.0 (mailto:research@medtoolkit.org)'})
+    with urllib.request.urlopen(req,timeout=30) as response:return response.read()
 
 
 def _clean_search_record(rec):
@@ -109,63 +119,271 @@ def _clean_search_record(rec):
     return out
 
 
+def _reconstruct_openalex_abstract(inv):
+    if not isinstance(inv, dict) or not inv:
+        return ''
+    words = []
+    for word, positions in inv.items():
+        if isinstance(positions, list):
+            for pos in positions:
+                if isinstance(pos, int):
+                    words.append((pos, str(word)))
+    words.sort(key=lambda x: x[0])
+    return ' '.join(w for _, w in words).strip()
+
+
 def search(store,pid,payload,jid):
     query=payload.get('query','').strip()
     limit=payload.get('limit',50)
     db=payload.get('database','pubmed')
-    if db not in ('pubmed','europe_pmc'):raise ValueError('检索数据库仅支持pubmed或europe_pmc')
-    if not query or len(query)>8000 or type(limit) is not int or not 1<=limit<=500:
-        raise ValueError('检索式必填；每次获取1至500条')
+    fetch_all=bool(payload.get('fetch_all',False))
+    custom_page_size=payload.get('page_size')
+    if db not in SUPPORTED_SEARCH_DATABASES:
+        raise ValueError('检索数据库仅支持pubmed、europe_pmc、openalex、crossref或clinicaltrials')
+    if not query or len(query)>8000 or type(limit) is not int or not 1<=limit<=5000:
+        raise ValueError('检索式必填；每次获取1至5000条')
+    if custom_page_size is not None and (type(custom_page_size) is not int or not 1<=custom_page_size<=1000):
+        raise ValueError('page_size须为1至1000之间的整数')
+
     if db=='europe_pmc':
-        url='https://www.ebi.ac.uk/europepmc/webservices/rest/search?'+urllib.parse.urlencode({'query':query,'format':'json','pageSize':limit,'resultType':'core'})
-        raw=get(url)
-        store.save(pid,f'{jid}-source-0.json',{'json':raw.decode('utf-8',errors='replace'),'sha256':hashlib.sha256(raw).hexdigest()})
-        epmc=json.loads(raw)
-        total=int(epmc.get('hitCount',0))
-        items=epmc.get('resultList',{}).get('result',[])
-        articles=[]
-        for item in items[:limit]:
-            title=(item.get('title') or '').strip()
-            if not title:continue
-            author_str=(item.get('authorString') or '').strip().rstrip('.')
-            authors=[a.strip() for a in author_str.split(',') if a.strip()] if author_str else []
-            jinfo=item.get('journalInfo') or {}
-            journal=((jinfo.get('journal') or {}).get('title') or item.get('journalTitle') or '').strip()
-            rec=_clean_search_record({
-                'title':title,
-                'abstract':re.sub(r'<[^>]+>',' ',item.get('abstractText') or '').strip(),
-                'pmid':item.get('pmid'),
-                'doi':item.get('doi'),
-                'authors':authors,
-                'journal':journal,
-                'pub_date':item.get('firstPublicationDate') or item.get('pubYear') or '',
-                'volume':jinfo.get('volume') or item.get('journalVolume') or '',
-                'issue':jinfo.get('issue') or item.get('issue') or '',
-                'pages':item.get('pageInfo') or '',
-            })
-            if rec.get('title'):articles.append(rec)
+        page_size=custom_page_size or (200 if fetch_all else min(limit,200))
+        cursor='*';page_idx=0;total=0;articles=[];target=limit
+        while True:
+            params={'query':query,'format':'json','pageSize':page_size,'resultType':'core'}
+            if fetch_all or page_idx>0 or custom_page_size is not None:
+                params['cursorMark']=cursor
+            url='https://www.ebi.ac.uk/europepmc/webservices/rest/search?'+urllib.parse.urlencode(params)
+            raw=get(url)
+            store.save(pid,f'{jid}-source-{page_idx}.json',{'json':raw.decode('utf-8',errors='replace'),'sha256':hashlib.sha256(raw).hexdigest()})
+            epmc=json.loads(raw)
+            if page_idx==0:
+                total=int(epmc.get('hitCount',0))
+                target=min(total, max(limit, min(total,5000)) if fetch_all else limit)
+            items=epmc.get('resultList',{}).get('result',[])
+            for item in items:
+                if len(articles)>=target:break
+                title=(item.get('title') or '').strip()
+                if not title:continue
+                author_str=(item.get('authorString') or '').strip().rstrip('.')
+                authors=[a.strip() for a in author_str.split(',') if a.strip()] if author_str else []
+                jinfo=item.get('journalInfo') or {}
+                journal=((jinfo.get('journal') or {}).get('title') or item.get('journalTitle') or '').strip()
+                rec=_clean_search_record({
+                    'title':title,
+                    'abstract':re.sub(r'<[^>]+>',' ',item.get('abstractText') or '').strip(),
+                    'pmid':item.get('pmid'),
+                    'doi':item.get('doi'),
+                    'authors':authors,
+                    'journal':journal,
+                    'pub_date':item.get('firstPublicationDate') or item.get('pubYear') or '',
+                    'volume':jinfo.get('volume') or item.get('journalVolume') or '',
+                    'issue':jinfo.get('issue') or item.get('issue') or '',
+                    'pages':item.get('pageInfo') or '',
+                })
+                if rec.get('title'):articles.append(rec)
+            next_cursor=epmc.get('nextCursorMark')
+            page_idx+=1
+            if len(articles)>=target or not items or len(items)<page_size or not next_cursor or next_cursor==cursor:
+                break
+            cursor=next_cursor
         result={'database':'Europe PMC','query':query,'total_hits':total,'retrieved':len(articles),'complete':total==len(articles),
-                'records':articles,'deduplication':'not_applied','llm_calls':0,'search_response':{'hitCount':total}}
+                'pages_fetched':page_idx,'records':articles,'deduplication':'not_applied','llm_calls':0,'search_response':{'hitCount':total}}
         name=store.save(pid,f'{jid}-search.json',result)
-        return {'artifact':name,'database':'Europe PMC','total_hits':total,'retrieved':len(articles),'complete':result['complete']}
+        return {'artifact':name,'database':'Europe PMC','total_hits':total,'retrieved':len(articles),'complete':result['complete'],'pages_fetched':page_idx}
+
+    if db=='openalex':
+        page_size=custom_page_size or min(limit,200)
+        cursor='*';page_idx=0;total=0;articles=[];target=limit
+        while True:
+            params={'search':query,'per-page':page_size,'cursor':cursor}
+            url='https://api.openalex.org/works?'+urllib.parse.urlencode(params)
+            raw=get(url)
+            store.save(pid,f'{jid}-source-{page_idx}.json',{'json':raw.decode('utf-8',errors='replace'),'sha256':hashlib.sha256(raw).hexdigest()})
+            oa=json.loads(raw)
+            meta=oa.get('meta') or {}
+            if page_idx==0:
+                total=int(meta.get('count',0))
+                target=min(total, max(limit, min(total,5000)) if fetch_all else limit)
+            items=oa.get('results') or []
+            for item in items:
+                if len(articles)>=target:break
+                title=(item.get('title') or item.get('display_name') or '').strip()
+                if not title:continue
+                ids_obj=item.get('ids') or {}
+                raw_pmid=str(ids_obj.get('pmid') or '').strip()
+                pmid=re.sub(r'^https?://pubmed\.ncbi\.nlm\.nih\.gov/','',raw_pmid).strip('/')
+                raw_doi=str(item.get('doi') or ids_obj.get('doi') or '').strip()
+                doi=re.sub(r'^https?://(?:dx\.)?doi\.org/','',raw_doi)
+                authors=[
+                    (a.get('author') or {}).get('display_name','').strip()
+                    for a in (item.get('authorships') or [])
+                    if (a.get('author') or {}).get('display_name')
+                ]
+                loc=(item.get('primary_location') or {}).get('source') or {}
+                journal=(loc.get('display_name') or '').strip()
+                bib=item.get('biblio') or {}
+                fp=str(bib.get('first_page') or '').strip()
+                lp=str(bib.get('last_page') or '').strip()
+                pages=f'{fp}-{lp}' if (fp and lp and fp!=lp) else fp
+                rec=_clean_search_record({
+                    'title':title,
+                    'abstract':_reconstruct_openalex_abstract(item.get('abstract_inverted_index')),
+                    'pmid':pmid,
+                    'doi':doi,
+                    'authors':authors,
+                    'journal':journal,
+                    'pub_date':str(item.get('publication_date') or item.get('publication_year') or ''),
+                    'volume':bib.get('volume') or '',
+                    'issue':bib.get('issue') or '',
+                    'pages':pages,
+                })
+                if rec.get('title'):articles.append(rec)
+            next_cursor=meta.get('next_cursor')
+            page_idx+=1
+            if len(articles)>=target or not items or len(items)<page_size or not next_cursor or next_cursor==cursor:
+                break
+            cursor=next_cursor
+        result={'database':'OpenAlex','query':query,'total_hits':total,'retrieved':len(articles),'complete':total==len(articles),
+                'pages_fetched':page_idx,'records':articles,'deduplication':'not_applied','llm_calls':0,'search_response':{'count':total}}
+        name=store.save(pid,f'{jid}-search.json',result)
+        return {'artifact':name,'database':'OpenAlex','total_hits':total,'retrieved':len(articles),'complete':result['complete'],'pages_fetched':page_idx}
+
+    if db=='crossref':
+        page_size=custom_page_size or min(limit,100)
+        cursor='*';page_idx=0;total=0;articles=[];target=limit
+        while True:
+            params={'query':query,'rows':page_size,'cursor':cursor}
+            url='https://api.crossref.org/works?'+urllib.parse.urlencode(params)
+            raw=get(url)
+            store.save(pid,f'{jid}-source-{page_idx}.json',{'json':raw.decode('utf-8',errors='replace'),'sha256':hashlib.sha256(raw).hexdigest()})
+            cr=json.loads(raw).get('message') or {}
+            if page_idx==0:
+                total=int(cr.get('total-results',0))
+                target=min(total, max(limit, min(total,5000)) if fetch_all else limit)
+            items=cr.get('items') or []
+            for item in items:
+                if len(articles)>=target:break
+                titles=item.get('title') or []
+                title=(titles[0] if titles else '').strip()
+                if not title:continue
+                authors=[]
+                for a in (item.get('author') or []):
+                    fam=(a.get('family') or '').strip()
+                    giv=(a.get('given') or '').strip()
+                    nm=' '.join(p for p in (fam,giv) if p)
+                    if nm:authors.append(nm)
+                containers=item.get('container-title') or []
+                journal=(containers[0] if containers else '').strip()
+                date_parts=((item.get('published') or item.get('issued') or {}).get('date-parts') or [[]])[0]
+                pub_date='-'.join(str(x) for x in date_parts if x)
+                rec=_clean_search_record({
+                    'title':title,
+                    'abstract':re.sub(r'<[^>]+>',' ',item.get('abstract') or '').strip(),
+                    'doi':item.get('DOI') or '',
+                    'authors':authors,
+                    'journal':journal,
+                    'pub_date':pub_date,
+                    'volume':item.get('volume') or '',
+                    'issue':item.get('issue') or '',
+                    'pages':item.get('page') or '',
+                })
+                if rec.get('title'):articles.append(rec)
+            next_cursor=cr.get('next-cursor')
+            page_idx+=1
+            if len(articles)>=target or not items or len(items)<page_size or not next_cursor or next_cursor==cursor:
+                break
+            cursor=next_cursor
+        result={'database':'Crossref','query':query,'total_hits':total,'retrieved':len(articles),'complete':total==len(articles),
+                'pages_fetched':page_idx,'records':articles,'deduplication':'not_applied','llm_calls':0,'search_response':{'total_results':total}}
+        name=store.save(pid,f'{jid}-search.json',result)
+        return {'artifact':name,'database':'Crossref','total_hits':total,'retrieved':len(articles),'complete':result['complete'],'pages_fetched':page_idx}
+
+    if db=='clinicaltrials':
+        page_size=custom_page_size or min(limit,100)
+        page_token=None;page_idx=0;total=0;articles=[];target=limit
+        while True:
+            params={'query.term':query,'pageSize':page_size,'countTotal':'true'}
+            if page_token:params['pageToken']=page_token
+            url='https://clinicaltrials.gov/api/v2/studies?'+urllib.parse.urlencode(params)
+            raw=get(url)
+            store.save(pid,f'{jid}-source-{page_idx}.json',{'json':raw.decode('utf-8',errors='replace'),'sha256':hashlib.sha256(raw).hexdigest()})
+            ct=json.loads(raw)
+            if page_idx==0:
+                total=int(ct.get('totalCount',len(ct.get('studies') or [])))
+                target=min(total, max(limit, min(total,5000)) if fetch_all else limit)
+            studies=ct.get('studies') or []
+            for st in studies:
+                if len(articles)>=target:break
+                psec=st.get('protocolSection') or {}
+                id_mod=psec.get('identificationModule') or {}
+                nct_id=(id_mod.get('nctId') or '').strip()
+                title=(id_mod.get('officialTitle') or id_mod.get('briefTitle') or '').strip()
+                if not title:continue
+                if nct_id and nct_id not in title:
+                    title=f'{title} ({nct_id})'
+                desc_mod=psec.get('descriptionModule') or {}
+                status_mod=psec.get('statusModule') or {}
+                design_mod=psec.get('designModule') or {}
+                enroll=((design_mod.get('enrollmentInfo') or {}).get('count'))
+                abstract_parts=[desc_mod.get('briefSummary') or '', desc_mod.get('detailedDescription') or '']
+                if nct_id:abstract_parts.append(f'Trial Registration: {nct_id}.')
+                if enroll:abstract_parts.append(f'Enrollment: N = {enroll}.')
+                sponsor=((psec.get('sponsorCollaboratorsModule') or {}).get('leadSponsor') or {}).get('name') or ''
+                pub_date=((status_mod.get('startDateStruct') or {}).get('date')) or ''
+                rec=_clean_search_record({
+                    'title':title,
+                    'abstract':' '.join(p.strip() for p in abstract_parts if p.strip()),
+                    'authors':[sponsor] if sponsor else [],
+                    'journal':'ClinicalTrials.gov',
+                    'pub_date':pub_date,
+                })
+                if rec.get('title'):articles.append(rec)
+            page_token=ct.get('nextPageToken')
+            page_idx+=1
+            if len(articles)>=target or not studies or len(studies)<page_size or not page_token:
+                break
+        result={'database':'ClinicalTrials.gov','query':query,'total_hits':total,'retrieved':len(articles),'complete':total==len(articles),
+                'pages_fetched':page_idx,'records':articles,'deduplication':'not_applied','llm_calls':0,'search_response':{'totalCount':total}}
+        name=store.save(pid,f'{jid}-search.json',result)
+        return {'artifact':name,'database':'ClinicalTrials.gov','total_hits':total,'retrieved':len(articles),'complete':result['complete'],'pages_fetched':page_idx}
+
     # Query is a literature query, never patient data. No LLM and no implicit filtering.
     base='https://eutils.ncbi.nlm.nih.gov/entrez/eutils/'
-    raw=get(base+'esearch.fcgi?'+urllib.parse.urlencode({'db':'pubmed','term':query,'retmode':'json','retmax':limit}))
+    esearch_page_size=custom_page_size or (200 if fetch_all else min(limit,200))
+    first_params={'db':'pubmed','term':query,'retmode':'json','retmax':esearch_page_size}
+    if fetch_all or custom_page_size is not None:
+        first_params['retstart']=0
+    raw=get(base+'esearch.fcgi?'+urllib.parse.urlencode(first_params))
     data=json.loads(raw)['esearchresult']
-    ids=data.get('idlist',[]);total=int(data['count']);articles=[]
+    page_ids=list(data.get('idlist',[]));total=int(data['count']);ids=list(page_ids)
+    target=min(total, max(limit, min(total,5000)) if fetch_all else limit)
+    esearch_pages=1
+    while len(ids)<target and len(page_ids)>=esearch_page_size:
+        time.sleep(.35)
+        req_max=min(esearch_page_size,target-len(ids))
+        next_raw=get(base+'esearch.fcgi?'+urllib.parse.urlencode({'db':'pubmed','term':query,'retmode':'json','retstart':len(ids),'retmax':req_max}))
+        next_data=json.loads(next_raw)['esearchresult']
+        page_ids=list(next_data.get('idlist',[]))
+        if not page_ids:
+            break
+        ids.extend(page_ids)
+        esearch_pages+=1
+    ids=ids[:target]
+    articles=[]
     parser=module('MedPaperHunter/backend/pubmed_fetcher.py','hunter_fetch')
-    for offset in range(0,len(ids),100):
-        time.sleep(.4)
-        xml=get(base+'efetch.fcgi?'+urllib.parse.urlencode({'db':'pubmed','id':','.join(ids[offset:offset+100]),'retmode':'xml'}))
-        store.save(pid,f'{jid}-source-{offset}.json',{'xml':xml.decode(),'sha256':hashlib.sha256(xml).hexdigest()})
+    batch_size=custom_page_size if (custom_page_size and custom_page_size<=200) else 200 if (fetch_all or len(ids)>100) else 100
+    for offset in range(0,len(ids),batch_size):
+        time.sleep(.35)
+        xml=get(base+'efetch.fcgi?'+urllib.parse.urlencode({'db':'pubmed','id':','.join(ids[offset:offset+batch_size]),'retmode':'xml'}))
+        store.save(pid,f'{jid}-source-{offset}.json',{'xml':xml.decode('utf-8',errors='replace'),'sha256':hashlib.sha256(xml).hexdigest()})
         for article in ET.fromstring(xml):
             if article.tag in ('PubmedArticle','PubmedBookArticle'):
                 parsed=_clean_search_record(parser._parse_article_xml(article))
                 if parsed.get('title'):articles.append(parsed)
     result={'database':'PubMed','query':query,'total_hits':total,'retrieved':len(articles),'complete':total==len(articles),
-            'records':articles,'deduplication':'not_applied','llm_calls':0,'search_response':data}
+            'pages_fetched':esearch_pages,'records':articles,'deduplication':'not_applied','llm_calls':0,'search_response':data}
     name=store.save(pid,f'{jid}-search.json',result)
-    return {'artifact':name,'total_hits':total,'retrieved':len(articles),'complete':result['complete']}
+    return {'artifact':name,'total_hits':total,'retrieved':len(articles),'complete':result['complete'],'pages_fetched':esearch_pages}
 
 
 def statistics(store,pid,payload,jid):

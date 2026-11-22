@@ -10,7 +10,8 @@ class ScreeningService:
         self.fulltext=FulltextService(self)
         from .studies import StudyService
         from .prisma import PrismaService
-        self.studies=StudyService(self);self.prisma=PrismaService(self)
+        from .charting import DataChartingService
+        self.studies=StudyService(self);self.prisma=PrismaService(self);self.charting=DataChartingService(self)
     def prepare(self,project,source_artifact,protocol):
         if not isinstance(protocol,dict):raise ValueError('需要筛选方案')
         from .screening_exports import REASON_CODES,REASON_VERSION
@@ -61,8 +62,9 @@ class ScreeningService:
             'fulltext_status':{'review'},'fulltext_register':{'review','record_id','status','reason'},'fulltext_batch_register':{'review'},
             'fulltext_prepare':{'review','protocol'},'fulltext_file':{'review','record_id'},
             'study_state':{'review'},'study_save':{'review','mappings','screening_event_hash','mapping_event_hash','confirmed'},'study_auto_suggest':{'review'},
+            'chart_state':{'review'},'chart_extract':{'review'},'chart_save':{'review','charting','screening_event_hash','mapping_event_hash','confirmed'},
             'prisma_preview':{'review'},'prisma_export':{'review','expected_sha256'}}
-        optional={'reason_code','locator','quote'} if operation=='adjudicate' else {'filename','content_base64'} if operation=='fulltext_register' else {'mode','submit'} if operation=='auto_screen' else {'default_for_disagreement'} if operation=='batch_adjudicate' else {'mode','items'} if operation=='fulltext_batch_register' else {'label','classification','include_statistics'} if operation=='writer_auto_package' else set()
+        optional={'reason_code','locator','quote'} if operation=='adjudicate' else {'filename','content_base64'} if operation=='fulltext_register' else {'mode','submit'} if operation=='auto_screen' else {'default_for_disagreement'} if operation=='batch_adjudicate' else {'mode','items'} if operation=='fulltext_batch_register' else {'label','classification','include_statistics'} if operation=='writer_auto_package' else {'mode','save'} if operation=='chart_extract' else {'charting_event_hash'} if operation=='chart_save' else set()
         fields=set(body)-optional
         if operation not in allowed or fields!=allowed[operation]:raise ValueError('筛选请求字段无效；身份由令牌决定')
         if not isinstance(body['review'],str):raise ValueError('批次ID无效')
@@ -130,6 +132,7 @@ class ScreeningService:
             from .fulltext import json_hash
             report=self.prisma.preview(body['review'],actor);return {'report':report,'sha256':json_hash(report)}
         if operation=='prisma_export':return self.prisma.export(actor=actor,**body)
+        if operation.startswith('chart_'):return getattr(self.charting,operation.removeprefix('chart_'))(actor=actor,**body)
         if operation.startswith('study_'):return getattr(self.studies,operation.removeprefix('study_'))(actor=actor,**body)
         if operation.startswith('fulltext_'):return getattr(self.fulltext,operation.removeprefix('fulltext_'))(actor=actor,**body)
         if operation=='state':return self.state(body['review'],actor)

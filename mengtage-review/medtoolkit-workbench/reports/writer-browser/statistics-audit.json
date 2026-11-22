@@ -3,21 +3,21 @@
     "actor": "local_owner",
     "checks": {
       "blockers": [],
-      "rule_version": "writer-citations-sci-v2",
+      "rule_version": "writer-citations-sci-v3-6gates",
       "semantic_support": "requires_human_review",
       "warnings": []
     },
-    "created": "2026-11-21T15:09:05.477000+00:00",
-    "evidence_id": "51954ab2d96e4208ba8f7851926cf1f4",
-    "evidence_sha256": "a86084e5aeaaa1208da518d20188fb0177c3d75f2af87d2feac70d850e2ef459",
-    "id": "d5a932e42b6046eeb893438e3bf2d97a",
+    "created": "2026-11-22T11:40:19.689169+00:00",
+    "evidence_id": "25ec508fac2a4b569a739df61cfa3e72",
+    "evidence_sha256": "40b23a469f820526246d91fbc4d5113fe1fb335663c7fcfca3f14341f661904f",
+    "id": "2ec42cd35cc145719cab029dd0668cf5",
     "identity_assurance": "single_owner_access_token",
     "kind": "manuscript",
     "llm_calls": 0,
-    "manuscript_id": "1a6a846973464b6db98f37a329ac0fb9",
+    "manuscript_id": "8a4287bfe7d24343b9a224b608510b12",
     "origin": "manual_draft",
     "parent_version": null,
-    "project": "0ef91ad4583144e5a86898d2f83f00bd",
+    "project": "341453b64b234cd4b464f8f5a4e05e73",
     "sections": [
       {
         "body": "Synthetic Pearson analysis [E:stat1]",
@@ -28,14 +28,14 @@
   },
   "evidence": {
     "actor": "local_owner",
-    "created": "2026-11-21T15:09:05.359737+00:00",
-    "id": "51954ab2d96e4208ba8f7851926cf1f4",
+    "created": "2026-11-22T11:40:19.571692+00:00",
+    "id": "25ec508fac2a4b569a739df61cfa3e72",
     "identity_assurance": "single_owner_access_token",
     "items": [
       {
         "classification": "synthetic",
-        "document_id": "c8eceda71f824de2be1337c399f73db9",
-        "document_sha256": "f15502d7584da06a90c3d01c2efcc5b4413d8bf3a953ce688c400d0e0bda37f8",
+        "document_id": "d578d8ddfe6f4ab5b8869019d77f90a1",
+        "document_sha256": "47b5ee2cfc58c046caa0455b02c7783f8d1fe31042994510e55ebed0e72e1f60",
         "excerpt": "\"method\": \"pearson\"",
         "file_sha256": "55f47c337a9d6d49cdff556897fc43f0e5bcf7a6498283c3715376ac0d7b75b2",
         "id": "stat1",
@@ -43,20 +43,20 @@
         "locator": "p:1",
         "native_statistics": {
           "analysis_input_sha256": "004dfb78dfcfaeba287e3b6d6c49b09f4f4b29b8c414c27e7dbd5319c3494478",
-          "artifact": "ba6ec1c125e840b9a087e3a793d6bf49-statistics.json",
+          "artifact": "2ad948afb3864e92809550950f1de513-statistics.json",
           "artifact_sha256": "de08a6263064ce95e78efc739defb76198414806cb96a9df498e2e4c986a565b",
           "classification": "synthetic",
           "environment": {
             "pandas": "3.1.1",
             "scipy": "1.18.1"
           },
-          "job_id": "ba6ec1c125e840b9a087e3a793d6bf49",
+          "job_id": "2ad948afb3864e92809550950f1de513",
           "method": "pearson",
           "payload_sha256": "c1d1209e23fc03f84ec9bca3af1cc089f0c65175189bc6b9295dae5643630e5d"
         },
         "origin": "native_statistics",
         "report_id": "",
-        "source": "MedStat pearson · synthetic · ba6ec1c125e840b9a087e3a793d6bf49",
+        "source": "MedStat pearson · synthetic · 2ad948afb3864e92809550950f1de513",
         "study_ids": [],
         "support_assurance": "human_declared",
         "support_note": "Synthetic method provenance only",
@@ -67,19 +67,20 @@
     "kind": "evidence",
     "label": "章节证据",
     "parent_id": null,
-    "project": "0ef91ad4583144e5a86898d2f83f00bd"
+    "project": "341453b64b234cd4b464f8f5a4e05e73"
   },
   "reviews": [],
   "status": "needs_human_review",
   "is_current": true,
-  "exported_at": "2026-11-21T15:09:05.543662+00:00",
-  "markdown": "# Native stats draft\n\n## Methods\n\nSynthetic Pearson analysis \n\n---\n\n## 附录：工作台证据溯源与作者审核记录\n\n未批准草稿 · 版本 d5a932e42b6046eeb893438e3bf2d97a\n\n- [E:stat1] MedStat pearson · synthetic · ba6ec1c125e840b9a087e3a793d6bf49；p:1；原件 SHA256 55f47c337a9d6d49cdff556897fc43f0e5bcf7a6498283c3715376ac0d7b75b2\n  摘录：\"method\": \"pearson\"\n\n统计证据 [E:stat1]：任务 ba6ec1c125e840b9a087e3a793d6bf49；输入 SHA256 c1d1209e23fc03f84ec9bca3af1cc089f0c65175189bc6b9295dae5643630e5d；结果 SHA256 de08a6263064ce95e78efc739defb76198414806cb96a9df498e2e4c986a565b；仅合成数据。\n",
+  "exported_at": "2026-11-22T11:40:19.756180+00:00",
+  "markdown": "# Native stats draft\n\n## Methods\n\nSynthetic Pearson analysis \n\n---\n\n## 附录：工作台证据溯源与作者审核记录\n\n未批准草稿 · 版本 2ec42cd35cc145719cab029dd0668cf5\n\n- [E:stat1] MedStat pearson · synthetic · 2ad948afb3864e92809550950f1de513；p:1；原件 SHA256 55f47c337a9d6d49cdff556897fc43f0e5bcf7a6498283c3715376ac0d7b75b2\n  摘录：\"method\": \"pearson\"\n\n统计证据 [E:stat1]：任务 2ad948afb3864e92809550950f1de513；输入 SHA256 c1d1209e23fc03f84ec9bca3af1cc089f0c65175189bc6b9295dae5643630e5d；结果 SHA256 de08a6263064ce95e78efc739defb76198414806cb96a9df498e2e4c986a565b；仅合成数据。\n",
   "academic_markdown": "# Native stats draft\n\n## Methods\n\nSynthetic Pearson analysis\n",
+  "technical_supplement_markdown": "# Native stats draft — 技术补充说明与可复现性审计附录 (Technical Supplement)\n\n**文档状态**：未批准草稿 · **主稿版本 ID**：`2ec42cd35cc145719cab029dd0668cf5` · **证据包 SHA-256**：`40b23a469f820526246d91fbc4d5113fe1fb335663c7fcfca3f14341f661904f`\n\n## S1. 多数据库检索策略语法转换与全量翻页完整性核验\n\n本补充材料记录文献检索底层的游标/偏移量自动翻页完整性验证、跨数据库检索式语法转换对照表及原始题录快照 SHA-256 指纹（上述软件工程防篡改细节均已从学术主稿正文中剥离，以确保主稿符合医学 SCI 期刊叙事规范）。\n\n## S2. 跨库题录确定性去重状态机与双盲独立筛选哈希链\n\n1. **确定性去重规则**：原始题录导入后依次按规范化 PubMed ID（PMID）、数字对象唯一标识符（DOI，小写并剥离 URL 前缀）及归一化题名（剔除标点与大小写差异）执行确定性等价类归并；对存在字段冲突的候选对生成独立复核事件并记录裁决哈希。\n2. **双盲独立筛选与裁决锁定**：题名摘要初筛与全文资格评估均采用双评审员独立令牌盲筛；在双方均完成提交前，服务端拒绝揭盲或返回对方理由。裁决者揭盲后逐条记录结构化排除原因代码，全文纳入报告强制校验原文页码定位（Locator）与逐字摘录（Verbatim Quote）。\n3. **同源临床试验与队列实体映射（Report-to-Study Mapping）**：通过正则提取全文中的临床试验注册号（NCT / ChiCTR / KCT / ISRCTN）及（第一作者 + 第二作者 + 样本量特征）队列签名，将同一独立临床试验的系列发表报告归并映射至同一 `study_id`。\n\n## S3. 统计计算引擎运行环境与极小 P 值防零截断规范\n\n定量汇总、基线特征表（TableOne）、分类变量关联检验（Pearson $\\chi^2$ / Yates 校正 / Fisher 精确检验）、连续变量组间比较（Welch $t$ 检验 / Mann–Whitney $U$ 检验）及预测模型校准与决策曲线分析（ROC / Brier 评分 / Hosmer–Lemeshow 检验 / DCA / NRI / IDI）均在本地确定性统计引擎（Python `pandas`, `scipy`, `statsmodels`, `scikit-learn`）中执行。每次统计任务的输入载荷与输出产物均计算 SHA-256 哈希，且对双侧检验 $P < 0.001$ 的极小概率值实施防下溢零截断保护（严禁输出 `P = 0.000`，统一格式化为 `P < 0.001`）。\n\n## S4. 纳入证据逐条原文定位、原件 SHA-256 与作者审核记录\n\n- **证据标识 `[E:stat1]`**：来源 `MedStat pearson · synthetic · 2ad948afb3864e92809550950f1de513`；定位 `p:1`；原件 SHA-256 `55f47c337a9d6d49cdff556897fc43f0e5bcf7a6498283c3715376ac0d7b75b2`\n  - 原文核验摘录：\"method\": \"pearson\"\n  - 原生统计任务绑定：Job `2ad948afb3864e92809550950f1de513`；输入 SHA-256 `c1d1209e23fc03f84ec9bca3af1cc089f0c65175189bc6b9295dae5643630e5d`；结果产物 SHA-256 `de08a6263064ce95e78efc739defb76198414806cb96a9df498e2e4c986a565b`\n",
   "references": [
     {
       "classification": "synthetic",
-      "document_id": "c8eceda71f824de2be1337c399f73db9",
-      "document_sha256": "f15502d7584da06a90c3d01c2efcc5b4413d8bf3a953ce688c400d0e0bda37f8",
+      "document_id": "d578d8ddfe6f4ab5b8869019d77f90a1",
+      "document_sha256": "47b5ee2cfc58c046caa0455b02c7783f8d1fe31042994510e55ebed0e72e1f60",
       "excerpt": "\"method\": \"pearson\"",
       "file_sha256": "55f47c337a9d6d49cdff556897fc43f0e5bcf7a6498283c3715376ac0d7b75b2",
       "id": "stat1",
@@ -87,20 +88,20 @@
       "locator": "p:1",
       "native_statistics": {
         "analysis_input_sha256": "004dfb78dfcfaeba287e3b6d6c49b09f4f4b29b8c414c27e7dbd5319c3494478",
-        "artifact": "ba6ec1c125e840b9a087e3a793d6bf49-statistics.json",
+        "artifact": "2ad948afb3864e92809550950f1de513-statistics.json",
         "artifact_sha256": "de08a6263064ce95e78efc739defb76198414806cb96a9df498e2e4c986a565b",
         "classification": "synthetic",
         "environment": {
           "pandas": "3.1.1",
           "scipy": "1.18.1"
         },
-        "job_id": "ba6ec1c125e840b9a087e3a793d6bf49",
+        "job_id": "2ad948afb3864e92809550950f1de513",
         "method": "pearson",
         "payload_sha256": "c1d1209e23fc03f84ec9bca3af1cc089f0c65175189bc6b9295dae5643630e5d"
       },
       "origin": "native_statistics",
       "report_id": "",
-      "source": "MedStat pearson · synthetic · ba6ec1c125e840b9a087e3a793d6bf49",
+      "source": "MedStat pearson · synthetic · 2ad948afb3864e92809550950f1de513",
       "study_ids": [],
       "support_assurance": "human_declared",
       "support_note": "Synthetic method provenance only",
@@ -111,10 +112,10 @@
   "vancouver_references": [],
   "llm_calls": 0,
   "format": "local_markdown_and_audit_json_no_translation",
-  "id": "6d4930ab40be4d11ba42ff52c192dee2",
+  "id": "0d38d8b79907464fbc14d417dae6c0c6",
   "kind": "export",
-  "project": "0ef91ad4583144e5a86898d2f83f00bd",
-  "created": "2026-11-21T15:09:05.543686+00:00",
+  "project": "341453b64b234cd4b464f8f5a4e05e73",
+  "created": "2026-11-22T11:40:19.756207+00:00",
   "actor": "local_owner",
   "identity_assurance": "single_owner_access_token"
 }

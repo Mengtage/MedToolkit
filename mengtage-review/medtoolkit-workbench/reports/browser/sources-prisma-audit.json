@@ -1,15 +1,28 @@
 {
-  "snapshot_id": "ed784d2450524a1dbdb389ecea73e160",
+  "snapshot_id": "54ac2fe638fc4e5f8180af8336626df6",
   "actor": "browser-human",
-  "created": "2026-11-21T15:09:01.011092+00:00",
+  "created": "2026-11-22T11:40:15.139315+00:00",
   "report": {
     "schema": "medhunter-prisma-v1",
-    "review_id": "951eb7eac93d42abacc4af0d6231ef15",
+    "review_id": "b7008f3a1b564acdae6a54c5d3a48643",
     "scope": "selected_frozen_source_collection_and_screening_lineage; not_whole_review_attestation",
     "source_breakdown": [
       {
+        "source_id": "6aa553a0b7045bcfe4b0d067885aced34bf9af0c74c4cf7e36b39c38c3649324",
+        "source_sha256": "95e8d2fe28132bb791442b23b49ea8483dea1115247021996994f79b18a4a430",
+        "complete": false,
+        "coverage_note": "原生检索任务 d98d64e6d4ac425eb432c9338ea9001d；时间为任务创建时间，非数据库更新时间",
+        "database": "PubMed",
+        "kind": "database",
+        "query": "synthetic browser fixture",
+        "searched_at": "2026-11-22T11:40:00.539310+00:00",
+        "total_hits": 2,
+        "retrieved": 1,
+        "coverage_assurance": "native_response_count"
+      },
+      {
         "source_id": "ee88899fba7ccb2dda6f9e6c29932a7deb5e52ad8dc6f9a9b5641d614a3b7e4a",
-        "source_sha256": "5a33978a765d526b198a46ac923e08007240266d9abd8d1fe87f21ecba1eeaf5",
+        "source_sha256": "3e4f0d4d35088ab37c6dca3dc28ca779f5a47862a167e77053dc34f64de7492c",
         "complete": true,
         "coverage_note": "Synthetic records, human-declared completeness",
         "database": "Synthetic registry B",
@@ -19,27 +32,14 @@
         "total_hits": 2,
         "retrieved": 2,
         "coverage_assurance": "human_declared"
-      },
-      {
-        "source_id": "ff4f44922cb4d25c04958c54e74e3afda4eff0b3f31b4a58439fd19083796eb5",
-        "source_sha256": "893ca8e62b52672f48c736272e56276ee13700d17e25b4dd6b8ea04ee01762cd",
-        "complete": false,
-        "coverage_note": "原生检索任务 76ca2baebeb84be1b0186396b2c29b99；时间为任务创建时间，非数据库更新时间",
-        "database": "PubMed",
-        "kind": "database",
-        "query": "synthetic browser fixture",
-        "searched_at": "2026-11-21T15:08:46.343854+00:00",
-        "total_hits": 2,
-        "retrieved": 1,
-        "coverage_assurance": "native_response_count"
       }
     ],
     "collection": {
       "label": "Synthetic incremental collection",
       "parent_collection": {
-        "artifact": "collection-c74607aa92f0b8b6ce1b39f3ba0a5d61541d2eeaa069f2c46d506a540b5d38ce.json",
-        "id": "c74607aa92f0b8b6ce1b39f3ba0a5d61541d2eeaa069f2c46d506a540b5d38ce",
-        "sha256": "3174ff694df92b0b8a3e26257bb81b4af4dafa0208e576aa717dc8312dc51df2"
+        "artifact": "collection-e09582e426b1f89b54ca70f1e5b87c12fd68f24a51a540f9197bfac9283f53ee.json",
+        "id": "e09582e426b1f89b54ca70f1e5b87c12fd68f24a51a540f9197bfac9283f53ee",
+        "sha256": "1b59ecb2446c6662356de34ca9b5a299a355c9b5d6d3c32b4ea432f48a706ac3"
       },
       "reason": "Add registry; retain full original source selection"
     },
@@ -68,19 +68,19 @@
     "mapping": null,
     "retrieval_history": [],
     "provenance": {
-      "project_id": "58f11dd300954bd890a349fd77a889c2",
-      "parent_review_id": "951eb7eac93d42abacc4af0d6231ef15",
-      "parent_event_hash": "4abd91641c4b9d468e31f6ceb362eae5102fd2490ecddd07066fb9e6a9d2508a",
-      "selected_event_hash": "4abd91641c4b9d468e31f6ceb362eae5102fd2490ecddd07066fb9e6a9d2508a",
+      "project_id": "333a42313d4f494097258b292bbeabd9",
+      "parent_review_id": "b7008f3a1b564acdae6a54c5d3a48643",
+      "parent_event_hash": "9fa89861ccfcb37e381cae3d1da79fbdbd2f75b147775e592379bcdb9786f8df",
+      "selected_event_hash": "9fa89861ccfcb37e381cae3d1da79fbdbd2f75b147775e592379bcdb9786f8df",
       "source_artifacts": [
         {
-          "artifact": "2dae52184b7143e191a45bd0fcea6269-dedup.json",
-          "sha256": "28440c37d49598a8a7135144e378005c0b4d057d06ea01ebcce6ab711949ad87",
+          "artifact": "e82fdf6113e54006872a12dad132daf3-dedup.json",
+          "sha256": "fdb24818cf2dc8b04abb22b5dc28a7ad83ae412e616547600c3e865a6ec27d01",
           "kind": "deduplication"
         },
         {
-          "artifact": "collection-6343810d8d6bfe919eb287875094a8512cbdb066395720d2f998e73dfb073211.json",
-          "sha256": "7c100cea9c1e89f21f878fdb10b1ae2286346691b1ff138f7a938c612cde7fe5",
+          "artifact": "collection-0f18d5cf22f4dc5ebfb0b0f25c1a560decf81f8bae5972a448e2f0d20c0215a3.json",
+          "sha256": "0f19d79416ee26e237c868bb3e668aa0c9902eccd29c30c0f67326ef3ab93811",
           "kind": "source_collection"
         }
       ],
@@ -90,14 +90,14 @@
           "canonical_record_id": "d000001",
           "members": [
             {
-              "source_id": "ee88899fba7ccb2dda6f9e6c29932a7deb5e52ad8dc6f9a9b5641d614a3b7e4a",
+              "source_id": "6aa553a0b7045bcfe4b0d067885aced34bf9af0c74c4cf7e36b39c38c3649324",
               "source_record_index": 1,
-              "source_sha256": "5a33978a765d526b198a46ac923e08007240266d9abd8d1fe87f21ecba1eeaf5"
+              "source_sha256": "95e8d2fe28132bb791442b23b49ea8483dea1115247021996994f79b18a4a430"
             },
             {
-              "source_id": "ff4f44922cb4d25c04958c54e74e3afda4eff0b3f31b4a58439fd19083796eb5",
+              "source_id": "ee88899fba7ccb2dda6f9e6c29932a7deb5e52ad8dc6f9a9b5641d614a3b7e4a",
               "source_record_index": 1,
-              "source_sha256": "893ca8e62b52672f48c736272e56276ee13700d17e25b4dd6b8ea04ee01762cd"
+              "source_sha256": "3e4f0d4d35088ab37c6dca3dc28ca779f5a47862a167e77053dc34f64de7492c"
             }
           ]
         },
@@ -108,7 +108,7 @@
             {
               "source_id": "ee88899fba7ccb2dda6f9e6c29932a7deb5e52ad8dc6f9a9b5641d614a3b7e4a",
               "source_record_index": 2,
-              "source_sha256": "5a33978a765d526b198a46ac923e08007240266d9abd8d1fe87f21ecba1eeaf5"
+              "source_sha256": "3e4f0d4d35088ab37c6dca3dc28ca779f5a47862a167e77053dc34f64de7492c"
             }
           ]
         }
@@ -129,6 +129,6 @@
       "fulltext_final_decisions": []
     }
   },
-  "report_sha256": "dc739ea5b9f32c7acae14cae8e562b03c6523797f884faad683eb894959dbe21",
-  "snapshot_sha256": "35bfb90a074e3005bf978f015d5590a267b2a0322b7aac7afffcf4de483ab268"
+  "report_sha256": "168a8fc5956fe7ade233dcbc81d89a21564254fb5ebdac4389dcdf04b85cd957",
+  "snapshot_sha256": "0dffc338a1d5123db88bbe1ba6e04c3a9d3415157ac3d049a4015683941e011d"
 }

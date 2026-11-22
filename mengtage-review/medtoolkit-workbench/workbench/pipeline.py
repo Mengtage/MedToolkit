@@ -46,7 +46,12 @@ def run_pipeline(store, config, output_dir=None):
         query = s_cfg.get('query', '').strip()
         db = s_cfg.get('database', 'pubmed')
         limit = int(s_cfg.get('limit', 50))
-        jid = store.enqueue(project, 'search', {'query': query, 'limit': limit, 'database': db})
+        s_payload = {'query': query, 'limit': limit, 'database': db}
+        if 'fetch_all' in s_cfg:
+            s_payload['fetch_all'] = bool(s_cfg['fetch_all'])
+        if 'page_size' in s_cfg:
+            s_payload['page_size'] = int(s_cfg['page_size'])
+        jid = store.enqueue(project, 'search', s_payload)
         if store.runnable(jid):
             res = store.run(jid)
         else:
@@ -175,7 +180,7 @@ def run_pipeline(store, config, output_dir=None):
             loc, q = _find_verbatim_quote(r['record'])
             screening_svc.ledger.adjudicate(ft_review, adjudicator, r['record_id'], 'include', '全文核验纳入综合分析', locator=loc, quote=q)
 
-    # 6. Smart Report-to-Study Entity Mapping & PRISMA 2020 Export
+    # 6. Smart Report-to-Study Entity Mapping, 10-Dimension Data Charting & PRISMA 2020 Export
     study_suggestions = suggest_study_mappings(screening_svc.studies, ft_review, adjudicator)
     mappings = config.get('study_mappings') or study_suggestions['suggestions']
     screening_svc.studies.save(
@@ -185,6 +190,12 @@ def run_pipeline(store, config, output_dir=None):
         study_suggestions['screening_event_hash'],
         study_suggestions['mapping_event_hash'],
         True,
+    )
+    charting_res = screening_svc.charting.extract(
+        ft_review,
+        adjudicator,
+        mode=config.get('charting_mode', 'auto'),
+        save=True,
     )
     prisma_prev = screening_svc.dispatch('prisma_preview', {'review': ft_review}, {'actor': adjudicator, 'role': 'human'})
     prisma_exp = screening_svc.prisma.export(ft_review, adjudicator, prisma_prev['sha256'])
@@ -246,14 +257,20 @@ def run_pipeline(store, config, output_dir=None):
         out_path.mkdir(parents=True, exist_ok=True)
         (out_path / 'manuscript.md').write_text(md_export['academic_markdown'], encoding='utf-8')
         (out_path / 'manuscript-with-audit.md').write_text(md_export['markdown'], encoding='utf-8')
+        (out_path / 'technical-supplement.md').write_text(md_export['technical_supplement_markdown'], encoding='utf-8')
         (out_path / 'manuscript.docx').write_bytes(base64.b64decode(word_export['academic_content_base64']))
         (out_path / 'manuscript-with-audit.docx').write_bytes(base64.b64decode(word_export['content_base64']))
+        (out_path / 'technical-supplement.docx').write_bytes(base64.b64decode(word_export['technical_supplement_content_base64']))
         (out_path / 'manuscript-audit.json').write_text(json.dumps(md_export, ensure_ascii=False, indent=2), encoding='utf-8')
+        (out_path / 'charting-10d.json').write_text(json.dumps(charting_res['charting'], ensure_ascii=False, indent=2), encoding='utf-8')
         for f in prisma_exp['files']:
             (out_path / f['filename']).write_text(f['content'], encoding='utf-8')
         written_files = {
             'manuscript_md': str(out_path / 'manuscript.md'),
             'manuscript_docx': str(out_path / 'manuscript.docx'),
+            'technical_supplement_md': str(out_path / 'technical-supplement.md'),
+            'technical_supplement_docx': str(out_path / 'technical-supplement.docx'),
+            'charting_json': str(out_path / 'charting-10d.json'),
             'manuscript_with_audit_md': str(out_path / 'manuscript-with-audit.md'),
             'manuscript_with_audit_docx': str(out_path / 'manuscript-with-audit.docx'),
             'prisma_svg': str(out_path / 'prisma-flow.svg'),
@@ -268,6 +285,8 @@ def run_pipeline(store, config, output_dir=None):
         'dedup_artifact': dedup_artifact,
         'ta_review_id': ta_review,
         'ft_review_id': ft_review,
+        'charting_count': charting_res['charted_count'],
+        'charting_event_hash': charting_res['event_hash'],
         'prisma_counts': prisma_prev['report']['counts'],
         'prisma_status': prisma_prev['report']['status'],
         'statistics_jobs': stat_jobs,
@@ -279,6 +298,7 @@ def run_pipeline(store, config, output_dir=None):
         'checks': manuscript['checks'],
         'vancouver_reference_count': len(md_export.get('vancouver_references', [])),
         'word_filename': word_export['filename'],
+        'technical_supplement_filename': word_export['technical_supplement_filename'],
         'word_sha256': word_export['file_sha256'],
         'output_files': written_files,
     }

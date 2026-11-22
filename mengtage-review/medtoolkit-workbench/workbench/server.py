@@ -82,6 +82,11 @@ def serve(store,port=8765):
                     return self.reply(200,writer.dispatch(self.path.removeprefix('/api/writer/'),body))
                 if self.path.startswith('/api/sources/'):
                     operation=self.path.removeprefix('/api/sources/')
+                    if operation=='translate_query':
+                        from .query_translator import translate_query
+                        if not isinstance(body.get('query'),str) or set(body)-{'query','target','date_from','date_to'}:
+                            raise ValueError('检索式转换参数无效')
+                        return self.reply(200,translate_query(body['query'],target=body.get('target','all'),date_from=body.get('date_from'),date_to=body.get('date_to')))
                     fields={'import_records':{'project','metadata','records','confirmed'},'import_file':{'project','metadata','filename','content','confirmed'},'capture':{'project','source_artifact','confirmed'},'create':{'project','label','source_ids','parent_id','reason','confirmed'}}
                     if operation not in fields or set(body)!=fields[operation]:raise ValueError('来源请求字段无效')
                     return self.reply(201,getattr(sources,operation)(**body))

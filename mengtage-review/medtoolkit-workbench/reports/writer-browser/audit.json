@@ -3,21 +3,21 @@
     "actor": "local_owner",
     "checks": {
       "blockers": [],
-      "rule_version": "writer-citations-sci-v2",
+      "rule_version": "writer-citations-sci-v3-6gates",
       "semantic_support": "requires_human_review",
       "warnings": []
     },
-    "created": "2026-11-21T15:09:03.426702+00:00",
-    "evidence_id": "62c328874b1a4d7e835bc9cde12c1b19",
-    "evidence_sha256": "c363efe8d16c51e92fa9c76d8a43f7e649c5f81b10c7ebab81818c03d2fb800d",
-    "id": "ce279ac3cdae4c8e98315ca2924ef1a5",
+    "created": "2026-11-22T11:40:17.572052+00:00",
+    "evidence_id": "829d4001dc8349f08815eeeb48874a1a",
+    "evidence_sha256": "c6f3fe660085164f39e09f597aaa66f4d099f2d2003c68bab1c27d9f2f4ca6ad",
+    "id": "75608bdbc073410f978cade3d307b91b",
     "identity_assurance": "single_owner_access_token",
     "kind": "manuscript",
     "llm_calls": 0,
-    "manuscript_id": "b102d75882e4445a90570b2953669d5f",
+    "manuscript_id": "4a9a9dab2480480faa81ea12bed6fc29",
     "origin": "manual_draft",
-    "parent_version": "4e1fdfd5a2f247318d69973a9031ad49",
-    "project": "0ef91ad4583144e5a86898d2f83f00bd",
+    "parent_version": "918182efbfc7464081b71731efdc14c7",
+    "project": "341453b64b234cd4b464f8f5a4e05e73",
     "sections": [
       {
         "body": "Synthetic finding 42. [E:e1]",
@@ -28,14 +28,14 @@
   },
   "evidence": {
     "actor": "local_owner",
-    "created": "2026-11-21T15:09:03.110690+00:00",
-    "id": "62c328874b1a4d7e835bc9cde12c1b19",
+    "created": "2026-11-22T11:40:17.255210+00:00",
+    "id": "829d4001dc8349f08815eeeb48874a1a",
     "identity_assurance": "single_owner_access_token",
     "items": [
       {
         "classification": "synthetic",
-        "document_id": "5e793d7ec25f4d6f97d53108d3bd4259",
-        "document_sha256": "ad4733cb9c68721e977761823e2cddd48fae7593a1708ea8fd52e7e2ab00a29b",
+        "document_id": "869641993d9c42f893024a84cfb3b54f",
+        "document_sha256": "e4bb1096f2e19e5cc6e8130bc63c033bbd8f37c5e63b5b7b7fe04fe0380b4f28",
         "excerpt": "Synthetic finding 42.",
         "file_sha256": "4fca7f9469b2117f31104f526739dd6e63083f0ec066d68f3eda972290c3b65b",
         "id": "e1",
@@ -54,7 +54,7 @@
     "kind": "evidence",
     "label": "章节证据",
     "parent_id": null,
-    "project": "0ef91ad4583144e5a86898d2f83f00bd"
+    "project": "341453b64b234cd4b464f8f5a4e05e73"
   },
   "reviews": [
     {
@@ -62,25 +62,26 @@
       "author": "Synthetic Author",
       "author_assurance": "owner_declared_name",
       "decision": "approved",
-      "hash": "e364a3f8d8a1cc12ac2ceb3c2af0691b1f5659a1552e079ec5f7a570641efb9a",
-      "manuscript_sha256": "4bfb02425e2df2af4fd572479cff80c4c81227f040af0b9cc69327517e60fd5e",
+      "hash": "b3610016ab571f70884fe51c7dd946cdea06cf5785f458e698ed93a9ba426ea2",
+      "manuscript_sha256": "58f5a700ffc9d763b17cbe47a2fc8db30a7d59b1d65ee52ce1d74113fd4e7cfe",
       "note": "Checked",
       "previous_hash": "",
       "support_confirmed": true,
-      "timestamp": "2026-11-21T15:09:03.526637+00:00",
-      "version": "ce279ac3cdae4c8e98315ca2924ef1a5"
+      "timestamp": "2026-11-22T11:40:17.671881+00:00",
+      "version": "75608bdbc073410f978cade3d307b91b"
     }
   ],
   "status": "approved",
   "is_current": true,
-  "exported_at": "2026-11-21T15:09:03.593693+00:00",
-  "markdown": "# 合成稿件 & Desktop\n\n## 结果\n\nSynthetic finding 42. [1]\n\n## 参考文献 (References)\n\n1. Synthetic source — 中文 & <test>.\n\n---\n\n## 附录：工作台证据溯源与作者审核记录\n\n已获作者批准 · 版本 ce279ac3cdae4c8e98315ca2924ef1a5\n\n- [E:e1] → [1] Synthetic source — 中文 & <test>；p:1；原件 SHA256 4fca7f9469b2117f31104f526739dd6e63083f0ec066d68f3eda972290c3b65b\n  摘录：Synthetic finding 42.\n",
+  "exported_at": "2026-11-22T11:40:17.739782+00:00",
+  "markdown": "# 合成稿件 & Desktop\n\n## 结果\n\nSynthetic finding 42. [1]\n\n## 参考文献 (References)\n\n1. Synthetic source — 中文 & <test>.\n\n---\n\n## 附录：工作台证据溯源与作者审核记录\n\n已获作者批准 · 版本 75608bdbc073410f978cade3d307b91b\n\n- [E:e1] → [1] Synthetic source — 中文 & <test>；p:1；原件 SHA256 4fca7f9469b2117f31104f526739dd6e63083f0ec066d68f3eda972290c3b65b\n  摘录：Synthetic finding 42.\n",
   "academic_markdown": "# 合成稿件 & Desktop\n\n## 结果\n\nSynthetic finding 42. [1]\n\n## 参考文献 (References)\n\n1. Synthetic source — 中文 & <test>.\n",
+  "technical_supplement_markdown": "# 合成稿件 & Desktop — 技术补充说明与可复现性审计附录 (Technical Supplement)\n\n**文档状态**：已获作者批准 · **主稿版本 ID**：`75608bdbc073410f978cade3d307b91b` · **证据包 SHA-256**：`c6f3fe660085164f39e09f597aaa66f4d099f2d2003c68bab1c27d9f2f4ca6ad`\n\n## S1. 多数据库检索策略语法转换与全量翻页完整性核验\n\n本补充材料记录文献检索底层的游标/偏移量自动翻页完整性验证、跨数据库检索式语法转换对照表及原始题录快照 SHA-256 指纹（上述软件工程防篡改细节均已从学术主稿正文中剥离，以确保主稿符合医学 SCI 期刊叙事规范）。\n\n## S2. 跨库题录确定性去重状态机与双盲独立筛选哈希链\n\n1. **确定性去重规则**：原始题录导入后依次按规范化 PubMed ID（PMID）、数字对象唯一标识符（DOI，小写并剥离 URL 前缀）及归一化题名（剔除标点与大小写差异）执行确定性等价类归并；对存在字段冲突的候选对生成独立复核事件并记录裁决哈希。\n2. **双盲独立筛选与裁决锁定**：题名摘要初筛与全文资格评估均采用双评审员独立令牌盲筛；在双方均完成提交前，服务端拒绝揭盲或返回对方理由。裁决者揭盲后逐条记录结构化排除原因代码，全文纳入报告强制校验原文页码定位（Locator）与逐字摘录（Verbatim Quote）。\n3. **同源临床试验与队列实体映射（Report-to-Study Mapping）**：通过正则提取全文中的临床试验注册号（NCT / ChiCTR / KCT / ISRCTN）及（第一作者 + 第二作者 + 样本量特征）队列签名，将同一独立临床试验的系列发表报告归并映射至同一 `study_id`。\n\n## S3. 统计计算引擎运行环境与极小 P 值防零截断规范\n\n定量汇总、基线特征表（TableOne）、分类变量关联检验（Pearson $\\chi^2$ / Yates 校正 / Fisher 精确检验）、连续变量组间比较（Welch $t$ 检验 / Mann–Whitney $U$ 检验）及预测模型校准与决策曲线分析（ROC / Brier 评分 / Hosmer–Lemeshow 检验 / DCA / NRI / IDI）均在本地确定性统计引擎（Python `pandas`, `scipy`, `statsmodels`, `scikit-learn`）中执行。每次统计任务的输入载荷与输出产物均计算 SHA-256 哈希，且对双侧检验 $P < 0.001$ 的极小概率值实施防下溢零截断保护（严禁输出 `P = 0.000`，统一格式化为 `P < 0.001`）。\n\n## S4. 纳入证据逐条原文定位、原件 SHA-256 与作者审核记录\n\n- **证据标识 `[E:e1]` → 对应主稿参考文献 [1]**：来源 `Synthetic source — 中文 & <test>`；定位 `p:1`；原件 SHA-256 `4fca7f9469b2117f31104f526739dd6e63083f0ec066d68f3eda972290c3b65b`\n  - 原文核验摘录：Synthetic finding 42.\n",
   "references": [
     {
       "classification": "synthetic",
-      "document_id": "5e793d7ec25f4d6f97d53108d3bd4259",
-      "document_sha256": "ad4733cb9c68721e977761823e2cddd48fae7593a1708ea8fd52e7e2ab00a29b",
+      "document_id": "869641993d9c42f893024a84cfb3b54f",
+      "document_sha256": "e4bb1096f2e19e5cc6e8130bc63c033bbd8f37c5e63b5b7b7fe04fe0380b4f28",
       "excerpt": "Synthetic finding 42.",
       "file_sha256": "4fca7f9469b2117f31104f526739dd6e63083f0ec066d68f3eda972290c3b65b",
       "id": "e1",
@@ -105,10 +106,10 @@
   ],
   "llm_calls": 0,
   "format": "local_markdown_and_audit_json_no_translation",
-  "id": "f61fe50fd3854c47bb4c987784ce3061",
+  "id": "a01925b8a34042aeaa9b0ab24a0abc14",
   "kind": "export",
-  "project": "0ef91ad4583144e5a86898d2f83f00bd",
-  "created": "2026-11-21T15:09:03.593723+00:00",
+  "project": "341453b64b234cd4b464f8f5a4e05e73",
+  "created": "2026-11-22T11:40:17.739809+00:00",
   "actor": "local_owner",
   "identity_assurance": "single_owner_access_token"
 }
